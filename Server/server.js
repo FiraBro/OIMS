@@ -23,6 +23,8 @@ mongoose
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
+import authRouter from "./routes/authRoutes.js";
+app.use("/api/v1/auth", authRouter);
 
 // Start server
 const PORT = process.env.PORT || 5000;

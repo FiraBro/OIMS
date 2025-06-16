@@ -24,7 +24,9 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 import authRouter from "./routes/authRoutes.js";
+import insurancePlanRouter from "./routes/insurancePlanRoutes.js";
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/plans", insurancePlanRouter);
 
 // Start server
 const PORT = process.env.PORT || 5000;

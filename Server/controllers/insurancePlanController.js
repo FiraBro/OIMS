@@ -14,7 +14,11 @@ export async function createPlan(req, res) {
 // Update Plan (admin only)
 export async function updatePlan(req, res) {
   try {
-    const plan = await InsurancePlan.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const plan = await InsurancePlan.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
     if (!plan) return res.status(404).json({ message: "Plan not found" });
     res.status(200).json({ status: true, data: plan });
   } catch (err) {

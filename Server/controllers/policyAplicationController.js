@@ -61,3 +61,18 @@ export const updateApplicationStatus = async (req, res) => {
       .json({ error: "Failed to update status", details: err.message });
   }
 };
+
+export const getUserApplications = async (req, res) => {
+  try {
+    const applications = await PolicyApplication.find({ user: req.user._id })
+      .populate("planId", "name premium durationMonths") // Optional
+      .sort({ createdAt: -1 }); // Most recent first
+
+    res.json(applications);
+  } catch (err) {
+    res.status(500).json({
+      error: "Failed to fetch user applications",
+      details: err.message,
+    });
+  }
+};

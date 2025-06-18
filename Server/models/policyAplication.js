@@ -5,7 +5,7 @@ const policyApplicationSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     planId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Plan",
+      ref: "InsurancePlan",
       required: true,
     },
     documents: [String],

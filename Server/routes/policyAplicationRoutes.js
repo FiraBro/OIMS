@@ -3,6 +3,7 @@ import {
   applyForPolicy,
   getAllApplications,
   updateApplicationStatus,
+  getUserApplications,
 } from "../controllers/policyAplicationController.js";
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
 import upload from "../middleware/upload.js";
@@ -21,5 +22,7 @@ policyRouter.put(
   isAdmin,
   updateApplicationStatus
 );
+
+policyRouter.get("/my-applications", protect, getUserApplications);
 
 export default policyRouter;

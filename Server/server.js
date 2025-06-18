@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
 
 // Load environment variables
 dotenv.config();
@@ -12,6 +13,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // MongoDB connection
 mongoose
@@ -25,8 +27,10 @@ app.get("/", (req, res) => {
 });
 import authRouter from "./routes/authRoutes.js";
 import insurancePlanRouter from "./routes/insurancePlanRoutes.js";
+import PolicyRouter from "./routes/policyAplicationRoutes.js"
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/plans", insurancePlanRouter);
+app.use("/api/v1/policy", PolicyRouter);
 
 // Start server
 const PORT = process.env.PORT || 5000;

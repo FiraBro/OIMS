@@ -3,26 +3,23 @@ import {
   applyForPolicy,
   getAllApplications,
   updateApplicationStatus,
-} from "../controllers/policyApplicationController.js";
+} from "../controllers/policyAplicationController.js";
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
 import upload from "../middleware/upload.js";
+const policyRouter = express.Router();
 
-const router = express.Router();
-
-router.post("/apply", protect, upload.array("documents", 3), applyForPolicy);
-router.get(
-  "/admin/all",
+policyRouter.post(
+  "/apply",
   protect,
-  isAdmin,
-  authorizeRoles("admin"),
-  getAllApplications
+  upload.array("documents", 3),
+  applyForPolicy
 );
-router.put(
+policyRouter.get("/admin/all", protect, isAdmin, getAllApplications);
+policyRouter.put(
   "/admin/:id/status",
   protect,
   isAdmin,
-  authorizeRoles("admin"),
   updateApplicationStatus
 );
 
-export default router;
+export default policyRouter;

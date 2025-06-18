@@ -1,6 +1,6 @@
 import PolicyApplication from "../models/policyAplication.js";
 
-export const applyForPolicy = async (req, res,next) => {
+export const applyForPolicy = async (req, res, next) => {
   try {
     const { planId } = req.body;
     const documents = req.files.map((file) => file.path);

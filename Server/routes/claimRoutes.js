@@ -3,14 +3,14 @@ import {
   submitClaim,
   updateClaimStatus,
 } from "../controllers/claimController.js";
-import { protect, admin } from "../middlewares/authMiddleware.js";
+import { protect, isAdmin } from "../middleware/authMiddleware.js";
 import upload from "../middleware/upload.js";
-const router = express.Router();
+const claimRouter = express.Router();
 
 // User submits claim
-router.post("/submit", protect, upload.single("document"), submitClaim);
+claimRouter.post("/submit", protect, upload.single("document"), submitClaim);
 
 // Admin approves/rejects claim
-router.put("/status/:id", protect, admin, updateClaimStatus);
+claimRouter.put("/status/:id", protect, isAdmin, updateClaimStatus);
 
-export default router;
+export default claimRouter;

@@ -11,6 +11,12 @@ export const applyForPolicy = async (req, res, next) => {
       documents,
     });
 
+    const policyNumber = `POL-${req.user._id
+      .toString()
+      .slice(-5)}-${Date.now()}`;
+
+    // Assign policyNumber to the plan before saving
+    newApplication.policyNumber = policyNumber; // ⚠️ Critical fix
     await newApplication.save();
     res
       .status(201)

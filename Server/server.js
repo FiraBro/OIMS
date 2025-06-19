@@ -32,7 +32,7 @@ import claimRouter from "./routes/claimRoutes.js";
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/plans", insurancePlanRouter);
 app.use("/api/v1/policy", PolicyRouter);
-app.use("/api/v1/claim", claimRouter);
+app.use("/api/v1/claims", claimRouter);
 
 // Start server
 const PORT = process.env.PORT || 5000;

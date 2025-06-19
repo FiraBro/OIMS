@@ -5,12 +5,6 @@ export async function createPlan(req, res) {
   try {
     const plan = new InsurancePlan(req.body);
 
-    const policyNumber = `POL-${req.user._id
-      .toString()
-      .slice(-5)}-${Date.now()}`;
-
-    // Assign policyNumber to the plan before saving
-    plan.policyNumber = policyNumber; // ⚠️ Critical fix
     await plan.save();
     res.status(201).json({ status: true, data: plan });
   } catch (err) {

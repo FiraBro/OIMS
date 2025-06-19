@@ -8,6 +8,9 @@ const policyApplicationSchema = new mongoose.Schema(
       ref: "InsurancePlan",
       required: true,
     },
+    policyNumber: {
+      type: String,
+    },
     documents: [String],
     status: {
       type: String,

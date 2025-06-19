@@ -1,17 +1,17 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const claimSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   policyNumber: { type: String, required: true },
   reason: { type: String, required: true },
   document: { type: String },
   status: {
     type: String,
-    enum: ["Pending", "Approved", "Rejected"],
-    default: "Pending",
+    enum: ['Pending', 'Approved', 'Rejected'],
+    default: 'Pending',
   },
   submittedAt: { type: Date, default: Date.now },
-  reviewedAt: { type: Date },
+  reviewedAt: { type: Date }
 });
 
-export default mongoose.model("Claim", claimSchema);
+export default mongoose.model('Claim', claimSchema);

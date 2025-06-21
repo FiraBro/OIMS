@@ -71,10 +71,10 @@ export default function WhyChooseUs() {
         {/* CTA Button */}
         <div className="text-center mt-12">
           <a
-            href="#get-started"
+            href="#"
             className="inline-block px-8 py-3 bg-blue-600 text-white rounded-full text-sm md:text-base font-medium hover:bg-blue-700 transition"
           >
-            Get Started Now
+            View Plan
           </a>
         </div>
       </div>

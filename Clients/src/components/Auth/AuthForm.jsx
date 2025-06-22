@@ -1,8 +1,7 @@
-// import { useState } from "react";
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { authService } from "../../services/authService";
 export default function AuthForm() {
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -62,59 +61,31 @@ export default function AuthForm() {
     }
   };
 
-  // Registration handler
   const handleRegister = async () => {
-    const formDataToSend = new FormData();
-
-    // Append all non-empty fields
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null && value !== "" && value !== undefined) {
-        formDataToSend.append(key, value);
-      }
-    });
-
-    const response = await axios.post(
-      "http://localhost:5000/api/v1/auth/register",
-      formDataToSend,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
-    );
-
+    const data = await authService.register(formData);
     setMessage({
       text: "✅ Registration successful! Redirecting...",
       type: "success",
     });
 
-    // Redirect after 2 seconds
     setTimeout(() => {
       setIsRegistering(false);
-      setFormData((prev) => ({ ...prev, password: "" })); // Clear password
+      setFormData((prev) => ({ ...prev, password: "" }));
     }, 2000);
   };
-
   // Login handler
   const handleLogin = async () => {
-    const { email, password } = formData;
-
-    const response = await axios.post(
-      "http://localhost:5000/api/v1/auth/login",
-      { email, password }
-    );
-
-    // Store token and user data (example)
-    localStorage.setItem("token", response.data.token);
-    localStorage.setItem("user", JSON.stringify(response.data.user));
+    await authService.login({
+      email: formData.email,
+      password: formData.password,
+    });
 
     setMessage({
       text: "✅ Login successful! Redirecting...",
       type: "success",
     });
 
-    // Redirect to dashboard
-    setTimeout(() => navigate("/dashboard"), 1500);
+    setTimeout(() => navigate("/"), 1500);
   };
 
   return (

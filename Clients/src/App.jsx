@@ -6,6 +6,7 @@ import Layout from "./utils/Layout";
 import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";
 import UserApplications from "./pages/apply/UserApplications";
 import AuthPage from "./pages/auth/AuthPage"; // ✅ New
+import ClaimSubmissionForm from "./pages/apply/ClaimSubmissionForm";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +28,10 @@ const router = createBrowserRouter([
       {
         path: "user-stats",
         element: <UserApplications />,
+      },
+      {
+        path: "/claim",
+        element: <ClaimSubmissionForm />,
       },
     ],
   },

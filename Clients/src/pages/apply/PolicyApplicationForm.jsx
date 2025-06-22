@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { policyService } from "../../services/policyService";
+import { policyService } from "../../services/policyService.js";
 import axios from "axios";
 
 export default function PolicyApplicationForm() {
@@ -16,25 +16,30 @@ export default function PolicyApplicationForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!selectedPlan || documents.length === 0) {
       setMessage("Please select a plan and upload documents.");
       return;
     }
 
+    const formData = new FormData();
+    formData.append("planId", selectedPlan);
+
+    for (let i = 0; i < documents.length; i++) {
+      formData.append("documents", documents[i]);
+    }
+
     try {
-      const formData = new FormData();
-      formData.append("plan", selectedPlan);
-
-      Array.from(documents).forEach((file) => {
-        formData.append("documents", file);
-      });
-
       const res = await policyService.applyForPolicy(formData);
       setMessage("✅ Application submitted successfully!");
       console.log("Response:", res);
     } catch (err) {
-      console.error("Error:", err.message || err);
-      setMessage(`❌ Error: ${err.message || err}`);
+      console.error("❌ Submission error:", err.response || err);
+      setMessage(
+        `❌ ${
+          err.response?.data?.message || err.message || "Something went wrong"
+        }`
+      );
     }
   };
 

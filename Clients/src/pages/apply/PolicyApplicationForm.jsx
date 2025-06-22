@@ -32,7 +32,10 @@ export default function PolicyApplicationForm() {
     try {
       const res = await policyService.applyForPolicy(formData);
       setMessage("✅ Application submitted successfully!");
-      console.log("Response:", res);
+
+      setSelectedPlan("");
+      setDocuments([]);
+      e.target.reset(); // Clears file input
     } catch (err) {
       console.error("❌ Submission error:", err.response || err);
       setMessage(

@@ -8,8 +8,8 @@ export default function Layout() {
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      {/* Main content area */}
-      <main className="flex-grow">
+      {/* Main content area with margin top */}
+      <main className="flex-grow mt-16">
         <Outlet />
       </main>
 

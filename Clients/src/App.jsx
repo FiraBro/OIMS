@@ -7,6 +7,7 @@ import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";
 import UserApplications from "./pages/apply/UserApplications";
 import AuthPage from "./pages/auth/AuthPage"; // ✅ New
 import ClaimSubmissionForm from "./pages/apply/ClaimSubmissionForm";
+import MyClaims from "./components/claim/MyClaims";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
         path: "/claim",
         element: <ClaimSubmissionForm />,
       },
+      {
+        path:'/show/claims',
+        element:<MyClaims />
+      }
     ],
   },
   {

@@ -37,3 +37,22 @@ export async function getUser(req, res, next) {
     });
   }
 }
+export async function deleteUser(req, res) {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.user._id);
+    if (!deleteUser)
+      return res.status(400).json({
+        status: false,
+        message: "No deleted user",
+      });
+    res.status(200).json({
+      status: true,
+      message: "User deleted succusfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: error.message,
+    });
+  }
+}

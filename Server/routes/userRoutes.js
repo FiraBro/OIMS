@@ -10,4 +10,4 @@ const userRouter = express.Router();
 userRouter.get("/all", protect, isAdmin, getAllUser);
 userRouter.delete("/delete/:id", protect, isAdmin, deleteUser);
 
-export default policyRouter;
+export default userRouter;

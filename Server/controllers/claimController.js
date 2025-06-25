@@ -84,3 +84,19 @@ export const getUserClaims = async (req, res) => {
     });
   }
 };
+export const getAllClaims = async (req, res) => {
+  try {
+    const claim = await Claim.find();
+    if (!claim)
+      return res.status(400).json({
+        status: false,
+        message: "No claim is found",
+      });
+    res.status(200).json({ status: true, data: claim });
+  } catch (error) {
+    res.status(400).json({
+      status: false,
+      message: error.message,
+    });
+  }
+};

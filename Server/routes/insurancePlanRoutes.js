@@ -5,6 +5,7 @@ import {
   deletePlan,
   listPlansAdmin,
   listPlansPublic,
+  countPlan,
 } from "../controllers/insurancePlanController.js";
 
 import { isAdmin, protect } from "../middleware/authMiddleware.js";
@@ -16,6 +17,7 @@ insurancePlanRouter.post("/create", protect, isAdmin, createPlan);
 insurancePlanRouter.put("/:id", protect, isAdmin, updatePlan);
 insurancePlanRouter.delete("/:id", protect, isAdmin, deletePlan);
 insurancePlanRouter.get("/admin", protect, isAdmin, listPlansAdmin);
+insurancePlanRouter.get("/count", protect, isAdmin, countPlan);
 
 // Public route - no auth needed
 insurancePlanRouter.get("/", listPlansPublic);

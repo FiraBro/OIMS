@@ -57,3 +57,32 @@ export async function listPlansPublic(req, res) {
     res.status(500).json({ message: err.message });
   }
 }
+
+export async function countPlan(req, res) {
+  try {
+    // 2. Get the plan count from database
+    const planCount = await InsurancePlan.countDocuments();
+
+    // 3. Return successful response
+    if (!planCount)
+      return res.status(400).json({
+        status: false,
+        message: "No plan is found",
+      });
+    res.status(200).json({
+      status: true,
+      count: planCount,
+      message: `Found ${planCount} plans matching criteria`,
+    });
+  } catch (error) {
+    console.error("Error counting plans:", error);
+
+    // 4. Return error response
+    res.status(400).json({
+      status: false,
+      count: 0,
+      message: "Failed to count plans",
+      error: error.message,
+    });
+  }
+}

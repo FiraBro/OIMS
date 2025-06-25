@@ -56,3 +56,25 @@ export async function deleteUser(req, res) {
     });
   }
 }
+export async function countUser(req, res) {
+  try {
+    // 1. Get the user count from database
+    const userCount = await User.countDocuments(); // Using Mongoose
+
+    // 2. Return successful response
+    return res.status(200).json({
+      success: true,
+      count: userCount,
+      message: `Found ${userCount} users in database`,
+    });
+  } catch (error) {
+    console.error("Error counting users:", error);
+
+    // 3. Return error response
+    return res.status(500).json({
+      success: false,
+      message: "Failed to count users",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+}

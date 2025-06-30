@@ -4,7 +4,7 @@ const insurancePlanSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
   premium: { type: Number, required: true }, // cost per period
-  coverageDetails: { type: String },
+  coverage: { type: String },
   durationMonths: { type: Number, required: true }, // plan duration in months
   createdAt: { type: Date, default: Date.now },
 });

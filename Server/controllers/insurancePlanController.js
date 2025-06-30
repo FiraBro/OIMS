@@ -86,3 +86,40 @@ export async function countPlan(req, res) {
     });
   }
 }
+
+export async function sumPlanPremiums(req, res) {
+  try {
+    const result = await InsurancePlan.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalPremiums: { $sum: "$premium" },
+          averagePremium: { $avg: "$premium" },
+          minPremium: { $min: "$premium" },
+          maxPremium: { $max: "$premium" },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = result[0] || {
+      totalPremiums: 0,
+      averagePremium: 0,
+      minPremium: 0,
+      maxPremium: 0,
+      count: 0,
+    };
+
+    res.status(200).json({
+      status: true,
+      data: stats,
+      message: `Premium analysis for ${stats.count} plans`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: "Failed to calculate premium statistics",
+      error: error.message,
+    });
+  }
+}

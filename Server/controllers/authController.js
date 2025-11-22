@@ -1,104 +1,50 @@
-import User from "../models/user.js"; // Make sure the path and extension match your setup
-import jwt from "jsonwebtoken";
-export async function register(req, res, next) {
-  try {
-    const {
-      fullName,
-      email,
-      password,
-      role,
-      phone,
-      address,
-      dateOfBirth,
-      gender,
-    } = req.body;
+import catchAsync from "../utils/catchAsync.js";
+import {
+  registerUser,
+  loginUser,
+  forgotPasswordService,
+  resetPasswordService,
+} from "../services/authService.js";
 
-    // Basic validation (you can expand this)
-    // if (!fullName || !email || !password || !phone || !dateOfBirth) {
-    //   return res.status(400).json({ message: "Missing required fields" });
-    // }
+export const register = catchAsync(async (req, res, next) => {
+  const user = await registerUser(req.body);
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ message: "Email already registered" });
-    }
+  res.status(201).json({
+    status: "success",
+    message: "User registered successfully",
+    user,
+  });
+});
 
-    // Create new user
-    const newUser = new User({
-      fullName,
-      email,
-      password,
-      role,
-      phone,
-      address,
-      dateOfBirth,
-      gender,
-    });
+export const login = catchAsync(async (req, res, next) => {
+  const result = await loginUser(req.body);
 
-    await newUser.save();
+  res.status(200).json({
+    status: "success",
+    message: "Login successful",
+    ...result,
+  });
+});
 
-    // You can choose what to send back (usually not the password)
-    res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id: newUser._id,
-        fullName: newUser.fullName,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+export const forgotPassword = catchAsync(async (req, res, next) => {
+  const resetURL = await forgotPasswordService(req.body.email);
 
-export async function login(req, res, next) {
-  try {
-    const { email, password } = req.body;
+  res.status(200).json({
+    status: "success",
+    message: "Reset password link sent to email",
+    resetURL, // remove in production
+  });
+});
 
-    // Basic validation
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
-    }
+export const resetPassword = catchAsync(async (req, res, next) => {
+  const result = await resetPasswordService(
+    req.params.token,
+    req.body.password
+  );
 
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    // Compare password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    next(error); // Pass to global error handler
-  }
-}
+  res.status(200).json({
+    status: "success",
+    message: "Password reset successfully",
+    ...result,
+  });
+});

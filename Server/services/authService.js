@@ -1,17 +1,8 @@
 import User from "../models/user.js";
 import AppError from "../utils/AppError.js";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import sendEmail from "../utils/sendEmail.js"; // optional if you have it
-
-// Generate JWT
-const signToken = (user) => {
-  return jwt.sign(
-    { id: user._id, email: user.email, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-};
+import sendEmail from "../utils/sendEmail.js";
+import { signToken } from "../utils/jwt.js";
 
 // ========================= REGISTER ==============================
 export const registerUser = async (data) => {
@@ -62,7 +53,6 @@ export const forgotPasswordService = async (email) => {
 
   const resetURL = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-  // Optional: Email the user
   if (sendEmail) {
     await sendEmail({
       email: user.email,

@@ -1,9 +1,42 @@
-import express from "express";
-import { login, register } from "../controllers/authController.js";
+import { Router } from "express";
+import {
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+} from "../controllers/authController.js";
 
-const authRouter = express.Router();
+import {
+  registerValidator,
+  loginValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+} from "../validators/authValidator.js";
 
-authRouter.post("/register", register);
-authRouter.post("/login", login);
+import validate from "../middlewares/validateMiddleware.js";
 
-export default authRouter;
+const router = Router();
+
+// REGISTER
+router.post("/register", registerValidator, validate, register);
+
+// LOGIN
+router.post("/login", loginValidator, validate, login);
+
+// FORGOT PASSWORD
+router.post(
+  "/forgot-password",
+  forgotPasswordValidator,
+  validate,
+  forgotPassword
+);
+
+// RESET PASSWORD
+router.put(
+  "/reset-password/:token",
+  resetPasswordValidator,
+  validate,
+  resetPassword
+);
+
+export default router;

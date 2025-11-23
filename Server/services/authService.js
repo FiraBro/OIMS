@@ -2,7 +2,11 @@ import User from "../models/user.js";
 import AppError from "../utils/AppError.js";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
-import { signToken } from "../utils/jwt.js";
+import {
+  signToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../utils/jwt.js";
 
 // ========================= REGISTER ==============================
 export const registerUser = async (data) => {
@@ -30,10 +34,16 @@ export const loginUser = async ({ email, password }) => {
   const isMatch = await user.comparePassword(password);
   if (!isMatch) throw new AppError("Invalid credentials", 401);
 
+  // Generate access and refresh tokens
   const token = signToken(user);
+  const refreshToken = signRefreshToken(user);
+
+  // Save refresh token in DB
+  await user.addRefreshToken(refreshToken);
 
   return {
     token,
+    refreshToken,
     user: {
       id: user._id,
       fullName: user.fullName,
@@ -41,6 +51,32 @@ export const loginUser = async ({ email, password }) => {
       role: user.role,
     },
   };
+};
+
+// ===================== REFRESH TOKEN ===========================
+export const refreshTokenService = async (refreshToken) => {
+  if (!refreshToken) throw new AppError("Refresh token required", 400);
+
+  // Verify refresh token
+  const payload = verifyRefreshToken(refreshToken);
+
+  const user = await User.findById(payload.id);
+  if (!user || !user.hasRefreshToken(refreshToken))
+    throw new AppError("Invalid refresh token", 401);
+
+  // Generate new access token
+  const newToken = signToken(user);
+
+  return { token: newToken };
+};
+
+// ====================== LOGOUT ================================
+export const logoutUser = async (refreshToken) => {
+  const payload = verifyRefreshToken(refreshToken);
+  const user = await User.findById(payload.id);
+  if (user) await user.removeRefreshToken(refreshToken);
+
+  return { message: "Logged out successfully" };
 };
 
 // ======================== FORGOT PASSWORD =========================

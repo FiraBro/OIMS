@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   register,
   login,
+  logout,
   forgotPassword,
   resetPassword,
 } from "../controllers/authController.js";
@@ -22,6 +23,7 @@ router.post("/register", registerValidator, validate, register);
 
 // LOGIN
 router.post("/login", loginValidator, validate, login);
+router.post("/logout", logout);
 
 // FORGOT PASSWORD
 router.post(

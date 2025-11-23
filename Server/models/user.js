@@ -1,52 +1,43 @@
+// models/User.js
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
-// Define roles
 const ROLES = ["customer", "admin", "agent"];
 
+const refreshSessionSchema = new mongoose.Schema({
+  tokenHash: { type: String, required: true }, // sha256 of refresh token
+  device: { type: String, default: "unknown" },
+  ip: { type: String },
+  userAgent: { type: String },
+  createdAt: { type: Date, default: Date.now },
+  expiresAt: { type: Date, required: true },
+});
+
 const userSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true,
-    trim: true,
-  },
+  fullName: { type: String, required: true, trim: true },
 
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-  },
+  email: { type: String, required: true, unique: true, lowercase: true },
 
-  password: {
-    type: String,
-    required: true,
-    minlength: 6,
-    select: false,
-  },
+  password: { type: String, required: true, minlength: 6, select: false },
 
   passwordConfirm: {
     type: String,
-    required: true,
+    required: function () {
+      return this.isNew; // Only required on create()
+    },
     validate: {
       validator: function (val) {
-        return val === this.password;
+        return this.password === val;
       },
       message: "Passwords do not match!",
     },
+    select: false,
   },
 
-  role: {
-    type: String,
-    enum: ROLES,
-    default: "customer",
-  },
+  role: { type: String, enum: ROLES, default: "customer" },
 
-  phone: {
-    type: String,
-    required: true,
-  },
+  phone: { type: String },
 
   address: {
     street: String,
@@ -56,84 +47,144 @@ const userSchema = new mongoose.Schema({
     country: String,
   },
 
-  dateOfBirth: {
-    type: Date,
-    required: true,
-  },
+  dateOfBirth: { type: Date },
 
-  gender: {
-    type: String,
-    enum: ["male", "female", "other"],
-  },
+  gender: { type: String, enum: ["male", "female", "other"] },
 
-  profilePicture: {
-    type: String,
-  },
+  profilePicture: { type: String },
 
-  isVerified: {
-    type: Boolean,
-    default: false,
-  },
+  isVerified: { type: Boolean, default: false },
 
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  createdAt: { type: Date, default: Date.now },
 
-  // For forgot/reset password
+  // forgot/reset password
   resetPasswordToken: String,
   resetPasswordExpire: Date,
 
-  // For refresh tokens
-  refreshTokens: [String], // can store multiple tokens
+  // email verify
+  emailVerifyToken: String,
+  emailVerifyExpire: Date,
+
+  // refresh sessions (hashed tokens)
+  refreshSessions: [refreshSessionSchema],
+
+  // brute force protection
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: Date,
 });
 
-// Hash password before saving
+// password hashing
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   this.passwordConfirm = undefined;
-
   next();
 });
 
-// Compare password method
-userSchema.methods.comparePassword = function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = function (candidate) {
+  return bcrypt.compare(candidate, this.password);
 };
 
-// Generate password reset token
+// reset password token
 userSchema.methods.getResetToken = function () {
   const resetToken = crypto.randomBytes(20).toString("hex");
-
   this.resetPasswordToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 min
-
   return resetToken;
 };
 
-// Add refresh token
-userSchema.methods.addRefreshToken = function (token) {
-  this.refreshTokens.push(token);
+// email verify token
+userSchema.methods.createEmailVerifyToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+  this.emailVerifyToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  this.emailVerifyExpire =
+    Date.now() +
+    (process.env.EMAIL_VERIFY_EXPIRES_MS
+      ? parseInt(process.env.EMAIL_VERIFY_EXPIRES_MS)
+      : 24 * 60 * 60 * 1000);
+  return token;
+};
+
+const hashToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
+
+// refresh session helpers
+userSchema.methods.addRefreshSession = async function ({
+  refreshToken,
+  device = "unknown",
+  ip,
+  userAgent,
+  ttlMs,
+}) {
+  const tokenHash = hashToken(refreshToken);
+  const expiresAt = new Date(Date.now() + ttlMs);
+  this.refreshSessions.push({ tokenHash, device, ip, userAgent, expiresAt });
   return this.save();
 };
 
-// Remove refresh token (logout)
-userSchema.methods.removeRefreshToken = function (token) {
-  this.refreshTokens = this.refreshTokens.filter((t) => t !== token);
+userSchema.methods.hasRefreshSession = function (refreshToken) {
+  const tokenHash = hashToken(refreshToken);
+  return this.refreshSessions.some(
+    (s) => s.tokenHash === tokenHash && s.expiresAt > Date.now()
+  );
+};
+
+userSchema.methods.removeRefreshSession = async function (refreshToken) {
+  const tokenHash = hashToken(refreshToken);
+  this.refreshSessions = this.refreshSessions.filter(
+    (s) => s.tokenHash !== tokenHash
+  );
   return this.save();
 };
 
-// Check if refresh token exists
-userSchema.methods.hasRefreshToken = function (token) {
-  return this.refreshTokens.includes(token);
+userSchema.methods.rotateRefreshSession = async function (
+  oldToken,
+  newToken,
+  { device = "unknown", ip, userAgent, ttlMs }
+) {
+  const oldHash = hashToken(oldToken);
+  this.refreshSessions = this.refreshSessions.filter(
+    (s) => s.tokenHash !== oldHash
+  );
+  const newHash = hashToken(newToken);
+  this.refreshSessions.push({
+    tokenHash: newHash,
+    device,
+    ip,
+    userAgent,
+    expiresAt: new Date(Date.now() + ttlMs),
+  });
+  return this.save();
 };
 
-const User = mongoose.model("User", userSchema);
-export default User;
+userSchema.methods.clearAllSessions = async function () {
+  this.refreshSessions = [];
+  return this.save();
+};
+
+// brute force
+userSchema.methods.incrementLoginAttempts = async function (
+  maxAttempts = 5,
+  lockTimeMs = 15 * 60 * 1000
+) {
+  this.loginAttempts = (this.loginAttempts || 0) + 1;
+  if (this.loginAttempts >= maxAttempts) {
+    this.lockUntil = new Date(Date.now() + lockTimeMs);
+  }
+  return this.save();
+};
+
+userSchema.methods.resetLoginAttempts = async function () {
+  this.loginAttempts = 0;
+  this.lockUntil = undefined;
+  return this.save();
+};
+
+export default mongoose.model("User", userSchema);

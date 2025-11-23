@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 6,
-    select: false, // Security: don't return on queries
+    select: false,
   },
 
   passwordConfirm: {
@@ -83,24 +83,23 @@ const userSchema = new mongoose.Schema({
   // For forgot/reset password
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+
+  // For refresh tokens
+  refreshTokens: [String], // can store multiple tokens
 });
 
 // Hash password before saving
 userSchema.pre("save", async function (next) {
-  // Only run if password was modified
   if (!this.isModified("password")) return next();
 
-  // Hash password
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-
-  // Remove confirm password so it is NOT stored in DB
   this.passwordConfirm = undefined;
 
   next();
 });
 
-// Password compare method
+// Compare password method
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
@@ -117,6 +116,23 @@ userSchema.methods.getResetToken = function () {
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 min
 
   return resetToken;
+};
+
+// Add refresh token
+userSchema.methods.addRefreshToken = function (token) {
+  this.refreshTokens.push(token);
+  return this.save();
+};
+
+// Remove refresh token (logout)
+userSchema.methods.removeRefreshToken = function (token) {
+  this.refreshTokens = this.refreshTokens.filter((t) => t !== token);
+  return this.save();
+};
+
+// Check if refresh token exists
+userSchema.methods.hasRefreshToken = function (token) {
+  return this.refreshTokens.includes(token);
 };
 
 const User = mongoose.model("User", userSchema);

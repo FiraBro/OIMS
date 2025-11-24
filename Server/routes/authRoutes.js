@@ -1,4 +1,5 @@
 import { Router } from "express";
+import cookieParser from "cookie-parser";
 import {
   register,
   login,
@@ -8,6 +9,11 @@ import {
   resetPassword,
   verifyEmail,
   resendVerification,
+  logoutAll,
+  changePassword,
+  updateEmail,
+  getSessions,
+  revokeSession,
 } from "../controllers/authController.js";
 
 import {
@@ -15,35 +21,37 @@ import {
   loginValidator,
   forgotPasswordValidator,
   resetPasswordValidator,
+  changePasswordValidator,
+  updateEmailValidator,
 } from "../validators/authValidator.js";
 
 import validate from "../middlewares/validateMiddleware.js";
 import { authLimiter } from "../middlewares/rateLimit.js";
 import { bruteForceProtection } from "../middlewares/bruteForce.js";
 import { protect } from "../middlewares/protect.js";
+import { csrfProtection, csrfCookie } from "../middlewares/csrf.js";
 
 const router = Router();
 
-// REGISTER
+// PUBLIC
 router.post("/register", authLimiter, registerValidator, validate, register);
 
-// LOGIN
 router.post(
   "/login",
   authLimiter,
   bruteForceProtection,
   loginValidator,
   validate,
+  csrfCookie,
+  csrfProtection,
   login
 );
 
-// LOGOUT
+// Cookie-based refresh and logout
+router.post("/refresh", refresh);
 router.post("/logout", logout);
 
-// REFRESH TOKEN (cookie-based)
-router.post("/refresh", refresh);
-
-// FORGOT PASSWORD
+// Forgot / Reset
 router.post(
   "/forgot-password",
   authLimiter,
@@ -52,7 +60,6 @@ router.post(
   forgotPassword
 );
 
-// RESET PASSWORD
 router.put(
   "/reset-password/:token",
   resetPasswordValidator,
@@ -60,10 +67,29 @@ router.put(
   resetPassword
 );
 
-// EMAIL VERIFY
+// Email verify
 router.get("/verify-email/:token", verifyEmail);
-
-// RESEND VERIFICATION EMAIL
 router.post("/resend-verification", protect, resendVerification);
+
+// Protected user actions
+router.post("/logout-all", protect, logoutAll);
+router.put(
+  "/change-password",
+  protect,
+  changePasswordValidator,
+  validate,
+  changePassword
+);
+router.put(
+  "/update-email",
+  protect,
+  updateEmailValidator,
+  validate,
+  updateEmail
+);
+
+// Session management
+router.get("/sessions", protect, getSessions);
+router.delete("/sessions/:sessionId", protect, revokeSession);
 
 export default router;

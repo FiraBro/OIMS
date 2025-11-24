@@ -6,23 +6,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// ----------------------------
-// Axios interceptor to attach CSRF token
-// ----------------------------
-api.interceptors.request.use((config) => {
-  const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
-  if (!SAFE_METHODS.includes(config.method.toUpperCase())) {
-    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
-      const [name, value] = cookie.split("=");
-      acc[name] = value;
-      return acc;
-    }, {});
-    const csrfToken = cookies["XSRF-TOKEN"];
-    if (csrfToken) config.headers["x-csrf-token"] = csrfToken;
-  }
-  return config;
-});
-
 // ====================== AUTH API ======================
 export const register = async (data) => {
   const res = await api.post("/auth/register", data);
@@ -30,17 +13,7 @@ export const register = async (data) => {
 };
 
 export const login = async ({ email, password }) => {
-  // Step 1: Get CSRF token
-  const { data } = await api.get("/auth/csrf-token"); // <-- GET request to get token
-  const csrfToken = data.csrfToken;
-
-  // Step 2: POST login with email/password and token
-  const res = await api.post(
-    "/auth/login",
-    { email, password },
-    { headers: { "x-csrf-token": csrfToken } }
-  );
-
+  const res = await api.post("/auth/login", { email, password });
   return res.data;
 };
 

@@ -16,30 +16,29 @@ export const AuthProvider = ({ children }) => {
   );
   const [loading, setLoading] = useState(true);
 
-  // ----------------------------
   // Decode JWT and set user
-  // ----------------------------
   const decodeUser = (token) => {
     try {
       const decoded = jwtDecode(token);
+      const now = Date.now() / 1000;
+      if (decoded.exp && decoded.exp < now) {
+        setUser(null);
+        return;
+      }
       setUser(decoded);
     } catch {
       setUser(null);
     }
   };
 
-  // ----------------------------
-  // Initialize on app load
-  // ----------------------------
+  // Initialize user on app load
   useEffect(() => {
     if (accessToken) decodeUser(accessToken);
     setLoading(false);
-  }, []);
+  }, [accessToken]);
 
-  // ----------------------------
   // LOGIN
-  // ----------------------------
-  const login = async (email, password) => {
+  const login = async ({ email, password }) => {
     try {
       const data = await loginRequest({ email, password });
       const token = data.accessToken;
@@ -55,9 +54,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ----------------------------
   // REGISTER
-  // ----------------------------
   const register = async (userData) => {
     try {
       const data = await registerRequest(userData);
@@ -74,9 +71,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ----------------------------
   // LOGOUT
-  // ----------------------------
   const logout = async () => {
     try {
       await logoutRequest();
@@ -88,9 +83,7 @@ export const AuthProvider = ({ children }) => {
     setAccessToken(null);
   };
 
-  // ----------------------------
   // REFRESH TOKEN
-  // ----------------------------
   const refreshAccessToken = async () => {
     try {
       const data = await refreshRequest();
@@ -100,7 +93,7 @@ export const AuthProvider = ({ children }) => {
       decodeUser(token);
       return token;
     } catch {
-      logout(); // auto logout if refresh fails
+      logout();
     }
   };
 

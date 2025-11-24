@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { register as registerRequest } from "../../services/authService";
+import ForgotPasswordModal from "./ForgotPasswordModal";
+import ResetPasswordModal from "./ResetPasswordModal";
+import {
+  register as registerRequest,
+  forgotPassword,
+  resetPassword,
+} from "../../services/authService";
+import { toast } from "react-toastify";
 
 export default function AuthForm() {
   const navigate = useNavigate();
@@ -10,6 +17,14 @@ export default function AuthForm() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -29,8 +44,6 @@ export default function AuthForm() {
     },
   });
 
-  const [message, setMessage] = useState({ text: "", type: "" });
-
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
 
@@ -38,7 +51,7 @@ export default function AuthForm() {
       const key = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
-        address: { ...prev.address, [key]: type === "file" ? files[0] : value },
+        address: { ...prev.address, [key]: value },
       }));
     } else {
       setFormData((prev) => ({
@@ -48,62 +61,93 @@ export default function AuthForm() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage({ text: "", type: "" });
-    setIsLoading(true);
-
-    try {
-      if (isRegistering) {
-        await registerUser();
-      } else {
-        await loginUser();
-      }
-    } catch (err) {
-      setMessage({
-        text: err.response?.data?.message || "Something went wrong",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const registerUser = async () => {
-    await registerRequest(formData);
-
-    setMessage({ text: "✅ Registration successful!", type: "success" });
-    setTimeout(() => {
-      setIsRegistering(false);
-      setFormData((prev) => ({ ...prev, password: "", passwordConfirm: "" }));
-      setActiveStep(0);
-    }, 1500);
-  };
-
+  // -------------------------
+  // LOGIN
+  // -------------------------
   const loginUser = async () => {
     try {
-      setIsLoading(true);
-      await ctxLogin({
-        email: formData.email,
-        password: formData.password,
-      });
+      await ctxLogin({ email: formData.email, password: formData.password });
 
-      setMessage({
-        text: "✅ Login successful! Redirecting...",
-        type: "success",
-      });
+      toast.success("Login successful! Redirecting...");
 
-      setTimeout(() => navigate("/"), 1200);
+      setTimeout(() => navigate("/"), 1000);
     } catch (err) {
-      setMessage({
-        text: err.response?.data?.message || "Something went wrong",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
+      toast.error(err.response?.data?.message || "Login failed");
     }
   };
 
+  // -------------------------
+  // REGISTER
+  // -------------------------
+  const registerUser = async () => {
+    try {
+      await registerRequest(formData);
+
+      toast.success("Account created successfully!");
+
+      setTimeout(() => {
+        setIsRegistering(false);
+        resetForm();
+      }, 1200);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Registration failed");
+    }
+  };
+
+  // -------------------------
+  // FORGOT PASSWORD
+  // -------------------------
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) return toast.error("Enter your email first");
+
+    try {
+      await forgotPassword(forgotEmail);
+      toast.success("Reset link sent! Check your email.");
+
+      setShowForgotModal(false);
+      setForgotEmail("");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send reset link");
+    }
+  };
+
+  // -------------------------
+  // RESET PASSWORD
+  // -------------------------
+  const handleResetPassword = async () => {
+    if (!resetToken || !newPassword || !newPasswordConfirm)
+      return toast.error("Fill all fields");
+
+    try {
+      await resetPassword(resetToken, newPassword, newPasswordConfirm);
+
+      toast.success("Password reset successful! Please log in.");
+      setResetToken("");
+      setNewPassword("");
+      setNewPasswordConfirm("");
+
+      setShowResetModal(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Reset failed");
+    }
+  };
+
+  // -------------------------
+  // FORM SUBMIT
+  // -------------------------
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (isRegistering) await registerUser();
+    else await loginUser();
+
+    setIsLoading(false);
+  };
+
+  // -------------------------
+  // RESET FORM
+  // -------------------------
   const resetForm = () => {
     setFormData({
       fullName: "",
@@ -122,7 +166,6 @@ export default function AuthForm() {
         country: "",
       },
     });
-    setMessage({ text: "", type: "" });
     setActiveStep(0);
   };
 
@@ -131,13 +174,8 @@ export default function AuthForm() {
     resetForm();
   };
 
-  const nextStep = () => {
-    if (activeStep < 2) setActiveStep(activeStep + 1);
-  };
-
-  const prevStep = () => {
-    if (activeStep > 0) setActiveStep(activeStep - 1);
-  };
+  const nextStep = () => activeStep < 2 && setActiveStep(activeStep + 1);
+  const prevStep = () => activeStep > 0 && setActiveStep(activeStep - 1);
 
   const steps = ["Personal Info", "Account Details", "Address"];
 
@@ -229,23 +267,6 @@ export default function AuthForm() {
                 ? "Fill in your details to get started"
                 : "Enter your credentials to continue"}
             </p>
-
-            {message.text && (
-              <div
-                className={`mb-6 p-4 rounded-xl border-l-4 animate-fadeIn ${
-                  message.type === "error"
-                    ? "bg-red-50 text-red-800 border-red-400"
-                    : "bg-green-50 text-green-800 border-green-400"
-                }`}
-              >
-                <div className="flex items-center">
-                  <span className="text-lg mr-2">
-                    {message.type === "error" ? "⚠️" : "✅"}
-                  </span>
-                  {message.text}
-                </div>
-              </div>
-            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {isRegistering ? (
@@ -523,6 +544,7 @@ export default function AuthForm() {
                     </label>
                     <button
                       type="button"
+                      onClick={() => setShowForgotModal(true)}
                       className="text-pink-600 hover:text-pink-700 font-medium transition-colors"
                     >
                       Forgot password?
@@ -568,6 +590,24 @@ export default function AuthForm() {
           </div>
         </div>
       </div>
+      <ForgotPasswordModal
+        show={showForgotModal}
+        email={forgotEmail}
+        onEmailChange={setForgotEmail}
+        onSubmit={handleForgotPassword}
+        onClose={() => setShowForgotModal(false)}
+      />
+      <ResetPasswordModal
+        show={showResetModal}
+        token={resetToken}
+        newPassword={newPassword}
+        newPasswordConfirm={newPasswordConfirm}
+        onTokenChange={setResetToken}
+        onPasswordChange={setNewPassword}
+        onPasswordConfirmChange={setNewPasswordConfirm}
+        onSubmit={handleResetPassword}
+        onClose={() => setShowResetModal(false)}
+      />
     </div>
   );
 }

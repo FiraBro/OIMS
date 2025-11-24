@@ -6,7 +6,7 @@ import crypto from "crypto";
 const ROLES = ["customer", "admin", "agent"];
 
 const refreshSessionSchema = new mongoose.Schema({
-  tokenHash: { type: String, required: true }, // sha256 of refresh token
+  tokenHash: { type: String, required: true },
   device: { type: String, default: "unknown" },
   ip: { type: String },
   userAgent: { type: String },
@@ -14,9 +14,11 @@ const refreshSessionSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true },
 });
 
+// Auto-delete expired refresh sessions
+refreshSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true, trim: true },
-
   email: { type: String, required: true, unique: true, lowercase: true },
 
   password: { type: String, required: true, minlength: 6, select: false },
@@ -24,7 +26,7 @@ const userSchema = new mongoose.Schema({
   passwordConfirm: {
     type: String,
     required: function () {
-      return this.isNew; // Only required on create()
+      return this.isNew;
     },
     validate: {
       validator: function (val) {
@@ -48,32 +50,30 @@ const userSchema = new mongoose.Schema({
   },
 
   dateOfBirth: { type: Date },
-
   gender: { type: String, enum: ["male", "female", "other"] },
-
   profilePicture: { type: String },
 
   isVerified: { type: Boolean, default: false },
 
   createdAt: { type: Date, default: Date.now },
 
-  // forgot/reset password
+  // Password reset
   resetPasswordToken: String,
   resetPasswordExpire: Date,
 
-  // email verify
+  // Email verify
   emailVerifyToken: String,
   emailVerifyExpire: Date,
 
-  // refresh sessions (hashed tokens)
+  // Refresh token sessions
   refreshSessions: [refreshSessionSchema],
 
-  // brute force protection
+  // Rate limit
   loginAttempts: { type: Number, default: 0 },
   lockUntil: Date,
 });
 
-// password hashing
+// Hash password
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   const salt = await bcrypt.genSalt(10);
@@ -93,7 +93,7 @@ userSchema.methods.getResetToken = function () {
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 min
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
   return resetToken;
 };
 
@@ -104,18 +104,21 @@ userSchema.methods.createEmailVerifyToken = function () {
     .createHash("sha256")
     .update(token)
     .digest("hex");
-  this.emailVerifyExpire =
-    Date.now() +
-    (process.env.EMAIL_VERIFY_EXPIRES_MS
-      ? parseInt(process.env.EMAIL_VERIFY_EXPIRES_MS)
-      : 24 * 60 * 60 * 1000);
+
+  // expiration in minutes (default 24 hours = 1440 minutes)
+  const expireMinutes = process.env.EMAIL_VERIFY_EXPIRES_MINUTES
+    ? parseInt(process.env.EMAIL_VERIFY_EXPIRES_MINUTES)
+    : 1440;
+
+  this.emailVerifyExpire = Date.now() + expireMinutes * 60 * 1000; // convert minutes → ms
+
   return token;
 };
 
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
-// refresh session helpers
+// === Refresh Token Methods ===
 userSchema.methods.addRefreshSession = async function ({
   refreshToken,
   device = "unknown",
@@ -153,6 +156,7 @@ userSchema.methods.rotateRefreshSession = async function (
   this.refreshSessions = this.refreshSessions.filter(
     (s) => s.tokenHash !== oldHash
   );
+
   const newHash = hashToken(newToken);
   this.refreshSessions.push({
     tokenHash: newHash,
@@ -161,6 +165,7 @@ userSchema.methods.rotateRefreshSession = async function (
     userAgent,
     expiresAt: new Date(Date.now() + ttlMs),
   });
+
   return this.save();
 };
 

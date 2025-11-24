@@ -93,3 +93,31 @@ export const resetPasswordValidator = [
       return true;
     }),
 ];
+// ================= CHANGE PASSWORD =================
+export const changePasswordValidator = [
+  body("oldPassword").notEmpty().withMessage("Old password is required"),
+
+  body("newPassword")
+    .matches(strongPassword)
+    .withMessage(
+      "New password must be at least 8 characters and include uppercase, lowercase, number, and special character"
+    ),
+
+  body("passwordConfirm")
+    .notEmpty()
+    .withMessage("Password confirmation is required")
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword)
+        throw new Error("Passwords do not match");
+      return true;
+    }),
+];
+// ================= UPDATE EMAIL =================
+export const updateEmailValidator = [
+  body("newEmail")
+    .notEmpty()
+    .withMessage("New email is required")
+    .isEmail()
+    .withMessage("Valid email is required")
+    .normalizeEmail(),
+];

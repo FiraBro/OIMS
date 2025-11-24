@@ -1,59 +1,111 @@
 import axios from "axios";
 
-const API_URL =
-  import.meta.env.VITE_AUTH_API_URL || "http://localhost:5000/api/v1/auth";
+// Base axios instance
+const api = axios.create({
+  baseURL: import.meta.env.VITE_AUTH_API_URL || "http://localhost:3001/api/v1",
+  withCredentials: true,
+});
 
-export const authService = {
-  register: async ({
-    fullName,
-    email,
-    password,
-    role,
-    phone,
-    address,
-    dateOfBirth,
-    gender,
-  }) => {
-    try {
-      const response = await axios.post(`${API_URL}/register`, {
-        fullName,
-        email,
-        password,
-        role,
-        phone,
-        address,
-        dateOfBirth,
-        gender,
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: "Registration failed" };
-    }
-  },
+// ----------------------------
+// Axios interceptor to attach CSRF token
+// ----------------------------
+api.interceptors.request.use((config) => {
+  const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
+  if (!SAFE_METHODS.includes(config.method.toUpperCase())) {
+    const cookies = document.cookie.split("; ").reduce((acc, cookie) => {
+      const [name, value] = cookie.split("=");
+      acc[name] = value;
+      return acc;
+    }, {});
+    const csrfToken = cookies["XSRF-TOKEN"];
+    if (csrfToken) config.headers["x-csrf-token"] = csrfToken;
+  }
+  return config;
+});
 
-  login: async ({ email, password }) => {
-    try {
-      const response = await axios.post(`${API_URL}/login`, {
-        email,
-        password,
-      });
-      localStorage.setItem("token", response.data.token);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: "Login failed" };
-    }
-  },
+// ====================== AUTH API ======================
+export const register = async (data) => {
+  const res = await api.post("/auth/register", data);
+  return res.data;
+};
 
-  logout: () => {
-    localStorage.removeItem("token");
-  },
+export const login = async ({ email, password }) => {
+  // Step 1: Get CSRF token
+  const { data } = await api.get("/auth/csrf-token"); // <-- GET request to get token
+  const csrfToken = data.csrfToken;
 
-  getToken: () => {
-    return localStorage.getItem("token");
-  },
+  // Step 2: POST login with email/password and token
+  const res = await api.post(
+    "/auth/login",
+    { email, password },
+    { headers: { "x-csrf-token": csrfToken } }
+  );
 
-  authHeader: () => {
-    const token = userService.getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  },
+  return res.data;
+};
+
+export const logout = async () => {
+  const res = await api.post("/auth/logout");
+  return res.data;
+};
+
+export const refreshToken = async () => {
+  const res = await api.post("/auth/refresh");
+  return res.data;
+};
+
+// ====================== PASSWORD ======================
+export const forgotPassword = async (email) => {
+  const res = await api.post("/auth/forgot-password", { email });
+  return res.data;
+};
+
+export const resetPassword = async (token, newPassword, passwordConfirm) => {
+  const res = await api.put(`/auth/reset-password/${token}`, {
+    password: newPassword,
+    passwordConfirm,
+  });
+  return res.data;
+};
+
+// ====================== EMAIL VERIFICATION ======================
+export const verifyEmail = async (token) => {
+  const res = await api.get(`/auth/verify-email/${token}`);
+  return res.data;
+};
+
+export const resendVerification = async () => {
+  const res = await api.post("/auth/resend-verification");
+  return res.data;
+};
+
+// ====================== USER ======================
+export const changePassword = async (oldPassword, newPassword) => {
+  const res = await api.put("/auth/change-password", {
+    oldPassword,
+    newPassword,
+  });
+  return res.data;
+};
+
+export const updateEmail = async (newEmail) => {
+  const res = await api.put("/auth/update-email", { newEmail });
+  return res.data;
+};
+
+// ====================== SESSION ======================
+export const getSessions = async () => {
+  const res = await api.get("/auth/sessions");
+  return res.data;
+};
+
+export const revokeSession = async (sessionId) => {
+  const res = await api.delete(`/auth/sessions/${sessionId}`);
+  return res.data;
+};
+
+// ====================== LOGOUT ALL ======================
+export const logoutAllDevices = async () => {
+  const res = await api.post("/auth/logout-all");
+  return res.data;
 };

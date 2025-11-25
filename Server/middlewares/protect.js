@@ -8,6 +8,7 @@ export const protect = async (req, res, next) => {
   try {
     const token =
       req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+
     if (!token) throw new AppError("Not logged in", 401);
 
     const payload = verifyAccessToken(token);
@@ -21,10 +22,22 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Check admin role
-export const isAdmin = (req, res, next) => {
+// Check admin role (middleware)
+export const adminOnly = (req, res, next) => {
   if (!req.user || req.user.role !== "admin") {
     return next(new AppError("Admin access required", 403));
   }
   next();
+};
+
+// Generic role check middleware
+export const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(
+        new AppError(`You do not have permission to perform this action`, 403)
+      );
+    }
+    next();
+  };
 };

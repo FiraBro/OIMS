@@ -1,125 +1,37 @@
-import InsurancePlan from "../models/insurancePlan.js";
+// controllers/insurancePlanController.js
+import catchAsync from "../utils/catchAsync.js";
+import InsurancePlanService from "../services/insurancePlanService.js";
 
-// Create Plan (admin only)
-export async function createPlan(req, res) {
-  try {
-    const plan = new InsurancePlan(req.body);
+export const createPlanController = catchAsync(async (req, res) => {
+  const plan = await InsurancePlanService.createPlan(req.body, req.user.id);
+  res.status(201).json({ status: true, data: plan });
+});
 
-    await plan.save();
-    res.status(201).json({ status: true, data: plan });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-}
+export const updatePlanController = catchAsync(async (req, res) => {
+  const plan = await InsurancePlanService.updatePlan(
+    req.params.id,
+    req.body,
+    req.user.id
+  );
+  res.json({ status: true, data: plan });
+});
 
-// Update Plan (admin only)
-export async function updatePlan(req, res) {
-  try {
-    const plan = await InsurancePlan.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!plan) return res.status(404).json({ message: "Plan not found" });
-    res.status(200).json({ status: true, data: plan });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-}
+export const deletePlanController = catchAsync(async (req, res) => {
+  const plan = await InsurancePlanService.softDeletePlan(req.params.id);
+  res.json({ status: true, data: plan });
+});
 
-// Delete Plan (admin only)
-export async function deletePlan(req, res) {
-  try {
-    const plan = await InsurancePlan.findByIdAndDelete(req.params.id);
-    if (!plan) return res.status(404).json({ message: "Plan not found" });
-    res.status(200).json({ status: true, message: "Plan deleted" });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-}
+export const listPlansAdminController = catchAsync(async (req, res) => {
+  const result = await InsurancePlanService.listPlansAdmin(req.query);
+  res.json({ status: true, ...result });
+});
 
-// List all Plans (admin only)
-export async function listPlansAdmin(req, res) {
-  try {
-    const plans = await InsurancePlan.find();
-    res.status(200).json({ status: true, data: plans });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}
+export const listPlansPublicController = catchAsync(async (req, res) => {
+  const plans = await InsurancePlanService.listPlansPublic(req.query);
+  res.json({ status: true, data: plans });
+});
 
-// Public List Plans (customer access)
-export async function listPlansPublic(req, res) {
-  try {
-    const plans = await InsurancePlan.find();
-    res.status(200).json({ status: true, data: plans });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-}
-
-export async function countPlan(req, res) {
-  try {
-    // 2. Get the plan count from database
-    const planCount = await InsurancePlan.countDocuments();
-
-    // 3. Return successful response
-    if (!planCount)
-      return res.status(400).json({
-        status: false,
-        message: "No plan is found",
-      });
-    res.status(200).json({
-      status: true,
-      count: planCount,
-      message: `Found ${planCount} plans matching criteria`,
-    });
-  } catch (error) {
-    console.error("Error counting plans:", error);
-
-    // 4. Return error response
-    res.status(400).json({
-      status: false,
-      count: 0,
-      message: "Failed to count plans",
-      error: error.message,
-    });
-  }
-}
-
-export async function sumPlanPremiums(req, res) {
-  try {
-    const result = await InsurancePlan.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalPremiums: { $sum: "$premium" },
-          averagePremium: { $avg: "$premium" },
-          minPremium: { $min: "$premium" },
-          maxPremium: { $max: "$premium" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const stats = result[0] || {
-      totalPremiums: 0,
-      averagePremium: 0,
-      minPremium: 0,
-      maxPremium: 0,
-      count: 0,
-    };
-
-    res.status(200).json({
-      status: true,
-      data: stats,
-      message: `Premium analysis for ${stats.count} plans`,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: false,
-      message: "Failed to calculate premium statistics",
-      error: error.message,
-    });
-  }
-}
+export const getPremiumStatsController = catchAsync(async (req, res) => {
+  const stats = await InsurancePlanService.getPremiumStats();
+  res.json({ status: true, data: stats });
+});

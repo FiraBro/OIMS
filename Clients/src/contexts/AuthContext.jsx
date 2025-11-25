@@ -16,11 +16,11 @@ export const AuthProvider = ({ children }) => {
   );
   const [loading, setLoading] = useState(true);
 
-  // Decode JWT and set user
   const decodeUser = (token) => {
     try {
       const decoded = jwtDecode(token);
       const now = Date.now() / 1000;
+
       if (decoded.exp && decoded.exp < now) {
         setUser(null);
         return;
@@ -31,17 +31,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Initialize user on app load
+  // 🔥 FIRST: Try refresh token on app load
   useEffect(() => {
-    if (accessToken) decodeUser(accessToken);
-    setLoading(false);
-  }, [accessToken]);
+    const initAuth = async () => {
+      try {
+        const res = await refreshRequest(); // uses refreshToken cookie
+        const token = res.accessToken;
+
+        localStorage.setItem("accessToken", token);
+        setAccessToken(token);
+        decodeUser(token);
+      } catch {
+        // refresh failed → fallback to localStorage
+        if (accessToken) decodeUser(accessToken);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
 
   // LOGIN
   const login = async ({ email, password }) => {
     try {
       const data = await loginRequest({ email, password });
       const token = data.accessToken;
+
       localStorage.setItem("accessToken", token);
       setAccessToken(token);
       decodeUser(token);
@@ -59,9 +75,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await registerRequest(userData);
       const token = data.accessToken;
+
       localStorage.setItem("accessToken", token);
       setAccessToken(token);
       decodeUser(token);
+
       return { success: true };
     } catch (err) {
       return {
@@ -75,19 +93,19 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await logoutRequest();
-    } catch (err) {
-      console.log("Logout error:", err.message);
-    }
+    } catch {}
+
     localStorage.removeItem("accessToken");
-    setUser(null);
     setAccessToken(null);
+    setUser(null);
   };
 
-  // REFRESH TOKEN
+  // MANUAL REFRESH
   const refreshAccessToken = async () => {
     try {
       const data = await refreshRequest();
       const token = data.accessToken;
+
       localStorage.setItem("accessToken", token);
       setAccessToken(token);
       decodeUser(token);
@@ -107,6 +125,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         refreshAccessToken,
+        isAuthenticated: !!user,
       }}
     >
       {!loading && children}

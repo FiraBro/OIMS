@@ -1,27 +1,37 @@
+// routes/insurancePlanRoutes.js
 import express from "express";
+import { protect, restrictTo } from "../middlewares/protect.js";
+import { handleValidation } from "../utils/handleValidation.js";
 import {
-  createPlan,
-  updatePlan,
-  deletePlan,
-  listPlansAdmin,
-  listPlansPublic,
-  countPlan,
-  sumPlanPremiums,
+  createPlanController,
+  updatePlanController,
+  deletePlanController,
+  listPlansAdminController,
+  listPlansPublicController,
+  getPremiumStatsController,
 } from "../controllers/insurancePlanController.js";
+import {
+  createPlanValidator,
+  updatePlanValidator,
+  filterPlansValidator,
+} from "../validators/insurancePlanValidator.js";
 
-import { isAdmin, protect } from "../middleware/authMiddleware.js";
+const router = express.Router();
 
-const insurancePlanRouter = express.Router();
+// Public routes
+router.get("/public", filterPlansValidator, listPlansPublicController);
+router.get("/stats", getPremiumStatsController);
 
-// Admin routes - protect with middleware
-insurancePlanRouter.post("/create", protect, isAdmin, createPlan);
-insurancePlanRouter.put("/:id", protect, isAdmin, updatePlan);
-insurancePlanRouter.delete("/:id", protect, isAdmin, deletePlan);
-insurancePlanRouter.get("/admin", protect, isAdmin, listPlansAdmin);
-insurancePlanRouter.get("/count", protect, isAdmin, countPlan);
-insurancePlanRouter.get("/sum", protect, isAdmin, sumPlanPremiums);
+// Admin-only routes
+router.use(protect, restrictTo("admin"));
+router.get(
+  "/",
+  filterPlansValidator,
+  handleValidation,
+  listPlansAdminController
+);
+router.post("/", createPlanValidator, handleValidation, createPlanController);
+router.put("/:id", updatePlanValidator, handleValidation, updatePlanController);
+router.delete("/:id", deletePlanController);
 
-// Public route - no auth needed
-insurancePlanRouter.get("/", listPlansPublic);
-
-export default insurancePlanRouter;
+export default router;

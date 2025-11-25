@@ -13,7 +13,6 @@ import userRouter from "./routes/userRoutes.js";
 
 import AppError from "./utils/AppError.js";
 import globalErrorHandler from "./middlewares/errorHandler.js";
-import { csrfCookie } from "./middlewares/csrf.js";
 
 // Load environment variables
 dotenv.config();
@@ -23,8 +22,11 @@ const app = express();
 // ===== Middleware =====
 app.use(express.json());
 app.use(cookieParser());
-app.use(csrfCookie);
-const allowedOrigin = ["http://localhost:3000", "http://172.23.0.4:5173"];
+const allowedOrigin = [
+  "http://localhost:3000",
+  /^http:\/\/172\.23\.0\.\d+:5173$/,
+];
+
 app.use(
   cors({
     origin: allowedOrigin,

@@ -1,8 +1,8 @@
 // services/insurancePlanService.js
 import mongoose from "mongoose";
 import slugify from "slugify";
-import InsurancePlan from "../models/insurancePlan.js";
-import PolicyApplication from "../models/policyAplication.js";
+import InsurancePlan from "../models/plan.js";
+import policy from "../models/policy.js";
 import AppError from "../utils/AppError.js";
 
 class InsurancePlanService {
@@ -35,10 +35,12 @@ class InsurancePlanService {
     session.startTransaction();
 
     try {
-      const activePolicies = await PolicyApplication.countDocuments({
-        planId: id,
-        status: "approved",
-      }).session(session);
+      const activePolicies = await policy
+        .countDocuments({
+          planId: id,
+          status: "approved",
+        })
+        .session(session);
 
       if (activePolicies > 0)
         throw new AppError(

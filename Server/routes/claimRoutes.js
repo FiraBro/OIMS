@@ -1,25 +1,27 @@
 import express from "express";
-import {
-  submitClaim,
-  updateClaimStatus,
-  getUserClaims,
-  getAllClaims,
-  countApprovedClaims,
-  totalClaims,
-} from "../controllers/claimController.js";
-import { protect, isAdmin } from "../middleware/authMiddleware.js";
-import upload from "../middleware/upload.js";
-const claimRouter = express.Router();
+import * as claimController from "../controllers/claimController.js";
+import { protect, restrictTo } from "../middlewares/protect.js";
 
-// User submits claim
-claimRouter.post("/submit", protect, upload.single("document"), submitClaim);
+const router = express.Router();
 
-// Admin approves/rejects claim
-claimRouter.put("/status/:id", protect, isAdmin, updateClaimStatus);
+// User endpoints
+router.post("/", protect, claimController.createClaim);
+router.get("/me", protect, claimController.getMyClaims);
+router.get("/:id", protect, claimController.getClaimById);
 
-claimRouter.get("/all-claims", protect, isAdmin, getAllClaims);
-claimRouter.get("/my-claims", protect, getUserClaims);
-claimRouter.get("/count", protect, isAdmin, countApprovedClaims);
-claimRouter.get("/total", protect, isAdmin, totalClaims);
+// Admin endpoints
+router.get("/", protect, restrictTo("admin"), claimController.listAllClaims);
+router.patch(
+  "/:id/status",
+  protect,
+  restrictTo("admin"),
+  claimController.updateStatus
+);
+router.delete(
+  "/:id",
+  protect,
+  restrictTo("admin"),
+  claimController.softDeleteClaim
+);
 
-export default claimRouter;
+export default router;

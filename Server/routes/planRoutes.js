@@ -1,4 +1,3 @@
-// routes/insurancePlanRoutes.js
 import express from "express";
 import { protect, restrictTo } from "../middlewares/protect.js";
 import { handleValidation } from "../utils/handleValidation.js";
@@ -18,20 +17,30 @@ import {
 
 const router = express.Router();
 
-// Public routes
-router.get("/public", filterPlansValidator, listPlansPublicController);
+// ========== Public Routes ==========
+router.get(
+  "/public",
+  filterPlansValidator,
+  handleValidation,
+  listPlansPublicController
+);
 router.get("/stats", getPremiumStatsController);
 
-// Admin-only routes
-router.use(protect, restrictTo("admin"));
+// ========== Admin Only Routes ==========
+router.use(protect); // only logged-in users
+router.use(restrictTo("admin")); // only admins below this line
+
 router.get(
   "/",
   filterPlansValidator,
   handleValidation,
   listPlansAdminController
 );
+
 router.post("/", createPlanValidator, handleValidation, createPlanController);
+
 router.put("/:id", updatePlanValidator, handleValidation, updatePlanController);
+
 router.delete("/:id", deletePlanController);
 
 export default router;

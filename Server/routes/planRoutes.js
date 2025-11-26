@@ -39,7 +39,12 @@ router.get(
 
 router.post("/", createPlanValidator, handleValidation, createPlanController);
 
-router.put("/:id", updatePlanValidator, handleValidation, updatePlanController);
+router.patch(
+  "/:id",
+  updatePlanValidator,
+  handleValidation,
+  updatePlanController
+);
 
 router.delete("/:id", deletePlanController);
 

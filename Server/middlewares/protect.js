@@ -3,20 +3,34 @@ import { verifyAccessToken } from "../utils/jwt.js";
 import AppError from "../utils/AppError.js";
 import User from "../models/user.js";
 
-// Protect route (check JWT)
+// Protect route
 export const protect = async (req, res, next) => {
   try {
-    const token =
-      req.cookies?.accessToken || req.headers.authorization?.split(" ")[1];
+    let token;
 
-    if (!token) throw new AppError("Not logged in", 401);
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    } else if (req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
+    }
 
-    const payload = verifyAccessToken(token);
+    if (!token) {
+      return next(new AppError("Not logged in", 401));
+    }
+
+    // Make sure verifyAccessToken is synchronous or await if async
+    const payload = await verifyAccessToken(token);
+
     const currentUser = await User.findById(payload.id);
-    if (!currentUser) throw new AppError("User no longer exists", 401);
+    if (!currentUser) {
+      return next(new AppError("User no longer exists", 401));
+    }
 
     req.user = { id: currentUser._id, role: currentUser.role };
-    next();
+    next(); // ✅ very important
   } catch (err) {
     next(err);
   }

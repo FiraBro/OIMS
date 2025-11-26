@@ -1,123 +1,103 @@
-// controllers/authController.js
+import * as authService from "../services/authService.js";
 import catchAsync from "../utils/catchAsync.js";
 import AppError from "../utils/AppError.js";
-import {
-  registerUser,
-  loginUser,
-  logoutUser,
-  refreshTokenService,
-  forgotPasswordService,
-  resetPasswordService,
-  verifyEmailService,
-  sendVerificationEmailService,
-} from "../services/authService.js";
+import { setRefreshCookie } from "../utils/setRefreshCookie.js";
 
-const REFRESH_TTL_MS = parseInt(
-  process.env.REFRESH_TTL_MS || `${30 * 24 * 60 * 60 * 1000}`
-);
-const ACCESS_TTL_MS = 15 * 60 * 1000; // 15 minutes
-
-const setAuthCookies = (res, { accessToken, refreshToken }) => {
-  // Access token as httpOnly cookie (short lived)
-  res.cookie("accessToken", accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: ACCESS_TTL_MS,
-  });
-
-  // Refresh token as httpOnly cookie (long lived)
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: REFRESH_TTL_MS,
-  });
-};
-
-// REGISTER
 export const register = catchAsync(async (req, res) => {
-  const user = await registerUser(req.body);
-  res.status(201).json({ status: "success", message: "Registered", user });
+  const result = await authService.registerUser(req.body);
+  res.status(201).json({ status: "success", data: result });
 });
 
-// LOGIN
 export const login = catchAsync(async (req, res) => {
-  const device = req.headers["x-device-name"] || req.body.device || "web";
-  const ip = req.ip;
-  const userAgent = req.get("User-Agent");
+  const { device } = req.body;
+  const { accessToken, refreshToken, refreshTTL, user } =
+    await authService.loginUser(
+      { email: req.body.email, password: req.body.password },
+      { device, ip: req.ip, userAgent: req.get("User-Agent") }
+    );
 
-  const result = await loginUser(req.body, { device, ip, userAgent });
-
-  setAuthCookies(res, {
-    accessToken: result.accessToken,
-    refreshToken: result.refreshToken,
-  });
-
-  res.status(200).json({
-    status: "success",
-    message: "Login successful",
-    user: result.user,
-  });
+  setRefreshCookie(res, refreshToken, refreshTTL);
+  res.json({ status: "success", accessToken, user });
 });
 
-// REFRESH
 export const refresh = catchAsync(async (req, res) => {
-  const oldRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
-  if (!oldRefreshToken) throw new AppError("Refresh token required", 400);
-
-  const device = req.headers["x-device-name"] || "web";
-  const ip = req.ip;
-  const userAgent = req.get("User-Agent");
-
-  const { token: newAccessToken, refreshToken: newRefreshToken } =
-    await refreshTokenService(oldRefreshToken, { device, ip, userAgent });
-
-  setAuthCookies(res, {
-    accessToken: newAccessToken,
+  const refreshToken = req.cookies?.refreshToken;
+  if (!refreshToken) throw new AppError("Refresh token required", 401);
+  const {
+    token,
     refreshToken: newRefreshToken,
+    refreshTTL,
+  } = await authService.refreshTokenService(refreshToken, {
+    ip: req.ip,
+    userAgent: req.get("User-Agent"),
   });
-
-  res.json({ status: "success" });
+  setRefreshCookie(res, newRefreshToken, refreshTTL);
+  res.json({ status: "success", accessToken: token });
 });
-
-// LOGOUT
 export const logout = catchAsync(async (req, res) => {
-  const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
-  await logoutUser(refreshToken);
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
+  const refreshToken = req.cookies?.refreshToken;
+  await authService.logoutUser(refreshToken);
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+  });
   res.json({ status: "success", message: "Logged out" });
 });
 
-// FORGOT
+export const logoutAll = catchAsync(async (req, res) => {
+  await authService.logoutAllDevices(req.user.id);
+  res.clearCookie("refreshToken");
+  res.json({ status: "success", message: "Logged out from all devices" });
+});
+
 export const forgotPassword = catchAsync(async (req, res) => {
-  await forgotPasswordService(req.body.email);
-  res.json({ status: "success", message: "Password reset email sent" });
+  const { resetURL } = await authService.forgotPasswordService(req.body.email);
+  res.json({ status: "success", resetURL });
 });
 
-// RESET
 export const resetPassword = catchAsync(async (req, res) => {
-  const { token } = req.params;
-  const result = await resetPasswordService(token, req.body.password);
-  // set new cookies
-  setAuthCookies(res, {
-    accessToken: result.token,
-    refreshToken: result.refreshToken || "",
-  });
-  res.json({ status: "success", message: "Password reset" });
+  const data = await authService.resetPasswordService(
+    req.params.token,
+    req.body.password
+  );
+  setRefreshCookie(res, data.refreshToken, data.refreshTTL || 0);
+  res.json({ status: "success", data: data });
 });
-
-// EMAIL VERIFY
 export const verifyEmail = catchAsync(async (req, res) => {
-  await verifyEmailService(req.params.token);
-  res.json({ status: "success", message: "Email verified" });
+  const r = await authService.verifyEmailService(req.params.token);
+  res.json({ status: "success", ...r });
 });
 
-// RESEND VERIFY
 export const resendVerification = catchAsync(async (req, res) => {
-  const userId = req.user?.id || req.body.userId;
-  if (!userId) throw new AppError("User required", 400);
-  await sendVerificationEmailService(userId);
-  res.json({ status: "success", message: "Verification email sent" });
+  const r = await authService.sendVerificationEmailService(req.user.id);
+  res.json({ status: "success", ...r });
+});
+
+export const changePassword = catchAsync(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const data = await authService.changePassword(
+    req.user.id,
+    oldPassword,
+    newPassword
+  );
+  res.clearCookie("refreshToken");
+  setRefreshCookie(res, data.refreshToken, data.refreshTTL);
+  res.json({ status: "success", data: data.user });
+});
+export const updateEmail = catchAsync(async (req, res) => {
+  const { newEmail } = req.body;
+  const r = await authService.updateEmail(req.user.id, newEmail);
+  res.json({ status: "success", ...r });
+});
+
+export const getSessions = catchAsync(async (req, res) => {
+  const sessions = await authService.getSessions(req.user.id);
+  res.json({ status: "success", sessions });
+});
+
+export const revokeSession = catchAsync(async (req, res) => {
+  const { sessionId } = req.params;
+  await authService.revokeSession(req.user.id, sessionId);
+  res.json({ status: "success", message: "Session revoked" });
 });

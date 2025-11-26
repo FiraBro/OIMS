@@ -6,8 +6,8 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
 import authRouter from "./routes/authRoutes.js";
-import insurancePlanRouter from "./routes/insurancePlanRoutes.js";
-import PolicyRouter from "./routes/policyAplicationRoutes.js";
+import insurancePlanRouter from "./routes/planRoutes.js";
+import policyRoute from "./routes/policyRoutes.js";
 import claimRouter from "./routes/claimRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 
@@ -21,7 +21,9 @@ const app = express();
 
 // ===== Middleware =====
 app.use(express.json());
+
 app.use(cookieParser());
+
 const allowedOrigin = [
   "http://localhost:3000",
   /^http:\/\/172\.23\.0\.\d+:5173$/,
@@ -44,7 +46,7 @@ app.get("/", (req, res) => {
 // ===== API Routes =====
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/plans", insurancePlanRouter);
-app.use("/api/v1/policy", PolicyRouter);
+app.use("/api/v1/policy", policyRoute);
 app.use("/api/v1/claims", claimRouter);
 app.use("/api/v1/user", userRouter);
 

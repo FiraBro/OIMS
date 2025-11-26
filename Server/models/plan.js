@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const insurancePlanSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    slug: { type: String, unique: true },
+    slug: { type: String, unique: true }, // unique index
     premium: { type: Number, required: true },
     coverageAmount: { type: Number, required: true },
     description: { type: String },
@@ -24,8 +24,7 @@ const insurancePlanSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Indexes
-insurancePlanSchema.index({ slug: 1 });
+// ✅ Keep only indexes that are not duplicated
 insurancePlanSchema.index({ isDeleted: 1 });
 insurancePlanSchema.index({ status: 1 });
 insurancePlanSchema.index({ premium: 1 });

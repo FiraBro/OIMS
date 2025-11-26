@@ -1,5 +1,5 @@
 import catchAsync from "../utils/catchAsync.js";
-import InsurancePlanService from "../services/planService.js";
+import InsurancePlanService from "../services/PlanService.js";
 export const createPlanController = catchAsync(async (req, res) => {
   const plan = await InsurancePlanService.createPlan(req.body, req.user.id);
   res.status(201).json({ status: true, data: plan });

@@ -13,6 +13,14 @@ export const updatePlanController = catchAsync(async (req, res) => {
   );
   res.json({ status: "success", data: plan });
 });
+export const getPlanByIdController = catchAsync(async (req, res, next) => {
+  const plan = await InsurancePlanService.getPlanById(req.params.id);
+
+  res.status(200).json({
+    status: "success",
+    data: plan,
+  });
+});
 
 export const deletePlanController = catchAsync(async (req, res) => {
   const plan = await InsurancePlanService.softDeletePlan(req.params.id);

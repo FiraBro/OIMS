@@ -1,5 +1,4 @@
 import { Router } from "express";
-import cookieParser from "cookie-parser";
 import {
   register,
   login,
@@ -29,7 +28,6 @@ import validate from "../middlewares/validateMiddleware.js";
 import { authLimiter } from "../middlewares/rateLimit.js";
 import { bruteForceProtection } from "../middlewares/bruteForce.js";
 import { protect } from "../middlewares/protect.js";
-import { csrfProtection, csrfCookie } from "../middlewares/csrf.js";
 
 const router = Router();
 
@@ -42,8 +40,6 @@ router.post(
   bruteForceProtection,
   loginValidator,
   validate,
-  csrfCookie,
-  csrfProtection,
   login
 );
 

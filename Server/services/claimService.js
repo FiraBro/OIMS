@@ -3,8 +3,12 @@ import Policy from "../models/policy.js";
 import AppError from "../utils/AppError.js";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
+import NotificationService from "./notificationService.js"; // <-- for creating notifications
 
 class ClaimService {
+  // ---------------------------
+  // Existing methods
+  // ---------------------------
   async createClaim(data, userId) {
     const policy = await Policy.findOne({
       _id: data.policyId,
@@ -59,9 +63,6 @@ class ClaimService {
     return { claims, total };
   }
 
-  // ---------------------------
-  // Update Claim Status & Send Email Notification
-  // ---------------------------
   async updateStatus(id, status, adminId) {
     const claim = await Claim.findOneAndUpdate(
       { _id: id, isDeleted: false },
@@ -71,7 +72,6 @@ class ClaimService {
 
     if (!claim) throw new AppError("Claim not found", 404);
 
-    // Send notification email to user
     try {
       const subject = `Your claim ${claim.claimNumber} status has been updated`;
       const text = `Hello ${claim.userId.fullName},\n\nYour claim status has been updated to "${status}".\n\nThank you.`;
@@ -96,6 +96,46 @@ class ClaimService {
 
     if (!claim) throw new AppError("Claim not found", 404);
     return claim;
+  }
+
+  // ---------------------------
+  // NEW: Send Reminders for Pending Claims
+  // ---------------------------
+  async sendClaimReminders(daysPending = 3) {
+    // Find claims that are pending for more than X days
+    const pendingClaims = await Claim.find({
+      status: "pending",
+      isDeleted: false,
+      createdAt: {
+        $lte: new Date(Date.now() - daysPending * 24 * 60 * 60 * 1000),
+      },
+    }).populate("userId");
+
+    for (const claim of pendingClaims) {
+      if (!claim.userId) continue;
+
+      // Create notification
+      await NotificationService.createNotification({
+        userId: claim.userId._id,
+        title: "Pending Claim Reminder",
+        message: `Your claim ${claim.claimNumber} is still pending. Please submit any required documents.`,
+      });
+
+      // Optional: send email
+      try {
+        const subject = `Reminder: Pending Claim ${claim.claimNumber}`;
+        const text = `Hello ${claim.userId.fullName},\n\nYour claim is still pending. Please submit required documents.\n\nThank you.`;
+        await sendEmail({
+          email: claim.userId.email,
+          subject,
+          text,
+        });
+      } catch (err) {
+        console.error("Error sending reminder email:", err);
+      }
+    }
+
+    return pendingClaims.length; // return number of reminders sent
   }
 }
 

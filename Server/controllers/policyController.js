@@ -99,7 +99,11 @@ export const renewPolicy = catchAsync(async (req, res) => {
 // ADMIN: Cancel Policy
 // =====================================
 export const cancelPolicy = catchAsync(async (req, res) => {
-  const policy = await policyService.cancelPolicy(req.params.id, req.user.id);
+  const policy = await policyService.cancelPolicy(
+    req.params.id,
+    req.body.reason, // optional reason
+    req.user.id
+  );
 
   res.status(200).json({
     status: "success",

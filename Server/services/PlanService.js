@@ -41,6 +41,26 @@ class InsurancePlanService {
     if (!plan) throw new AppError("Plan not found", 404);
     return plan;
   }
+  // ---------------------------
+  // GET PLAN BY ID
+  // ---------------------------
+  async getPlanById(id) {
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new AppError("Invalid plan ID", 400);
+    }
+
+    const plan = await InsurancePlan.findOne({
+      _id: id,
+      isDeleted: false,
+    }).lean();
+
+    if (!plan) {
+      throw new AppError("Plan not found", 404);
+    }
+
+    return plan;
+  }
 
   // ---------------------------
   // SOFT DELETE PLAN  (NO TRANSACTION)

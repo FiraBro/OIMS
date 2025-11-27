@@ -23,7 +23,7 @@ const router = express.Router();
 
 // USER ROUTES
 router.post(
-  "/",
+  "/enroll",
   protect,
   createPolicyValidator,
   handleValidation,

@@ -10,6 +10,7 @@ import insurancePlanRouter from "./routes/planRoutes.js";
 import policyRoute from "./routes/policyRoutes.js";
 import claimRouter from "./routes/claimRoutes.js";
 import userRouter from "./routes/userRoutes.js";
+import notificationRouter from "./routes/notificationRoutes.js";
 
 import AppError from "./utils/AppError.js";
 import globalErrorHandler from "./middlewares/errorHandler.js";
@@ -42,13 +43,14 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
-
+const versions = "v1";
 // ===== API Routes =====
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/plans", insurancePlanRouter);
-app.use("/api/v1/policy", policyRoute);
-app.use("/api/v1/claims", claimRouter);
-app.use("/api/v1/user", userRouter);
+app.use(`/api/${versions}/auth`, authRouter);
+app.use(`/api/${versions}/plans`, insurancePlanRouter);
+app.use(`/api/${versions}/policies`, policyRoute);
+app.use(`/api/${versions}/claims`, claimRouter);
+app.use(`/api/${versions}/user`, userRouter);
+app.use(`/api/${versions}/notifications`, notificationRouter);
 
 // ===== 404 Handler (No *) =====
 app.use((req, res, next) => {

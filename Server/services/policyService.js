@@ -2,67 +2,46 @@ import Policy from "../models/policy.js";
 import Plan from "../models/plan.js";
 import AppError from "../utils/AppError.js";
 import crypto from "crypto";
-import mongoose from "mongoose";
 
 class PolicyService {
   // ==================================================
-  // ENROLL USER INTO A POLICY (with transaction)
+  // ENROLL USER INTO A POLICY (no transaction)
   // ==================================================
   async enrollPolicy(data, userId) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const plan = await Plan.findOne({
+      _id: data.planId,
+      isDeleted: false,
+      status: "published",
+    }).lean();
 
-    try {
-      const plan = await Plan.findOne({
-        _id: data.planId,
-        isDeleted: false,
-        status: "published",
-      }).lean();
+    if (!plan) throw new AppError("Insurance plan not found", 404);
 
-      if (!plan) throw new AppError("Insurance plan not found", 404);
-
-      // Validate dates
-      if (new Date(data.endDate) <= new Date(data.startDate)) {
-        throw new AppError("End date must be after start date", 400);
-      }
-
-      // Unique policy number
-      const policyNumber = `POL-${crypto.randomBytes(6).toString("hex")}`;
-
-      // Create policy with snapshot + premium frozen
-      const policy = await Policy.create(
-        [
-          {
-            userId,
-            planId: plan._id,
-            policyNumber,
-            startDate: data.startDate,
-            endDate: data.endDate,
-
-            premium: plan.premium,
-            currency: plan.currency || "USD",
-
-            planSnapshot: {
-              name: plan.name,
-              coverageAmount: plan.coverageAmount,
-              planType: plan.planType,
-            },
-
-            createdBy: userId,
-          },
-        ],
-        { session }
-      );
-
-      await session.commitTransaction();
-      session.endSession();
-
-      return policy[0];
-    } catch (err) {
-      await session.abortTransaction();
-      session.endSession();
-      throw err;
+    // Validate dates
+    if (new Date(data.endDate) <= new Date(data.startDate)) {
+      throw new AppError("End date must be after start date", 400);
     }
+
+    // Unique policy number
+    const policyNumber = `POL-${crypto.randomBytes(6).toString("hex")}`;
+
+    // Create policy with snapshot + premium frozen
+    const policy = await Policy.create({
+      userId,
+      planId: plan._id,
+      policyNumber,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      premium: plan.premium,
+      currency: plan.currency || "USD",
+      planSnapshot: {
+        name: plan.name,
+        coverageAmount: plan.coverageAmount,
+        planType: plan.planType,
+      },
+      createdBy: userId,
+    });
+
+    return policy;
   }
 
   // ==================================================
@@ -90,7 +69,7 @@ class PolicyService {
   // ==================================================
   // ADMIN: LIST POLICIES WITH PAGINATION
   // ==================================================
-  async listPolicies({ page, limit }) {
+  async listPolicies({ page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;
 
     const policies = await Policy.find({ isDeleted: false })
@@ -102,7 +81,13 @@ class PolicyService {
 
     const total = await Policy.countDocuments({ isDeleted: false });
 
-    return { policies, total };
+    return {
+      policies,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   // ==================================================

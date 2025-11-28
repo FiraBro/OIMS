@@ -1,5 +1,6 @@
 import express from "express";
 import { protect, restrictTo } from "../middlewares/protect.js";
+import { ROLES } from "../constants/roles.js";
 import {
   enrollPolicy,
   getMyPolicies,
@@ -36,27 +37,27 @@ router.get("/my", protect, getMyPolicies);
 router.get(
   "/",
   protect,
-  restrictTo("admin"),
+  restrictTo(ROLES.ADMIN),
   paginationValidator,
   handleValidation,
   listAllPolicies
 );
 
-router.get("/:id", protect, restrictTo("admin"), getPolicyById);
+router.get("/:id", protect, restrictTo(ROLES.ADMIN), getPolicyById);
 
 router.put(
   "/:id/status",
   protect,
-  restrictTo("admin"),
+  restrictTo(ROLES.ADMIN),
   updateStatusValidator,
   handleValidation,
   updateStatus
 );
 
-router.put("/:id/renew", protect, restrictTo("admin"), renewPolicy);
+router.put("/:id/renew", protect, restrictTo(ROLES.ADMIN), renewPolicy);
 
-router.put("/:id/cancel", protect, restrictTo("admin"), cancelPolicy);
+router.put("/:id/cancel", protect, restrictTo(ROLES.ADMIN), cancelPolicy);
 
-router.delete("/:id", protect, restrictTo("admin"), softDeletePolicy);
+router.delete("/:id", protect, restrictTo(ROLES.ADMIN), softDeletePolicy);
 
 export default router;

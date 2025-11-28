@@ -5,6 +5,7 @@ import {
   markAsRead,
   createNotificationController,
 } from "../controllers/notificationController.js";
+import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
 
@@ -15,6 +16,6 @@ router.get("/", getMyNotifications);
 router.patch("/:id/read", markAsRead);
 
 // ========== Admin Only ==========
-router.post("/", restrictTo("admin"), createNotificationController);
+router.post("/", restrictTo(ROLES.ADMIN), createNotificationController);
 
 export default router;

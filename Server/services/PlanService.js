@@ -4,6 +4,7 @@ import slugify from "slugify";
 import InsurancePlan from "../models/plan.js";
 import Policy from "../models/policy.js";
 import AppError from "../utils/AppError.js";
+import { PLAN_TYPES } from "../constants/planTypes.js"; // ✅ import plan types
 
 class InsurancePlanService {
   // ---------------------------
@@ -19,6 +20,11 @@ class InsurancePlanService {
 
     if (exists) throw new AppError("Plan name already exists", 400);
 
+    // ✅ Validate plan type
+    if (data.planType && !Object.values(PLAN_TYPES).includes(data.planType)) {
+      throw new AppError("Invalid plan type", 400);
+    }
+
     return await InsurancePlan.create({
       ...data,
       slug,
@@ -32,6 +38,11 @@ class InsurancePlanService {
   async updatePlan(id, data, userId) {
     if (data.name) data.slug = slugify(data.name, { lower: true });
 
+    // ✅ Validate plan type if updating
+    if (data.planType && !Object.values(PLAN_TYPES).includes(data.planType)) {
+      throw new AppError("Invalid plan type", 400);
+    }
+
     const plan = await InsurancePlan.findOneAndUpdate(
       { _id: id, isDeleted: false },
       { ...data, updatedBy: userId },
@@ -41,6 +52,7 @@ class InsurancePlanService {
     if (!plan) throw new AppError("Plan not found", 404);
     return plan;
   }
+
   // ---------------------------
   // GET PLAN BY ID
   // ---------------------------
@@ -63,10 +75,10 @@ class InsurancePlanService {
   }
 
   // ---------------------------
-  // SOFT DELETE PLAN  (NO TRANSACTION)
+  // SOFT DELETE PLAN
   // ---------------------------
   async softDeletePlan(id) {
-    // Check if this plan has any active approved policies
+    // Check for active approved policies under this plan
     const activePolicies = await Policy.countDocuments({
       planId: id,
       status: "approved",
@@ -79,7 +91,6 @@ class InsurancePlanService {
       );
     }
 
-    // Soft delete the plan
     const plan = await InsurancePlan.findByIdAndUpdate(
       id,
       { isDeleted: true },
@@ -108,7 +119,6 @@ class InsurancePlanService {
     } = filters;
 
     const skip = (page - 1) * limit;
-
     const query = { isDeleted: false };
 
     if (planType) query.planType = planType;

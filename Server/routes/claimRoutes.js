@@ -1,6 +1,7 @@
 import express from "express";
 import * as claimController from "../controllers/claimController.js";
 import { protect, restrictTo } from "../middlewares/protect.js";
+import { ROLES } from "../constants/roles.js";
 
 const router = express.Router();
 
@@ -10,17 +11,22 @@ router.get("/me", protect, claimController.getMyClaims);
 router.get("/:id", protect, claimController.getClaimById);
 
 // Admin endpoints
-router.get("/", protect, restrictTo("admin"), claimController.listAllClaims);
+router.get(
+  "/",
+  protect,
+  restrictTo(ROLES.ADMIN),
+  claimController.listAllClaims
+);
 router.patch(
   "/:id/status",
   protect,
-  restrictTo("admin"),
+  restrictTo(ROLES.ADMIN),
   claimController.updateStatus
 );
 router.delete(
   "/:id",
   protect,
-  restrictTo("admin"),
+  restrictTo(ROLES.ADMIN),
   claimController.softDeleteClaim
 );
 

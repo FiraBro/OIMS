@@ -10,7 +10,7 @@ const policySchema = new mongoose.Schema(
 
     planId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "InsurancePlan",
+      ref: "Plan",
       required: true,
     },
 

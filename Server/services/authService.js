@@ -20,6 +20,9 @@ export const registerUser = async (data) => {
   const existing = await User.findOne({ email: data.email });
   if (existing) throw new AppError("Email already registered", 409);
 
+  // 🔒 FORCE role = "user" always
+  data.role = "customer";
+
   const newUser = await User.create(data);
 
   const verifyToken = newUser.createEmailVerifyToken();

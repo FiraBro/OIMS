@@ -1,10 +1,5 @@
-import axios from "axios";
-
-// Base axios instance
-const api = axios.create({
-  baseURL: import.meta.env.VITE_AUTH_API_URL || "http://localhost:3001/api/v1",
-  withCredentials: true,
-});
+import api from "./api";
+import refreshTokenService from "./refreshTokenService";
 
 // ====================== AUTH API ======================
 export const register = async (data) => {
@@ -14,6 +9,7 @@ export const register = async (data) => {
 
 export const login = async ({ email, password }) => {
   const res = await api.post("/auth/login", { email, password });
+  console.log(res);
   return res.data;
 };
 
@@ -22,10 +18,7 @@ export const logout = async () => {
   return res.data;
 };
 
-export const refreshToken = async () => {
-  const res = await api.post("/auth/refresh");
-  return res.data;
-};
+export const refreshToken = refreshTokenService;
 
 // ====================== PASSWORD ======================
 export const forgotPassword = async (email) => {

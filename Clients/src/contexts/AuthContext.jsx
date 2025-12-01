@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
 import {
   login as loginRequest,
   register as registerRequest,
   logout as logoutRequest,
-  refreshToken as refreshRequest,
+  refreshToken as refreshTokenService, // fixed import name
 } from "../services/authService";
 
 const AuthContext = createContext();
@@ -16,34 +15,20 @@ export const AuthProvider = ({ children }) => {
   );
   const [loading, setLoading] = useState(true);
 
-  const decodeUser = (token) => {
-    try {
-      const decoded = jwtDecode(token);
-      const now = Date.now() / 1000;
-
-      if (decoded.exp && decoded.exp < now) {
-        setUser(null);
-        return;
-      }
-      setUser(decoded);
-    } catch {
-      setUser(null);
-    }
-  };
-
-  // 🔥 FIRST: Try refresh token on app load
+  // INITIAL LOAD: Try refreshing token
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const res = await refreshRequest(); // uses refreshToken cookie
-        const token = res.accessToken;
-
-        localStorage.setItem("accessToken", token);
-        setAccessToken(token);
-        decodeUser(token);
-      } catch {
-        // refresh failed → fallback to localStorage
-        if (accessToken) decodeUser(accessToken);
+        const data = await refreshTokenService(); // backend uses http-only cookie
+        if (data?.token) {
+          localStorage.setItem("accessToken", data.token);
+          setAccessToken(data.token);
+        }
+        setUser(data?.user || null);
+      } catch (err) {
+        setUser(null);
+        setAccessToken(null);
+        localStorage.removeItem("accessToken");
       } finally {
         setLoading(false);
       }
@@ -56,11 +41,11 @@ export const AuthProvider = ({ children }) => {
   const login = async ({ email, password }) => {
     try {
       const data = await loginRequest({ email, password });
-      const token = data.accessToken;
-
-      localStorage.setItem("accessToken", token);
-      setAccessToken(token);
-      decodeUser(token);
+      if (data?.accessToken) {
+        localStorage.setItem("accessToken", data.accessToken);
+        setAccessToken(data.accessToken);
+      }
+      setUser(data?.user || null);
       return { success: true };
     } catch (err) {
       return {
@@ -74,12 +59,11 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const data = await registerRequest(userData);
-      const token = data.accessToken;
-
-      localStorage.setItem("accessToken", token);
-      setAccessToken(token);
-      decodeUser(token);
-
+      if (data?.accessToken) {
+        localStorage.setItem("accessToken", data.accessToken);
+        setAccessToken(data.accessToken);
+      }
+      setUser(data?.user || null);
       return { success: true };
     } catch (err) {
       return {
@@ -92,26 +76,29 @@ export const AuthProvider = ({ children }) => {
   // LOGOUT
   const logout = async () => {
     try {
-      await logoutRequest();
-    } catch {}
-
-    localStorage.removeItem("accessToken");
-    setAccessToken(null);
-    setUser(null);
+      await logoutRequest(); // optional backend logout
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      localStorage.removeItem("accessToken");
+      setAccessToken(null);
+      setUser(null);
+    }
   };
 
-  // MANUAL REFRESH
+  // REFRESH TOKEN
   const refreshAccessToken = async () => {
     try {
-      const data = await refreshRequest();
-      const token = data.accessToken;
-
-      localStorage.setItem("accessToken", token);
-      setAccessToken(token);
-      decodeUser(token);
-      return token;
-    } catch {
-      logout();
+      const data = await refreshTokenService();
+      if (data?.token) {
+        localStorage.setItem("accessToken", data.token);
+        setAccessToken(data.token);
+      }
+      setUser(data?.user || null);
+      return data?.token || null;
+    } catch (err) {
+      await logout();
+      return null;
     }
   };
 

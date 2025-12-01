@@ -58,11 +58,7 @@ Deployment: Docker
 
 ## Infrastructure
 
-Containerization: Docker & Docker Compose  
-
-Reverse Proxy: Nginx  
-
-Logging: ELK Stack (Elasticsearch, Logstash, Kibana)  
+Containerization: Docker & Docker Compose   
 
 ## Quick Start with Docker
 

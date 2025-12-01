@@ -18,9 +18,16 @@ export default function LoginForm({
     setIsLoading(true);
 
     try {
-      await login({ email: formData.email, password: formData.password });
-      toast.success("Login successful! Redirecting...");
-      setTimeout(() => navigate("/"), 1000);
+      const result = await login({
+        email: formData.email,
+        password: formData.password,
+      });
+      if (result.success) {
+        toast.success("Login successful! Redirecting...");
+        setTimeout(() => navigate("/"), 1000);
+      } else {
+        toast.error(result.message || "Login failed");
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Login failed");
     }

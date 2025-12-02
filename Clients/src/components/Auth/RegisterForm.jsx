@@ -117,13 +117,16 @@ export default function RegisterForm({
           )}
 
           {activeStep < steps.length - 1 ? (
-            <Button type="submit" className="bg-gray-900 hover:bg-gray-800">
+            <Button
+              type="submit"
+              className="bg-gray-900 hover:bg-gray-800 text-white"
+            >
               Next Step →
             </Button>
           ) : (
             <Button
               type="submit"
-              className="bg-gray-900 hover:bg-gray-800"
+              className="bg-gray-900 hover:bg-gray-800 text-white"
               disabled={isLoading || !acceptTerms}
             >
               {isLoading ? (

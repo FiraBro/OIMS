@@ -1,88 +1,89 @@
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
-export default function ResetPasswordModal({
-  show,
-  token,
-  newPassword,
-  newPasswordConfirm,
-  onTokenChange,
-  onPasswordChange,
-  onPasswordConfirmChange,
-  onSubmit,
-  onClose,
-}) {
+export default function ResetPasswordModal({ isOpen, onClose }) {
+  const [token, setToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleSubmit = () => {
+    // Handle reset password logic
+    console.log("Reset password with token:", token);
+    onClose();
+  };
+
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="bg-white w-full max-w-md p-6 rounded-2xl shadow-xl"
-            initial={{ scale: 0.8, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <h2 className="text-xl font-semibold mb-4 text-center">
-              Reset Password
-            </h2>
-
-            <p className="text-gray-600 text-sm mb-4 text-center">
-              Enter the reset token sent to your email and create a new
-              password.
-            </p>
-
-            {/* Reset Token */}
-            <input
-              type="text"
-              placeholder="Reset Token"
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md border border-gray-200">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-gray-900">
+            Create new password
+          </DialogTitle>
+          <DialogDescription className="text-gray-600">
+            Enter your reset token and create a new secure password.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">
+              Reset Token
+            </Label>
+            <Input
               value={token}
-              onChange={(e) => onTokenChange(e.target.value)}
-              className="w-full px-4 py-3 mb-3 border border-gray-300 rounded-xl 
-                         focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="Enter 6-digit code"
+              className="border-gray-300 focus:border-gray-900 focus:ring-gray-900"
             />
-
-            {/* New Password */}
-            <input
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">
+              New Password
+            </Label>
+            <Input
               type="password"
-              placeholder="New Password"
               value={newPassword}
-              onChange={(e) => onPasswordChange(e.target.value)}
-              className="w-full px-4 py-3 mb-3 border border-gray-300 rounded-xl 
-                         focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="border-gray-300 focus:border-gray-900 focus:ring-gray-900"
             />
-
-            {/* Confirm Password */}
-            <input
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">
+              Confirm Password
+            </Label>
+            <Input
               type="password"
-              placeholder="Confirm New Password"
-              value={newPasswordConfirm}
-              onChange={(e) => onPasswordConfirmChange(e.target.value)}
-              className="w-full px-4 py-3 mb-4 border border-gray-300 rounded-xl 
-                         focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="border-gray-300 focus:border-gray-900 focus:ring-gray-900"
             />
-
-            <button
-              onClick={onSubmit}
-              className="w-full bg-pink-500 text-white py-3 rounded-xl font-semibold hover:bg-pink-600 transition"
-            >
-              Reset Password
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-full mt-3 text-gray-600 hover:text-gray-800 transition"
-            >
-              Cancel
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </div>
+        </div>
+        <DialogFooter className="flex flex-col space-y-3 pt-4">
+          <Button
+            onClick={handleSubmit}
+            className="w-full h-11 bg-gray-900 hover:bg-gray-800"
+          >
+            Update password
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-11 border-gray-300 hover:bg-gray-50"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,61 +1,70 @@
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
-export default function ForgotPasswordModal({
-  show,
-  email,
-  onEmailChange,
-  onSubmit,
-  onClose,
-}) {
+export default function ForgotPasswordModal({ isOpen, onClose }) {
+  const [email, setEmail] = useState("");
+
+  const handleSubmit = () => {
+    // Handle forgot password logic
+    console.log("Reset password for:", email);
+    onClose();
+  };
+
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="bg-white w-96 p-6 rounded-2xl shadow-xl"
-            initial={{ scale: 0.8, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <h2 className="text-xl font-semibold mb-4 text-center">
-              Forgot Password
-            </h2>
-
-            <p className="text-gray-600 text-sm mb-3 text-center">
-              Enter your email and we’ll send you a reset link.
-            </p>
-
-            <input
-              type="email"
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md border border-gray-200">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold text-gray-900">
+            Reset your password
+          </DialogTitle>
+          <DialogDescription className="text-gray-600">
+            Enter your email address and we'll send you instructions to reset
+            your password.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">
+              Email Address
+            </Label>
+            <Input
               value={email}
-              onChange={(e) => onEmailChange(e.target.value)}
-              placeholder="Enter your email"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-pink-400 focus:border-transparent"
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              className="border-gray-300 focus:border-gray-900 focus:ring-gray-900"
             />
-
-            <button
-              onClick={onSubmit}
-              className="w-full bg-pink-500 text-white py-3 rounded-xl font-semibold hover:bg-pink-600 transition"
-            >
-              Send Reset Link
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-full mt-3 text-gray-600 hover:text-gray-800 transition"
-            >
-              Cancel
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </div>
+          <p className="text-sm text-gray-500">
+            We'll email you a secure link to reset your password. The link will
+            expire in 1 hour.
+          </p>
+        </div>
+        <DialogFooter className="flex flex-col space-y-3 pt-4">
+          <Button
+            onClick={handleSubmit}
+            className="w-full h-11 bg-gray-900 hover:bg-gray-800"
+          >
+            Send reset instructions
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-11 border-gray-300 hover:bg-gray-50"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

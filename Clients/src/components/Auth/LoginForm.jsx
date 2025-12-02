@@ -70,7 +70,7 @@ export default function LoginForm({
 
         <Button
           type="submit"
-          className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-base font-medium"
+          className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white font-medium"
           disabled={isLoading}
         >
           {isLoading ? (

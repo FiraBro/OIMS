@@ -119,14 +119,14 @@ export default function RegisterForm({
           {activeStep < steps.length - 1 ? (
             <Button
               type="submit"
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+              className="bg-blue-600 hover:bg-blue-500 text-white"
             >
               Next Step →
             </Button>
           ) : (
             <Button
               type="submit"
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+              className="bg-blue-600 hover:bg-blue-500 cursor-pointer text-white"
               disabled={isLoading || !acceptTerms}
             >
               {isLoading ? (
@@ -167,7 +167,7 @@ export default function RegisterForm({
             type="button"
             variant="link"
             onClick={onSwitchToLogin}
-            className="text-gray-900 font-semibold p-0 h-auto"
+            className="text-blue-500 cursor-pointer font-semibold p-0 h-auto"
           >
             Sign in here
           </Button>

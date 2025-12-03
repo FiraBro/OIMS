@@ -7,6 +7,7 @@ export default function LoginForm({ onSwitchToRegister }) {
   const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // new state
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -30,6 +31,7 @@ export default function LoginForm({ onSwitchToRegister }) {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5 w-full">
+        {/* Email */}
         <div>
           <label className="block text-gray-700 font-medium mb-1">Email</label>
           <input
@@ -52,12 +54,13 @@ export default function LoginForm({ onSwitchToRegister }) {
           />
         </div>
 
-        <div>
+        {/* Password with Show/Hide */}
+        <div className="relative">
           <label className="block text-gray-700 font-medium mb-1">
             Password
           </label>
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={form.password}
             onChange={handleChange}
@@ -74,8 +77,18 @@ export default function LoginForm({ onSwitchToRegister }) {
             placeholder="••••••••"
             required
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute top-1/2 right-3 -translate-y-1/2 px-2 py-1 text-gray-500 hover:text-gray-700"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </Button>
         </div>
 
+        {/* Submit */}
         <Button
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-500 cursor-pointer text-white"

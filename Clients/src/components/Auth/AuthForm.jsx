@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useAuth } from "../../contexts/AuthContext";
-import BrandSection from "./BrandSection";
+
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import ResetPasswordModal from "./ResetPasswordModal";
+
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function AuthForm() {
   const navigate = useNavigate();
@@ -69,10 +71,10 @@ export default function AuthForm() {
         password: formData.password,
       });
       if (result.success) {
-        toast.success("Login successful! Redirecting...");
-        setTimeout(() => navigate("/dashboard"), 1000);
+        toast.success("Login successful!");
+        setTimeout(() => navigate("/"), 1000);
       } else {
-        toast.error(result.message || "Invalid credentials. Please try again.");
+        toast.error(result.message || "Invalid credentials.");
       }
     } catch (err) {
       toast.error(
@@ -87,33 +89,49 @@ export default function AuthForm() {
     setIsLoading(true);
     try {
       await registerRequest(formData);
-      toast.success(
-        "Account created successfully! Redirecting to dashboard..."
-      );
+      toast.success("Account created successfully!");
       setTimeout(() => navigate("/dashboard"), 1500);
     } catch (err) {
       toast.error(
-        err.response?.data?.message || "Registration failed. Please try again."
+        err.response?.data?.message || "Registration failed. Try again."
       );
     }
     setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-6xl w-full grid md:grid-cols-2 gap-8">
-        <BrandSection />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 p-6">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeMode} // key triggers the exit/enter animation when activeMode changes
+          initial={{ opacity: 0, scale: 0.97, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: -10 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="w-full max-w-5xl bg-white rounded-3xl shadow-xl p-10 border border-gray-100"
+        >
+          {/* Header */}
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold text-gray-900">
+              {activeMode === "login" ? "Welcome Back" : "Create Your Account"}
+            </h2>
+            <p className="text-gray-500 text-sm mt-1">
+              {activeMode === "login"
+                ? "Sign in to continue to your dashboard"
+                : "Join us and manage your insurance easily"}
+            </p>
+          </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-          <div className="flex mb-8 border-b border-gray-200">
+          {/* Mode Switcher */}
+          <div className="flex mb-8 rounded-xl bg-gray-100 p-1">
             <button
               onClick={() => {
                 setActiveMode("login");
                 resetForm();
               }}
-              className={`flex-1 py-3 text-center font-medium text-sm transition-colors ${
+              className={`flex-1 py-2 text-center text-sm rounded-lg transition ${
                 activeMode === "login"
-                  ? "text-gray-900 border-b-2 border-gray-900"
+                  ? "bg-white shadow font-medium"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -124,55 +142,75 @@ export default function AuthForm() {
                 setActiveMode("register");
                 resetForm();
               }}
-              className={`flex-1 py-3 text-center font-medium text-sm transition-colors ${
+              className={`flex-1 py-2 text-center text-sm rounded-lg transition ${
                 activeMode === "register"
-                  ? "text-gray-900 border-b-2 border-gray-900"
+                  ? "bg-white shadow font-medium"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              Create Account
+              Register
             </button>
           </div>
 
-          {activeMode === "login" ? (
-            <LoginForm
-              formData={formData}
-              onChange={handleChange}
-              onSubmit={handleLogin}
-              isLoading={isLoading}
-              onForgotPassword={() => setShowForgotModal(true)}
-              onSwitchToRegister={() => {
-                setActiveMode("register");
-                resetForm();
-              }}
-            />
-          ) : (
-            <RegisterForm
-              formData={formData}
-              onChange={handleChange}
-              onSubmit={handleRegister}
-              isLoading={isLoading}
-              onSwitchToLogin={() => {
-                setActiveMode("login");
-                resetForm();
-              }}
-            />
-          )}
+          {/* Forms */}
+          <AnimatePresence mode="wait">
+            {activeMode === "login" ? (
+              <motion.div
+                key="login-form"
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 40 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                <LoginForm
+                  formData={formData}
+                  onChange={handleChange}
+                  onSubmit={handleLogin}
+                  isLoading={isLoading}
+                  onForgotPassword={() => setShowForgotModal(true)}
+                  onSwitchToRegister={() => {
+                    setActiveMode("register");
+                    resetForm();
+                  }}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="register-form"
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+              >
+                <RegisterForm
+                  formData={formData}
+                  onChange={handleChange}
+                  onSubmit={handleRegister}
+                  isLoading={isLoading}
+                  onSwitchToLogin={() => {
+                    setActiveMode("login");
+                    resetForm();
+                  }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
+          {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-xs text-gray-500">
-              By continuing, you agree to our security standards and compliance
-              policies
+              By continuing, you agree to our terms, privacy, and security
+              policy.
             </p>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </AnimatePresence>
 
+      {/* Modals */}
       <ForgotPasswordModal
         isOpen={showForgotModal}
         onClose={() => setShowForgotModal(false)}
       />
-
       <ResetPasswordModal
         isOpen={showResetModal}
         onClose={() => setShowResetModal(false)}

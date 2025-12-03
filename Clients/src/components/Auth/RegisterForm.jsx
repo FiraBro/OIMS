@@ -17,6 +17,8 @@ export default function RegisterForm({
 }) {
   const [activeStep, setActiveStep] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false); // New state
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // New state
 
   const validateCurrentStep = () => {
     switch (activeStep) {
@@ -38,13 +40,10 @@ export default function RegisterForm({
           return false;
         }
         return true;
-
       case 1:
         return true;
-
       case 2:
         return true;
-
       default:
         return true;
     }
@@ -86,7 +85,14 @@ export default function RegisterForm({
 
       <form onSubmit={handleSubmit}>
         {activeStep === 0 && (
-          <AccountStep formData={formData} onChange={onChange} />
+          <AccountStep
+            formData={formData}
+            onChange={onChange}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            showConfirmPassword={showConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword}
+          />
         )}
 
         {activeStep === 1 && (

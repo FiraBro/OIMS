@@ -1,25 +1,14 @@
 import { useState } from "react";
-import { useAuth } from "../../contexts/AuthContext";
-import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 
-export default function LoginForm({ onSwitchToRegister }) {
-  const { login } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // new state
-
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const res = await login(form);
-    setLoading(false);
-
-    if (!res.success) toast.error(res.message);
-  };
+export default function LoginForm({
+  formData,
+  onChange,
+  onSubmit,
+  isLoading,
+  onSwitchToRegister,
+}) {
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <div className="w-full space-y-6">
@@ -29,16 +18,15 @@ export default function LoginForm({ onSwitchToRegister }) {
       <p className="text-gray-600 text-center">
         Login to continue to your dashboard
       </p>
-
-      <form onSubmit={handleSubmit} className="space-y-5 w-full">
+      <form onSubmit={onSubmit} className="space-y-5 w-full">
         {/* Email */}
         <div>
           <label className="block text-gray-700 font-medium mb-1">Email</label>
           <input
             type="email"
             name="email"
-            value={form.email}
-            onChange={handleChange}
+            value={formData.email}
+            onChange={onChange}
             className="
               w-full 
               px-4 py-3 
@@ -54,7 +42,7 @@ export default function LoginForm({ onSwitchToRegister }) {
           />
         </div>
 
-        {/* Password with Show/Hide */}
+        {/* Password */}
         <div className="relative">
           <label className="block text-gray-700 font-medium mb-1">
             Password
@@ -62,8 +50,8 @@ export default function LoginForm({ onSwitchToRegister }) {
           <input
             type={showPassword ? "text" : "password"}
             name="password"
-            value={form.password}
-            onChange={handleChange}
+            value={formData.password}
+            onChange={onChange}
             className="
               w-full 
               px-4 py-3 
@@ -88,13 +76,12 @@ export default function LoginForm({ onSwitchToRegister }) {
           </Button>
         </div>
 
-        {/* Submit */}
         <Button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-500 cursor-pointer text-white"
-          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white"
+          disabled={isLoading}
         >
-          {loading ? "Logging in..." : "Login"}
+          {isLoading ? "Logging in..." : "Login"}
         </Button>
       </form>
 

@@ -1,6 +1,7 @@
 // utils/jwt.js
 import jwt from "jsonwebtoken";
 
+// =============================== SIGN ACCESS TOKEN ===============================
 export const signToken = (
   user,
   expiresIn = process.env.JWT_ACCESS_EXPIRES || "15m"
@@ -10,31 +11,13 @@ export const signToken = (
   });
 };
 
-export const signRefreshToken = (
-  user,
-  expiresIn = process.env.JWT_REFRESH_EXPIRES || "30d"
-) => {
-  return jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, {
-    expiresIn,
-  });
-};
-
-export const verifyRefreshToken = (token) => {
-  try {
-    return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-  } catch (err) {
-    const e = new Error("Invalid or expired refresh token");
-    e.statusCode = 401;
-    throw e;
-  }
-};
-
+// =============================== VERIFY ACCESS TOKEN ===============================
 export const verifyAccessToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch (err) {
-    const e = new Error("Invalid or expired access token");
-    e.statusCode = 401;
-    throw e;
+    const error = new Error("Invalid or expired token");
+    error.statusCode = 401;
+    throw error;
   }
 };

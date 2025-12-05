@@ -1,17 +1,9 @@
-// services/authService.js
 import AppError from "../utils/AppError.js";
-import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import User from "../models/user.js";
-import {
-  signToken,
-  signRefreshToken,
-  verifyRefreshToken,
-} from "../utils/jwt.js";
+import { hashToken } from "../utils/hashToken.js";
+import { signToken } from "../utils/jwt.js";
 
-const REFRESH_TTL_MS = parseInt(
-  process.env.REFRESH_TTL_MS || `${30 * 24 * 60 * 60 * 1000}`
-);
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS || "5");
 const LOCK_TIME_MS = parseInt(process.env.LOCK_TIME_MS || `${15 * 60 * 1000}`);
 
@@ -20,9 +12,7 @@ export const registerUser = async (data) => {
   const existing = await User.findOne({ email: data.email });
   if (existing) throw new AppError("Email already registered", 409);
 
-  // 🔒 FORCE role = "user" always
   data.role = "customer";
-
   const newUser = await User.create(data);
 
   const verifyToken = newUser.createEmailVerifyToken();
@@ -49,10 +39,7 @@ export const registerUser = async (data) => {
 };
 
 // =============================== LOGIN ===============================
-export const loginUser = async (
-  { email, password },
-  { device = "web", ip, userAgent } = {}
-) => {
+export const loginUser = async ({ email, password }) => {
   if (!email || !password)
     throw new AppError("Email and password are required", 400);
 
@@ -61,53 +48,25 @@ export const loginUser = async (
   );
   if (!existingUser) throw new AppError("Invalid credentials", 401);
 
-  // lock check
+  // Locked due to failed attempts?
   if (existingUser.lockUntil && existingUser.lockUntil > Date.now()) {
     throw new AppError("Too many failed attempts. Try again later.", 423);
   }
 
+  // Check password
   const isMatch = await existingUser.comparePassword(password);
   if (!isMatch) {
-    if (existingUser.incrementLoginAttempts) {
-      await existingUser.incrementLoginAttempts(
-        MAX_LOGIN_ATTEMPTS,
-        LOCK_TIME_MS
-      );
-    } else {
-      existingUser.loginAttempts = (existingUser.loginAttempts || 0) + 1;
-      if (existingUser.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        existingUser.lockUntil = new Date(Date.now() + LOCK_TIME_MS);
-      }
-      await existingUser.save();
-    }
+    await existingUser.incrementLoginAttempts(MAX_LOGIN_ATTEMPTS, LOCK_TIME_MS);
     throw new AppError("Invalid credentials", 401);
   }
 
-  // reset attempts
-  if (existingUser.resetLoginAttempts) {
-    await existingUser.resetLoginAttempts();
-  } else {
-    existingUser.loginAttempts = 0;
-    existingUser.lockUntil = undefined;
-    await existingUser.save();
-  }
+  // Success: reset attempts
+  await existingUser.resetLoginAttempts();
 
-  // generate tokens
   const accessToken = signToken(existingUser);
-  const refreshToken = signRefreshToken(existingUser);
-
-  await existingUser.addRefreshSession({
-    refreshToken,
-    device,
-    ip,
-    userAgent,
-    ttlMs: REFRESH_TTL_MS,
-  });
 
   return {
     accessToken,
-    refreshToken,
-    refreshTTL: REFRESH_TTL_MS,
     user: {
       id: existingUser._id,
       fullName: existingUser.fullName,
@@ -118,56 +77,16 @@ export const loginUser = async (
   };
 };
 
-// =============================== REFRESH TOKEN ===============================
-export const refreshTokenService = async (
-  oldRefreshToken,
-  { device = "web", ip, userAgent } = {}
-) => {
-  if (!oldRefreshToken) throw new AppError("Refresh token required", 400);
-
-  const payload = verifyRefreshToken(oldRefreshToken);
-  const currentUser = await User.findById(payload.id);
-  if (!currentUser) throw new AppError("Invalid refresh token", 401);
-
-  if (!currentUser.hasRefreshSession(oldRefreshToken)) {
-    await currentUser.clearAllSessions();
-    throw new AppError("Refresh token revoked or reused. Login again.", 401);
-  }
-
-  const newRefreshToken = signRefreshToken(currentUser);
-  await currentUser.rotateRefreshSession(oldRefreshToken, newRefreshToken, {
-    device,
-    ip,
-    userAgent,
-    ttlMs: REFRESH_TTL_MS,
-  });
-
-  const newAccessToken = signToken(currentUser);
-
-  return {
-    token: newAccessToken,
-    refreshToken: newRefreshToken,
-    refreshTTL: REFRESH_TTL_MS,
-  };
-};
-
 // =============================== LOGOUT ===============================
-export const logoutUser = async (refreshToken) => {
-  if (!refreshToken) return { message: "No token provided" };
-
-  try {
-    const payload = verifyRefreshToken(refreshToken);
-    const currentUser = await User.findById(payload.id);
-    if (currentUser) await currentUser.removeRefreshSession(refreshToken);
-  } catch (err) {}
-
+export const logoutUser = async () => {
+  // No refresh tokens → nothing to clear
   return { message: "Logged out successfully" };
 };
 
 // =============================== FORGOT PASSWORD ===============================
 export const forgotPasswordService = async (email) => {
   const currentUser = await User.findOne({ email });
-  if (!currentUser) throw new AppError("User not found with this email", 404);
+  if (!currentUser) throw new AppError("User not found", 404);
 
   const resetToken = currentUser.getResetToken();
   await currentUser.save({ validateBeforeSave: false });
@@ -185,37 +104,23 @@ export const forgotPasswordService = async (email) => {
 
 // =============================== RESET PASSWORD ===============================
 export const resetPasswordService = async (token, newPassword) => {
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
+  const hashedToken = hashToken(token);
   const currentUser = await User.findOne({
     resetPasswordToken: hashedToken,
     resetPasswordExpire: { $gt: Date.now() },
   });
+
   if (!currentUser) throw new AppError("Invalid or expired token", 400);
 
   currentUser.password = newPassword;
   currentUser.passwordConfirm = newPassword;
-  currentUser.resetPasswordToken = undefined;
-  currentUser.resetPasswordExpire = undefined;
 
-  await currentUser.clearAllSessions();
   await currentUser.save();
 
   const accessToken = signToken(currentUser);
-  const refreshToken = signRefreshToken(currentUser);
-
-  await currentUser.addRefreshSession({
-    refreshToken,
-    device: "password-reset",
-    ip: null,
-    userAgent: null,
-    ttlMs: REFRESH_TTL_MS,
-  });
 
   return {
     accessToken,
-    refreshToken,
-    refreshTTL: REFRESH_TTL_MS,
     user: {
       id: currentUser._id,
       fullName: currentUser.fullName,
@@ -227,8 +132,7 @@ export const resetPasswordService = async (token, newPassword) => {
 
 // =============================== VERIFY EMAIL ===============================
 export const verifyEmailService = async (token) => {
-  const hashed = crypto.createHash("sha256").update(token).digest("hex");
-
+  const hashed = hashToken(token);
   const currentUser = await User.findOne({
     emailVerifyToken: hashed,
     emailVerifyExpire: { $gt: Date.now() },
@@ -257,7 +161,7 @@ export const sendVerificationEmailService = async (userId) => {
   await sendEmail({
     email: currentUser.email,
     subject: "Verify your email",
-    text: `Verify: ${verifyURL}`,
+    text: `Verify here: ${verifyURL}`,
   });
 
   return { verifyURL };
@@ -274,19 +178,9 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
   currentUser.password = newPassword;
   currentUser.passwordConfirm = newPassword;
 
-  await currentUser.clearAllSessions();
   await currentUser.save();
 
   const accessToken = signToken(currentUser);
-  const refreshToken = signRefreshToken(currentUser);
-
-  await currentUser.addRefreshSession({
-    refreshToken,
-    device: "password-change",
-    ip: null,
-    userAgent: null,
-    ttlMs: REFRESH_TTL_MS,
-  });
 
   return {
     user: {
@@ -295,7 +189,6 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
       email: currentUser.email,
       role: currentUser.role,
     },
-    refreshToken,
-    refreshTTL: REFRESH_TTL_MS,
+    accessToken,
   };
 };

@@ -3,16 +3,11 @@ import {
   register,
   login,
   logout,
-  refresh,
   forgotPassword,
   resetPassword,
   verifyEmail,
   resendVerification,
-  logoutAll,
   changePassword,
-  updateEmail,
-  getSessions,
-  revokeSession,
 } from "../controllers/authController.js";
 
 import {
@@ -21,33 +16,26 @@ import {
   forgotPasswordValidator,
   resetPasswordValidator,
   changePasswordValidator,
-  updateEmailValidator,
 } from "../validators/authValidator.js";
 
 import validate from "../middlewares/validateMiddleware.js";
 import { authLimiter } from "../middlewares/rateLimit.js";
-import { bruteForceProtection } from "../middlewares/bruteForce.js";
 import { protect } from "../middlewares/protect.js";
 
 const router = Router();
 
-// PUBLIC
+// ================== PUBLIC ROUTES ==================
+
+// Register
 router.post("/register", authLimiter, registerValidator, validate, register);
 
-router.post(
-  "/login",
-  authLimiter,
-  bruteForceProtection,
-  loginValidator,
-  validate,
-  login
-);
+// Login
+router.post("/login", authLimiter, loginValidator, validate, login);
 
-// Cookie-based refresh and logout
-router.post("/refresh", refresh);
+// Logout (simple, no refresh tokens)
 router.post("/logout", logout);
 
-// Forgot / Reset
+// Forgot-password
 router.post(
   "/forgot-password",
   authLimiter,
@@ -56,6 +44,7 @@ router.post(
   forgotPassword
 );
 
+// Reset password
 router.put(
   "/reset-password/:token",
   resetPasswordValidator,
@@ -63,12 +52,15 @@ router.put(
   resetPassword
 );
 
-// Email verify
+// Verify email
 router.get("/verify-email/:token", verifyEmail);
+
+// Resend email verification (requires login)
 router.post("/resend-verification", protect, resendVerification);
 
-// Protected user actions
-router.post("/logout-all", protect, logoutAll);
+// ================== PROTECTED ROUTES ==================
+
+// Change password
 router.put(
   "/change-password",
   protect,
@@ -76,16 +68,5 @@ router.put(
   validate,
   changePassword
 );
-router.put(
-  "/update-email",
-  protect,
-  updateEmailValidator,
-  validate,
-  updateEmail
-);
-
-// Session management
-router.get("/sessions", protect, getSessions);
-router.delete("/sessions/:sessionId", protect, revokeSession);
 
 export default router;

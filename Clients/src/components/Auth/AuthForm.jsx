@@ -1,23 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { useAuth } from "../../contexts/AuthContext";
+import { AnimatePresence, motion } from "framer-motion";
 
+import { useAuth } from "../../contexts/AuthContext";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
-import ForgotPasswordModal from "./ForgotPasswordModal";
-import ResetPasswordModal from "./ResetPasswordModal";
-
-import { AnimatePresence, motion } from "framer-motion";
 
 export default function AuthForm() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { user, login, register } = useAuth();
 
   const [activeMode, setActiveMode] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -31,9 +26,13 @@ export default function AuthForm() {
     address: { street: "", city: "", state: "", zip: "", country: "" },
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) navigate("/");
+  }, [user, navigate]);
+
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
-
     if (name.startsWith("address.")) {
       const key = name.split(".")[1];
       setFormData((prev) => ({
@@ -48,7 +47,7 @@ export default function AuthForm() {
     }
   };
 
-  const resetForm = () => {
+  const resetForm = () =>
     setFormData({
       fullName: "",
       email: "",
@@ -60,50 +59,49 @@ export default function AuthForm() {
       profilePicture: null,
       address: { street: "", city: "", state: "", zip: "", country: "" },
     });
-  };
 
+  // =================== LOGIN ===================
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    try {
-      const result = await login({
-        email: formData.email,
-        password: formData.password,
-      });
-      if (result.success) {
-        toast.success("Login successful!");
-        setTimeout(() => navigate("/"), 1000);
-      } else {
-        toast.error(result.message || "Invalid credentials.");
-      }
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message ||
-          "Login failed. Please check your connection."
-      );
-    }
+
+    const result = await login({
+      email: formData.email,
+      password: formData.password,
+    });
+
     setIsLoading(false);
+
+    if (result.success) {
+      toast.success("Login successful!");
+      navigate("/"); // redirect after success
+    } else {
+      toast.error(result.message || "Invalid credentials.");
+    }
   };
 
+  // =================== REGISTER ===================
   const handleRegister = async () => {
+    // e.preventDefault();
     setIsLoading(true);
-    try {
-      await registerRequest(formData);
-      toast.success("Account created successfully!");
-      setTimeout(() => navigate("/dashboard"), 1500);
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Registration failed. Try again."
-      );
-    }
+
+    const result = await register(formData);
+
     setIsLoading(false);
+
+    if (result.success) {
+      toast.success("Account created successfully!");
+      navigate("/login"); // redirect after success
+    } else {
+      toast.error(result.message || "Registration failed. Try again.");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 p-6">
       <AnimatePresence mode="wait">
         <motion.div
-          key={activeMode} // key triggers the exit/enter animation when activeMode changes
+          key={activeMode}
           initial={{ opacity: 0, scale: 0.97, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: -10 }}
@@ -134,6 +132,7 @@ export default function AuthForm() {
                   ? "bg-white shadow font-medium"
                   : "text-gray-500 hover:text-gray-700"
               }`}
+              disabled={isLoading}
             >
               Sign In
             </button>
@@ -147,6 +146,7 @@ export default function AuthForm() {
                   ? "bg-white shadow font-medium"
                   : "text-gray-500 hover:text-gray-700"
               }`}
+              disabled={isLoading}
             >
               Register
             </button>
@@ -167,11 +167,7 @@ export default function AuthForm() {
                   onChange={handleChange}
                   onSubmit={handleLogin}
                   isLoading={isLoading}
-                  onForgotPassword={() => setShowForgotModal(true)}
-                  onSwitchToRegister={() => {
-                    setActiveMode("register");
-                    resetForm();
-                  }}
+                  onSwitchToRegister={() => setActiveMode("register")}
                 />
               </motion.div>
             ) : (
@@ -187,34 +183,13 @@ export default function AuthForm() {
                   onChange={handleChange}
                   onSubmit={handleRegister}
                   isLoading={isLoading}
-                  onSwitchToLogin={() => {
-                    setActiveMode("login");
-                    resetForm();
-                  }}
+                  onSwitchToLogin={() => setActiveMode("login")}
                 />
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Footer */}
-          <div className="mt-8 text-center">
-            <p className="text-xs text-gray-500">
-              By continuing, you agree to our terms, privacy, and security
-              policy.
-            </p>
-          </div>
         </motion.div>
       </AnimatePresence>
-
-      {/* Modals */}
-      <ForgotPasswordModal
-        isOpen={showForgotModal}
-        onClose={() => setShowForgotModal(false)}
-      />
-      <ResetPasswordModal
-        isOpen={showResetModal}
-        onClose={() => setShowResetModal(false)}
-      />
     </div>
   );
 }

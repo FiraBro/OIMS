@@ -1,53 +1,51 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import api from "../services/api";
 import {
   login as loginRequest,
   register as registerRequest,
   logout as logoutRequest,
-  refreshToken as refreshTokenService, // fixed import name
 } from "../services/authService";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [accessToken, setAccessToken] = useState(
-    localStorage.getItem("accessToken")
-  );
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [accessToken, setAccessToken] = useState(() => {
+    return localStorage.getItem("accessToken") || null;
+  });
   const [loading, setLoading] = useState(true);
 
-  // INITIAL LOAD: Try refreshing token
+  // Persist to localStorage
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const data = await refreshTokenService(); // backend uses http-only cookie
-        if (data?.token) {
-          localStorage.setItem("accessToken", data.token);
-          setAccessToken(data.token);
-        }
-        setUser(data?.user || null);
-      } catch (err) {
-        setUser(null);
-        setAccessToken(null);
-        localStorage.removeItem("accessToken");
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+    else localStorage.removeItem("user");
+  }, [user]);
 
-    initAuth();
+  useEffect(() => {
+    if (accessToken) localStorage.setItem("accessToken", accessToken);
+    else localStorage.removeItem("accessToken");
+  }, [accessToken]);
+
+  useEffect(() => {
+    setLoading(false);
   }, []);
 
-  // LOGIN
   const login = async ({ email, password }) => {
     try {
-      const data = await loginRequest({ email, password });
-      if (data?.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-        setAccessToken(data.accessToken);
-      }
-      setUser(data?.user || null);
-      return { success: true };
+      const res = await api.post("/auth/login", { email, password });
+      const { user, accessToken } = res.data.data; // ✅ extract correctly
+
+      // Store user in state and localStorage
+      setUser(user);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", accessToken);
+
+      return { success: true, user };
     } catch (err) {
+      console.error(err);
       return {
         success: false,
         message: err.response?.data?.message || "Login failed",
@@ -55,16 +53,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // REGISTER
   const register = async (userData) => {
     try {
-      const data = await registerRequest(userData);
-      if (data?.accessToken) {
-        localStorage.setItem("accessToken", data.accessToken);
-        setAccessToken(data.accessToken);
+      const res = await registerRequest(userData);
+
+      if (res?.status === "success") {
+        setUser(res.user);
+        return { success: true };
+      } else {
+        return {
+          success: false,
+          message: res?.message || "Registration failed",
+        };
       }
-      setUser(data?.user || null);
-      return { success: true };
     } catch (err) {
       return {
         success: false,
@@ -73,32 +74,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT
   const logout = async () => {
     try {
-      await logoutRequest(); // optional backend logout
+      await logoutRequest();
     } catch (err) {
-      console.error("Logout failed", err);
+      console.error(err);
     } finally {
-      localStorage.removeItem("accessToken");
-      setAccessToken(null);
       setUser(null);
-    }
-  };
-
-  // REFRESH TOKEN
-  const refreshAccessToken = async () => {
-    try {
-      const data = await refreshTokenService();
-      if (data?.token) {
-        localStorage.setItem("accessToken", data.token);
-        setAccessToken(data.token);
-      }
-      setUser(data?.user || null);
-      return data?.token || null;
-    } catch (err) {
-      await logout();
-      return null;
+      setAccessToken(null);
     }
   };
 
@@ -111,7 +94,6 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
-        refreshAccessToken,
         isAuthenticated: !!user,
       }}
     >

@@ -1,5 +1,4 @@
 import api from "./api";
-import refreshTokenService from "./refreshTokenService";
 
 // ====================== AUTH API ======================
 export const register = async (data) => {
@@ -9,7 +8,7 @@ export const register = async (data) => {
 
 export const login = async ({ email, password }) => {
   const res = await api.post("/auth/login", { email, password });
-  console.log(res);
+  console.log("Login:", res);
   return res.data;
 };
 
@@ -17,8 +16,6 @@ export const logout = async () => {
   const res = await api.post("/auth/logout");
   return res.data;
 };
-
-export const refreshToken = refreshTokenService;
 
 // ====================== PASSWORD ======================
 export const forgotPassword = async (email) => {

@@ -4,6 +4,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 import HomePage from "./pages/home/HomePage";
 import PlanPage from "./pages/plan/PlanPage";
+import PlanDetail from "./pages/plan/PlanDetail"; // ✅ Import detail page
 import Layout from "./utils/Layout";
 import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";
 import UserApplications from "./pages/apply/UserApplications";
@@ -11,25 +12,85 @@ import AuthPage from "./pages/auth/AuthPage";
 import ClaimSubmissionForm from "./pages/apply/ClaimSubmissionForm";
 import MyClaims from "./components/claim/MyClaims";
 
-import { ToastContainer } from "react-toastify"; // ✅ FIXED IMPORT
-import "react-toastify/dist/ReactToastify.css"; // styles
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+// Import the animated Navbar and PageTransition
+import { PageTransition } from "./components/navigation/Navbar";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
     children: [
-      { index: true, element: <HomePage /> },
-      { path: "plans", element: <PlanPage /> },
-      { path: "apply", element: <PolicyApplicationForm /> },
-      { path: "user-stats", element: <UserApplications /> },
-      { path: "claim", element: <ClaimSubmissionForm /> },
-      { path: "show/claims", element: <MyClaims /> },
+      {
+        index: true,
+        element: (
+          <PageTransition>
+            <HomePage />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "plans",
+        element: (
+          <PageTransition>
+            <PlanPage />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "plans/:id",
+        element: (
+          <PageTransition>
+            <PlanDetail />
+          </PageTransition>
+        ),
+      },
+
+      {
+        path: "apply",
+        element: (
+          <PageTransition>
+            <PolicyApplicationForm />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "user-stats",
+        element: (
+          <PageTransition>
+            <UserApplications />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "claim",
+        element: (
+          <PageTransition>
+            <ClaimSubmissionForm />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "show/claims",
+        element: (
+          <PageTransition>
+            <MyClaims />
+          </PageTransition>
+        ),
+      },
     ],
   },
+
+  // ⭐ Authentication page
   {
     path: "/auth",
-    element: <AuthPage />,
+    element: (
+      <PageTransition>
+        <AuthPage />
+      </PageTransition>
+    ),
   },
 ]);
 

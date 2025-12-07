@@ -1,65 +1,52 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-
-const slides = [
-  {
-    id: 1,
-    image: "/insu1.jpg",
-    title: "Secure Your Health Today",
-    subtitle: "Affordable, reliable health insurance for everyone.",
-  },
-  {
-    id: 2,
-    image: "/insu2.jpg",
-    title: "Family Coverage Plans",
-    subtitle: "Protect your loved ones with tailored insurance options.",
-  },
-  {
-    id: 3,
-    image: "/insu3.jpg",
-    title: "Claim Processing Made Easy",
-    subtitle: "Fast, transparent, and hassle-free claim handling.",
-  },
-];
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { FiArrowRight } from "react-icons/fi";
+import { Link } from "react-router-dom";
 
 export default function HeroSection() {
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Change slide every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const { image, title, subtitle } = slides[currentSlide];
-
   return (
-    <div className="relative w-full h-[90vh] overflow-hidden">
-      <img
-        src={image}
-        alt="Health Slide"
-        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
-      />
+    <section className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-6">
+      <div className="max-w-3xl text-center">
+        {/* Headline */}
+        <motion.h1
+          className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          Your Health, Our Priority
+        </motion.h1>
 
-      <div className="absolute inset-0 bg-black/50" />
+        {/* Subtext */}
+        <motion.p
+          className="mt-4 text-lg md:text-xl text-gray-600"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.8 }}
+        >
+          Apply, manage, and track your health insurance seamlessly.
+        </motion.p>
 
-      <div className="relative z-10 h-full flex items-center justify-center">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ duration: 0.7 }}
-            className="text-center px-6 text-white"
+        {/* Buttons */}
+        <motion.div
+          className="mt-8 flex flex-col md:flex-row items-center justify-center gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.8 }}
+        >
+          <Button size="lg" className="px-8 flex items-center gap-2">
+            Explore Plans <FiArrowRight />
+          </Button>
+
+          <Button
+            size="lg"
+            variant="outline"
+            className="px-8 border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4">{title}</h1>
-            <p className="text-lg md:text-2xl">{subtitle}</p>
-          </motion.div>
-        </AnimatePresence>
+            <Link to="/auth">Login / Register</Link>
+          </Button>
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 }

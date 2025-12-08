@@ -1,8 +1,7 @@
 import React from "react";
-import FeaturesSection from "../../components/cardSection/FeaturesSection";
-import HeroSection from "../../components/heroSection/HeroSection";
-import WhyChooseUs from "../../components/whChooseUs/WhyChooseUs";
-import GetStarted from "../../components/getStarted/GetStarted";
+import HowItWorks from "@/components/howitworks/HowItWorks";
+import HeroSection from "@/components/heroSection/HeroSection";
+import TestimonialsCarousel from "@/components/testimonial/TestimonialsSection";
 import FAQSection from "../../components/Faq/FAQSection";
 import PlansPreview from "@/components/preview/PlanPreview";
 
@@ -11,9 +10,8 @@ export default function HomePage() {
     <div>
       <HeroSection />
       <PlansPreview />
-      <FeaturesSection />
-      <WhyChooseUs />
-      <GetStarted />
+      <HowItWorks />
+      <TestimonialsCarousel />
       <FAQSection />
     </div>
   );

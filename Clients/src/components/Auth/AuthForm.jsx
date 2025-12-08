@@ -106,7 +106,7 @@ export default function AuthForm() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: -10 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
-          className="w-full max-w-5xl bg-white rounded-3xl shadow-xl p-10 border border-gray-100"
+          className="w-full max-w-6xl bg-white rounded-3xl shadow-xl p-10 border border-gray-100"
         >
           {/* Header */}
           <div className="text-center mb-6">

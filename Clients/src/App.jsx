@@ -9,7 +9,7 @@ import Layout from "./utils/Layout";
 import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";
 import UserApplications from "./pages/apply/UserApplications";
 import AuthPage from "./pages/auth/AuthPage";
-import ClaimSubmissionForm from "./pages/apply/ClaimSubmissionForm";
+import ClaimSubmissionForm from "./pages/apply/ClaimsManagement";
 import MyClaims from "./components/claim/MyClaims";
 
 import { ToastContainer } from "react-toastify";
@@ -65,7 +65,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "claim",
+        path: "claims/new",
         element: (
           <PageTransition>
             <ClaimSubmissionForm />

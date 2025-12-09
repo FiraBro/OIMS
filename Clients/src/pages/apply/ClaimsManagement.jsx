@@ -1,460 +1,351 @@
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { useState } from "react";
+import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableHead,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Upload, Pencil, X } from "lucide-react";
-import { toast } from "react-toastify";
-import { motion } from "framer-motion";
-import axios from "axios";
+import { Label } from "@/components/ui/label";
+import { Upload, FileText, Shield, DollarSign } from "lucide-react";
+import api from "@/services/api";
 
-const STATUS = ["Pending", "Under Review", "Approved", "Rejected", "Settled"];
-const CLAIM_TYPES = ["Auto Accident", "Property Damage", "Theft", "Other"];
-const POLICY_TYPES = ["Auto", "Home", "Property", "Liability"];
-
-export default function ClaimsManagement({ role = "user" }) {
-  const [claims, setClaims] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function ClaimsManagement() {
   const [formData, setFormData] = useState({
-    policyId: "",
-    incidentDate: "",
-    incidentLocation: "",
-    claimType: CLAIM_TYPES[0],
-    estimatedLoss: "",
-    incidentDescription: "",
-    documents: [],
-  });
-  const [filePreviews, setFilePreviews] = useState([]);
-  const [selectedClaim, setSelectedClaim] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    status: "",
-    policyType: "",
-    startDate: "",
-    endDate: "",
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
+    policyNumber: "",
+    claimType: "",
+    description: "",
+    amount: "",
   });
 
-  const api = axios.create({ baseURL: "/api/v1" });
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fileName, setFileName] = useState("");
 
-  // Fetch claims
-  const fetchClaims = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/claims", {
-        params: { page: pagination.page, limit: pagination.limit },
-      });
-      setClaims(data.claims || []);
-      setPagination((prev) => ({ ...prev, total: data.total || 0 }));
-    } catch (err) {
-      toast.error("Failed to fetch claims.");
-      console.error(err);
-      setClaims([]);
-    } finally {
-      setLoading(false);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSelectChange = (value) => {
+    setFormData({ ...formData, claimType: value });
+  };
+
+  const handleFile = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
     }
   };
 
-  useEffect(() => {
-    fetchClaims();
-  }, [pagination.page]);
-
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === "file") {
-      const fileList = Array.from(files);
-      setFormData((prev) => ({ ...prev, documents: fileList }));
-      setFilePreviews(fileList.map((f) => URL.createObjectURL(f)));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmitClaim = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (
-      !formData.policyId ||
-      !formData.incidentDate ||
-      !formData.incidentLocation ||
-      !formData.estimatedLoss
-    ) {
-      toast.error("Please fill all required fields.");
-      return;
-    }
-
-    const formPayload = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === "documents")
-        value.forEach((f) => formPayload.append("documents", f));
-      else formPayload.append(key, value);
-    });
+    setLoading(true);
 
     try {
-      await api.post("/claims", formPayload, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const data = new FormData();
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
       });
-      toast.success("Claim submitted successfully!");
+
+      if (file) data.append("document", file);
+
+      await api.post("/claims/create", data);
+      toast.success(
+        "Claim submitted successfully! Our team will review it shortly."
+      );
+
       setFormData({
-        policyId: "",
-        incidentDate: "",
-        incidentLocation: "",
-        claimType: CLAIM_TYPES[0],
-        estimatedLoss: "",
-        incidentDescription: "",
-        documents: [],
+        policyNumber: "",
+        claimType: "",
+        description: "",
+        amount: "",
       });
-      setFilePreviews([]);
-      fetchClaims();
+      setFile(null);
+      setFileName("");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to submit claim");
+      toast.error(
+        err.response?.data?.message ||
+          "Failed to submit claim. Please try again."
+      );
     }
+
+    setLoading(false);
   };
 
-  const filteredClaims = (claims || []).filter((c) => {
-    const statusMatch = filters.status ? c.status === filters.status : true;
-    const policyMatch = filters.policyType
-      ? c.policyId?.type === filters.policyType
-      : true;
-    const dateMatch =
-      (!filters.startDate ||
-        new Date(c.incidentDate) >= new Date(filters.startDate)) &&
-      (!filters.endDate ||
-        new Date(c.incidentDate) <= new Date(filters.endDate));
-    return statusMatch && policyMatch && dateMatch;
-  });
+  const claimTypes = [
+    { value: "Accident", label: "Accident Claim" },
+    { value: "Medical", label: "Medical Expense" },
+    { value: "Property Damage", label: "Property Damage" },
+    { value: "Theft", label: "Theft/Loss" },
+    { value: "Liability", label: "Third Party Liability" },
+    { value: "Natural Disaster", label: "Natural Disaster" },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4">
-      <div className="max-w-5xl mx-auto py-6">
-        <h1 className="text-3xl font-bold mb-6 text-gray-900">
-          Claims Management
-        </h1>
-
-        {/* Claim Form */}
-        <motion.div layout className="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Submit New Claim</h2>
-          <form className="space-y-4" onSubmit={handleSubmitClaim}>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block mb-1 font-medium text-gray-700">
-                  Policy *
-                </label>
-                <Select
-                  value={formData.policyId}
-                  onValueChange={(v) =>
-                    setFormData((prev) => ({ ...prev, policyId: v }))
-                  }
-                >
-                  <SelectTrigger className="w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400">
-                    <SelectValue placeholder="Select Policy" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {POLICY_TYPES.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block mb-1 font-medium text-gray-700">
-                  Incident Date *
-                </label>
-                <Input
-                  type="date"
-                  name="incidentDate"
-                  value={formData.incidentDate}
-                  onChange={handleInputChange}
-                  className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 font-medium text-gray-700">
-                  Location *
-                </label>
-                <Input
-                  type="text"
-                  name="incidentLocation"
-                  value={formData.incidentLocation}
-                  onChange={handleInputChange}
-                  className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 font-medium text-gray-700">
-                  Claim Type
-                </label>
-                <Select
-                  value={formData.claimType}
-                  onValueChange={(v) =>
-                    setFormData((prev) => ({ ...prev, claimType: v }))
-                  }
-                >
-                  <SelectTrigger className="w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400">
-                    <SelectValue placeholder="Select Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CLAIM_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block mb-1 font-medium text-gray-700">
-                  Estimated Loss *
-                </label>
-                <Input
-                  type="number"
-                  name="estimatedLoss"
-                  value={formData.estimatedLoss}
-                  onChange={handleInputChange}
-                  className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 font-medium text-gray-700">
-                  Documents
-                </label>
-                <Input
-                  type="file"
-                  name="documents"
-                  onChange={handleInputChange}
-                  multiple
-                  className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-                />
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {filePreviews.map((src, idx) => (
-                    <img
-                      key={idx}
-                      src={src}
-                      alt="preview"
-                      className="h-16 w-16 object-cover rounded"
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <Button type="submit" className="mt-2">
-              Submit Claim
-            </Button>
-          </form>
-        </motion.div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap gap-4 items-center">
-          <Select
-            value={filters.status}
-            onValueChange={(v) =>
-              setFilters((prev) => ({ ...prev, status: v }))
-            }
-          >
-            <SelectTrigger className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400">
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.policyType}
-            onValueChange={(v) =>
-              setFilters((prev) => ({ ...prev, policyType: v }))
-            }
-          >
-            <SelectTrigger className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400">
-              <SelectValue placeholder="All Policies" />
-            </SelectTrigger>
-            <SelectContent>
-              {POLICY_TYPES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Input
-            type="date"
-            value={filters.startDate}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, startDate: e.target.value }))
-            }
-            className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-          />
-          <Input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, endDate: e.target.value }))
-            }
-            className="border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400"
-          />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            Claims Management Portal
+          </h1>
+          <p className="text-gray-600">
+            Submit your insurance claim quickly and securely
+          </p>
         </div>
 
-        {/* Claims Table */}
-        <div className="overflow-x-auto bg-white rounded-xl shadow p-4">
-          {loading ? (
-            <p>Loading claims...</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Claim ID</TableHead>
-                  <TableHead>Policy Type</TableHead>
-                  <TableHead>Incident Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Claim Amount</TableHead>
-                  <TableHead>Last Updated</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClaims.map((claim) => (
-                  <TableRow key={claim._id} className="hover:bg-gray-50">
-                    <TableCell>{claim.claimNumber}</TableCell>
-                    <TableCell>{claim.policyId?.type}</TableCell>
-                    <TableCell>
-                      {new Date(claim.incidentDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          claim.status === "Pending"
-                            ? "secondary"
-                            : claim.status === "Approved"
-                            ? "success"
-                            : claim.status === "Rejected"
-                            ? "destructive"
-                            : "default"
-                        }
-                      >
-                        {claim.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>${claim.estimatedLoss}</TableCell>
-                    <TableCell>
-                      {new Date(claim.updatedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="flex gap-2">
-                      <Button
-                        variant="link"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedClaim(claim);
-                          setIsModalOpen(true);
-                        }}
-                      >
-                        View
-                      </Button>
-                      {role !== "user" && (
-                        <Button variant="outline" size="sm">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
-
-        {/* Claim Modal */}
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>
-                Claim Details - {selectedClaim?.claimNumber}
-              </DialogTitle>
-              <DialogClose>
-                <X className="w-5 h-5" />
-              </DialogClose>
-            </DialogHeader>
-            {selectedClaim && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-2"
-              >
-                <p>
-                  <strong>Status:</strong> {selectedClaim.status}
-                </p>
-                <p>
-                  <strong>Policy Type:</strong> {selectedClaim.policyId?.type}
-                </p>
-                <p>
-                  <strong>Claim Amount:</strong> ${selectedClaim.estimatedLoss}
-                </p>
-                <h3 className="font-semibold">History</h3>
-                <ul className="border-l-2 border-blue-500 ml-4 space-y-1">
-                  {selectedClaim.history?.map((h, idx) => (
-                    <li key={idx}>
-                      <span className="font-medium">
-                        {new Date(h.date).toLocaleDateString()}:
-                      </span>{" "}
-                      {h.status} - {h.note}
-                    </li>
-                  ))}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="border border-gray-200 border-l-4 border-l-blue-500 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-blue-500" />
+                  What You'll Need
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
+                    Valid policy number
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
+                    Incident details and description
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
+                    Supporting documents (receipts, photos, reports)
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
+                    Claim amount with breakdown if available
+                  </li>
                 </ul>
-                <div className="flex gap-2 flex-wrap mt-2">
-                  <Button variant="outline" size="sm">
-                    <Upload className="w-4 h-4" /> Upload Documents
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Add Note
-                  </Button>
-                  <Button variant="default" size="sm">
-                    Request Update
-                  </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-gray-200 border-l-4 border-l-blue-500 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base">Processing Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">
+                      Initial Review
+                    </span>
+                    <span className="text-sm font-medium">
+                      1-2 Business Days
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Assessment</span>
+                    <span className="text-sm font-medium">
+                      3-5 Business Days
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">
+                      Final Decision
+                    </span>
+                    <span className="text-sm font-medium">
+                      7-10 Business Days
+                    </span>
+                  </div>
                 </div>
-              </motion.div>
-            )}
-          </DialogContent>
-        </Dialog>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-2">
+            <Card className="shadow-lg border border-gray-200 border-r-4 border-r-blue-500 ">
+              <CardHeader className="border-b border-gray-200">
+                <CardTitle>Submit New Claim</CardTitle>
+                <CardDescription>
+                  Fill in all required fields to process your claim efficiently
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="pt-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Policy Number */}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="policyNumber"
+                        className="flex items-center gap-2"
+                      >
+                        <Shield className="h-4 w-4" />
+                        Policy Number *
+                      </Label>
+                      <Input
+                        id="policyNumber"
+                        name="policyNumber"
+                        value={formData.policyNumber}
+                        onChange={handleChange}
+                        placeholder="e.g., POL-2024-001234"
+                        className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                        required
+                      />
+                    </div>
+
+                    {/* Claim Type - FIXED: Added positioning props to SelectContent */}
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="claimType">Claim Type *</Label>
+                      <Select
+                        value={formData.claimType}
+                        onValueChange={handleSelectChange}
+                      >
+                        <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
+                          <SelectValue placeholder="Select claim type" />
+                        </SelectTrigger>
+                        <SelectContent
+                          position="popper"
+                          sideOffset={5}
+                          className="z-50 bg-white border border-gray-200 rounded-md shadow-lg w-full min-w-[var(--radix-select-trigger-width)]"
+                        >
+                          {claimTypes.map((type) => (
+                            <SelectItem
+                              key={type.value}
+                              value={type.value}
+                              className="cursor-pointer bg-white hover:bg-gray-100"
+                            >
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Claim Amount */}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="amount"
+                        className="flex items-center gap-2"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        Claim Amount *
+                      </Label>
+                      <Input
+                        id="amount"
+                        name="amount"
+                        type="number"
+                        value={formData.amount}
+                        onChange={handleChange}
+                        placeholder="0.00"
+                        className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                        required
+                      />
+                    </div>
+
+                    {/* File Upload */}
+                    <div className="space-y-2">
+                      <Label htmlFor="document">Supporting Document *</Label>
+                      <div className="relative">
+                        <Input
+                          id="document"
+                          type="file"
+                          onChange={handleFile}
+                          className="sr-only"
+                          required
+                        />
+                        <Label
+                          htmlFor="document"
+                          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                          <span className="text-sm text-gray-600">
+                            {fileName || "Click to upload"}
+                          </span>
+                          <span className="text-xs text-gray-500 mt-1">
+                            PDF, JPG, PNG up to 10MB
+                          </span>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="description"
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Incident Description *
+                    </Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Please provide a detailed description of the incident..."
+                      className="min-h-[120px] resize-none border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">
+                      Include date, time, location, and any other relevant
+                      details
+                    </p>
+                  </div>
+
+                  {/* Submit */}
+                  <div className="pt-4">
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full h-12 text-white font-medium bg-blue-600 hover:bg-blue-500 cursor-pointer"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Processing Your Claim...
+                        </>
+                      ) : (
+                        "Submit Claim for Review"
+                      )}
+                    </Button>
+
+                    <p className="text-xs text-gray-500 text-center mt-3">
+                      By submitting, you confirm that all information provided
+                      is accurate
+                    </p>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            <div className="mt-6 text-center text-sm text-gray-500">
+              Need assistance? Contact our claims support team at{" "}
+              <a
+                href="tel:+18001234567"
+                className="text-blue-600 hover:underline"
+              >
+                1-800-123-4567
+              </a>{" "}
+              or{" "}
+              <a
+                href="mailto:claims@insurance.com"
+                className="text-blue-600 hover:underline"
+              >
+                claims@insurance.com
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

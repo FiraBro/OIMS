@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import HomePage from "./pages/home/HomePage";
-import PlanPage from "./pages/plan/PlanPage";
+import PlanPage from "./pages/plan/InsurancePlansDashboard";
 import PlanDetail from "./pages/plan/PlanDetail"; // ✅ Import detail page
 import Layout from "./utils/Layout";
 import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";

@@ -11,6 +11,7 @@ import {
   listPlansPublicController,
   getPremiumStatsController,
   getPlanByIdController,
+  getPopularPlansController,
 } from "../controllers/planController.js";
 
 import {
@@ -21,7 +22,9 @@ import {
 
 const router = express.Router();
 
-// ========== Public Routes ==========
+// ==================== Public Routes ====================
+
+// Get all published plans with optional filters
 router.get(
   "/public",
   filterPlansValidator,
@@ -29,35 +32,51 @@ router.get(
   listPlansPublicController
 );
 
+// Get popular plans
+router.get("/popular", getPopularPlansController);
+
+// Get premium statistics
 router.get("/stats", getPremiumStatsController);
 
-// ========== Admin Only Routes ==========
-router.use(protect); // only logged-in users
-router.use(restrictTo(ROLES.ADMIN)); // only admins below this line
+// Get single plan by ID (public)
+router.get("/public/:id", getPlanByIdController);
+
+// ==================== Admin Routes ====================
+
+// All routes below require authentication
+router.use(protect);
 
 // Filter / List all plans (admin)
 router.get(
-  "/filter",
+  "/admin/filter",
+  restrictTo(ROLES.ADMIN),
   filterPlansValidator,
   handleValidation,
   listPlansAdminController
 );
 
-// Create plan
-router.post("/", createPlanValidator, handleValidation, createPlanController);
+// Create a new plan
+router.post(
+  "/admin",
+  restrictTo(ROLES.ADMIN),
+  createPlanValidator,
+  handleValidation,
+  createPlanController
+);
 
-// Update plan
+// Update an existing plan
 router.patch(
-  "/:id",
+  "/admin/:id",
+  restrictTo(ROLES.ADMIN),
   updatePlanValidator,
   handleValidation,
   updatePlanController
 );
 
-// Soft delete plan
-router.delete("/:id", deletePlanController);
+// Soft delete a plan
+router.delete("/admin/:id", restrictTo(ROLES.ADMIN), deletePlanController);
 
-// 👉 Get single plan by ID (admin) - ALWAYS LAST
-router.get("/:id", getPlanByIdController);
+// Get single plan by ID (admin)
+router.get("/admin/:id", restrictTo(ROLES.ADMIN), getPlanByIdController);
 
 export default router;

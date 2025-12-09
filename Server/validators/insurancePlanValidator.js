@@ -12,7 +12,7 @@ export const createPlanValidator = [
   body("description").optional().isString(),
   body("planType")
     .optional()
-    .isIn(["individual", "family", "student"])
+    .isIn(["individual", "family", "student", "group", "senior", "corporate"])
     .withMessage("Invalid plan type"),
 ];
 

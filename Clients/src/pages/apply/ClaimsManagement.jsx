@@ -94,7 +94,7 @@ export default function ClaimsManagement() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-[#fff] md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 text-center">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">

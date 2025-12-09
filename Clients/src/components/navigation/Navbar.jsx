@@ -17,6 +17,7 @@ import {
   FiBell,
   FiCreditCard,
   FiShield,
+  FiPlusCircle,
 } from "react-icons/fi";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -283,13 +284,19 @@ export default function Navbar() {
       to: "/show/claims",
       text: "Claims",
       icon: <FiFileText size={18} />,
-      active: location.pathname.includes("/claims"),
+      active: location.pathname === "/show/claims",
+    },
+    {
+      to: "/claims/new",
+      text: "Submit Claim",
+      icon: <FiPlusCircle size={18} />,
+      active: location.pathname === "/claims/new",
     },
     {
       to: "/user-stats",
       text: "Applications",
       icon: <FiBarChart2 size={18} />,
-      active: location.pathname.includes("/user-stats"),
+      active: location.pathname === "/user-stats",
     },
     {
       to: "/contact",

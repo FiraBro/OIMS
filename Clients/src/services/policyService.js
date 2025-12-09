@@ -1,77 +1,76 @@
-// 📁 services/policyService.js
-import axios from "axios";
+// services/policyService.js
+import api from "./api";
 
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1/policy";
-
-export const policyService = {
-  // applyForPolicy: async (formData) => {
-  //   try {
-  //     const response = await axios.post(`${API_URL}/apply`, formData, {
-  //       headers: policyService.authHeader(),
-  //     });
-  //     return response.data;
-  //   } catch (error) {
-  //     throw error.response?.data || { message: "Policy application failed" };
-  //   }
-  // },
-
-  applyForPolicy: async (formData) => {
-    try {
-      const response = await axios.post(`${API_URL}/apply`, formData, {
-        headers: {
-          ...policyService.authHeader(), // ✅ Includes Authorization
-          // ❌ DO NOT manually set Content-Type
-        },
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Policy application error:", error);
-      throw error.response?.data || { message: "Policy application failed" };
-    }
+const policyService = {
+  // ==================================================
+  // ENROLL USER INTO A POLICY
+  // ==================================================
+  enrollPolicy: async (data) => {
+    // data: { planId, startDate, endDate }
+    const res = await api.post("/policies/enroll", data);
+    return res.data;
   },
 
-  getUserApplications: async () => {
-    try {
-      const response = await axios.get(`${API_URL}/my-applications`, {
-        headers: policyService.authHeader(),
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: "Fetching applications failed" };
-    }
+  // ==================================================
+  // GET ALL POLICIES OF LOGGED-IN USER
+  // ==================================================
+  getMyPolicies: async () => {
+    const res = await api.get("/policies/me");
+    return res.data;
   },
 
-  getAllApplications: async () => {
-    try {
-      const response = await axios.get(`${API_URL}/applications`, {
-        headers: policyService.authHeader(),
-      });
-      return response.data;
-    } catch (error) {
-      throw (
-        error.response?.data || { message: "Fetching all applications failed" }
-      );
-    }
+  // ==================================================
+  // GET SINGLE POLICY BY ID
+  // ==================================================
+  getPolicyById: async (id) => {
+    const res = await api.get(`/policies/${id}`);
+    return res.data;
   },
 
-  updateApplicationStatus: async (id, data) => {
-    try {
-      const response = await axios.put(`${API_URL}/applications/${id}`, data, {
-        headers: policyService.authHeader(),
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { message: "Updating status failed" };
-    }
+  // ==================================================
+  // ADMIN: LIST POLICIES (PAGINATION)
+  // ==================================================
+  listPolicies: async (filters = {}) => {
+    // filters: { page, limit }
+    const res = await api.get("/policies", {
+      params: filters,
+    });
+    return res.data;
   },
 
-  getToken: () => {
-    return localStorage.getItem("token");
+  // ==================================================
+  // ADMIN: UPDATE POLICY STATUS
+  // ==================================================
+  updateStatus: async (id, status) => {
+    const res = await api.patch(`/policies/${id}/status`, { status });
+    return res.data;
   },
 
-  authHeader: () => {
-    const token = policyService.getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+  // ==================================================
+  // ADMIN: RENEW POLICY
+  // ==================================================
+  renewPolicy: async (id, newEndDate) => {
+    const res = await api.patch(`/policies/${id}/renew`, {
+      newEndDate,
+    });
+    return res.data;
+  },
+
+  // ==================================================
+  // ADMIN: CANCEL POLICY
+  // ==================================================
+  cancelPolicy: async (id, reason) => {
+    const res = await api.patch(`/policies/${id}/cancel`, { reason });
+    return res.data;
+  },
+
+  // ==================================================
+  // ADMIN: SOFT DELETE POLICY
+  // ==================================================
+  softDeletePolicy: async (id) => {
+    const res = await api.delete(`/policies/${id}`);
+    return res.data;
   },
 };
+
+export default policyService;

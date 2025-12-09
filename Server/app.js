@@ -11,6 +11,8 @@ import policyRoute from "./routes/policyRoutes.js";
 import claimRouter from "./routes/claimRoutes.js";
 import userRouter from "./routes/userRoutes.js";
 import notificationRouter from "./routes/notificationRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+import applicationRoutes from "./routes/applicationRoutes.js";
 
 import AppError from "./utils/AppError.js";
 import globalErrorHandler from "./middlewares/errorHandler.js";
@@ -25,14 +27,11 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-const allowedOrigin = [
-  "http://localhost:3000",
-  /^http:\/\/172\.23\.0\.\d+:5173$/,
-];
-
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      callback(null, true); // allow all origins
+    },
     credentials: true,
   })
 );
@@ -51,6 +50,9 @@ app.use(`/api/${versions}/policies`, policyRoute);
 app.use(`/api/${versions}/claims`, claimRouter);
 app.use(`/api/${versions}/user`, userRouter);
 app.use(`/api/${versions}/notifications`, notificationRouter);
+app.use("/api/admin", adminRoutes);
+
+app.use("/api/applications", applicationRoutes);
 
 // ===== 404 Handler (No *) =====
 app.use((req, res, next) => {

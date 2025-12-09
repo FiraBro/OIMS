@@ -194,6 +194,13 @@ class InsurancePlanService {
       }
     );
   }
+
+  async getPopularPlans(limit = 4) {
+    return await InsurancePlan.find({ status: "published", isDeleted: false })
+      .sort({ createdAt: -1 }) // latest first
+      .limit(limit)
+      .lean();
+  }
 }
 
 export default new InsurancePlanService();

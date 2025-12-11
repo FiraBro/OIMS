@@ -1,16 +1,54 @@
-import catchAsync from "../utils/catchAsync.js";
 import applicationService from "../services/applicationService.js";
+import catchAsync from "../utils/catchAsync.js";
 
+// ==================================================
+// USER: APPLY FOR A POLICY
+// ==================================================
 export const applyForPolicy = catchAsync(async (req, res) => {
-  const app = await applicationService.apply(req.body, req.user.id);
+  const application = await applicationService.apply(req.body, req.user.id);
 
   res.status(201).json({
     status: "success",
     message: "Application submitted successfully",
-    data: app,
+    data: application,
   });
 });
 
+// ==================================================
+// ADMIN: APPROVE APPLICATION
+// ==================================================
+export const approveApplication = catchAsync(async (req, res) => {
+  const result = await applicationService.approve(req.params.id, req.user.id);
+
+  res.status(200).json({
+    status: "success",
+    message: "Application approved successfully",
+    data: result,
+  });
+});
+
+// ==================================================
+// ADMIN: REJECT APPLICATION
+// ==================================================
+export const rejectApplication = catchAsync(async (req, res) => {
+  const { reason } = req.body;
+
+  const result = await applicationService.reject(
+    req.params.id,
+    reason,
+    req.user.id
+  );
+
+  res.status(200).json({
+    status: "success",
+    message: "Application rejected successfully",
+    data: result,
+  });
+});
+
+// ==================================================
+// USER: GET MY APPLICATIONS
+// ==================================================
 export const getMyApplications = catchAsync(async (req, res) => {
   const apps = await applicationService.getMyApplications(req.user.id);
 
@@ -21,39 +59,26 @@ export const getMyApplications = catchAsync(async (req, res) => {
   });
 });
 
-export const approveApplication = catchAsync(async (req, res) => {
-  const data = await applicationService.approve(req.params.id, req.user.id);
-
-  res.status(200).json({
-    status: "success",
-    message: "Application approved and policy created",
-    data,
-  });
-});
-
-export const rejectApplication = catchAsync(async (req, res) => {
-  const app = await applicationService.reject(
-    req.params.id,
-    req.body.reason,
-    req.user.id
-  );
-
-  res.status(200).json({
-    status: "success",
-    message: "Application rejected",
-    data: app,
-  });
-});
-
+// ==================================================
+// ADMIN: LIST APPLICATIONS
+// ==================================================
 export const listApplications = catchAsync(async (req, res) => {
-  const result = await applicationService.list(req.query);
+  const { page, limit } = req.query;
+
+  const data = await applicationService.list({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+  });
 
   res.status(200).json({
     status: "success",
-    ...result,
+    ...data,
   });
 });
 
+// ==================================================
+// ADMIN: SOFT DELETE APPLICATION
+// ==================================================
 export const deleteApplication = catchAsync(async (req, res) => {
   const deleted = await applicationService.softDelete(
     req.params.id,
@@ -62,7 +87,7 @@ export const deleteApplication = catchAsync(async (req, res) => {
 
   res.status(200).json({
     status: "success",
-    message: "Application soft-deleted",
+    message: "Application deleted successfully",
     data: deleted,
   });
 });

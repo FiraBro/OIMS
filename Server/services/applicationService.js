@@ -1,31 +1,34 @@
 import Application from "../models/application.js";
-import plan from "../models/plan.js";
 import Policy from "../models/policy.js";
+import { validatePlan, validateDates } from "../utils/validation.js";
 import AppError from "../utils/AppError.js";
-
+import mongoose from "mongoose";
+import crypto from "crypto";
 class ApplicationService {
   // ==================================================
   // USER: APPLY FOR A POLICY
   // ==================================================
   async apply(data, userId) {
-    // 1. Check plan exists
-    const plans = await plan.findOne({
-      _id: data.planId,
+    const plan = await validatePlan(data.planId);
+    validateDates(data.startDate, data.endDate);
+
+    // Check for existing active policy
+    const existingPolicy = await Policy.findOne({
+      userId,
+      planId: plan._id,
+      status: "active",
       isDeleted: false,
-      status: "published",
     });
+    if (existingPolicy)
+      throw new AppError(
+        "You already have an active policy for this plan",
+        400
+      );
 
-    if (!plans) throw new AppError("Insurance plan not found", 404);
-
-    // 2. Validate date range
-    if (new Date(data.endDate) <= new Date(data.startDate)) {
-      throw new AppError("End date must be after start date", 400);
-    }
-
-    // 3. Create application
+    // Create application
     const application = await Application.create({
       userId,
-      planId: plans._id,
+      planId: plan._id,
       startDate: data.startDate,
       endDate: data.endDate,
       documents: data.documents || [],
@@ -36,56 +39,70 @@ class ApplicationService {
   }
 
   // ==================================================
-  // USER: GET MY APPLICATIONS
-  // ==================================================
-  async getMyApplications(userId) {
-    return await Application.find({ userId, isDeleted: false })
-      .populate("planId")
-      .sort({ createdAt: -1 })
-      .lean();
-  }
-
-  // ==================================================
   // ADMIN: APPROVE APPLICATION
   // ==================================================
   async approve(id, adminId) {
-    const app = await Application.findOne({
-      _id: id,
-      isDeleted: false,
-    });
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const app = await Application.findOne({
+        _id: id,
+        isDeleted: false,
+      }).session(session);
+      if (!app) throw new AppError("Application not found", 404);
+      if (app.status !== "pending")
+        throw new AppError("Only pending applications can be approved", 400);
 
-    if (!app) throw new AppError("Application not found", 404);
-    if (app.status !== "pending")
-      throw new AppError("Only pending applications can be approved", 400);
+      // Check for existing active policy
+      const existingPolicy = await Policy.findOne({
+        userId: app.userId,
+        planId: app.planId,
+        status: "active",
+        isDeleted: false,
+      }).session(session);
+      if (existingPolicy)
+        throw new AppError(
+          "User already has an active policy for this plan",
+          400
+        );
 
-    // MARK AS APPROVED
-    app.status = "approved";
-    app.updatedBy = adminId;
-    await app.save();
+      // Update application
+      app.status = "approved";
+      app.updatedBy = adminId;
+      await app.save({ session });
 
-    // CREATE POLICY AUTOMATICALLY
-    const policy = await Policy.create({
-      userId: app.userId,
-      planId: app.planId,
-      startDate: app.startDate,
-      endDate: app.endDate,
-      status: "active",
-      policyNumber: "POL-" + Math.random().toString(36).substring(2, 10),
-      createdBy: adminId,
-    });
+      // Create policy
+      const policy = await Policy.create(
+        [
+          {
+            userId: app.userId,
+            planId: app.planId,
+            startDate: app.startDate,
+            endDate: app.endDate,
+            status: "active",
+            policyNumber: `POL-${crypto.randomBytes(6).toString("hex")}`,
+            createdBy: adminId,
+          },
+        ],
+        { session }
+      );
 
-    return { application: app, policy };
+      await session.commitTransaction();
+      session.endSession();
+
+      return { application: app, policy: policy[0] };
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
+    }
   }
 
   // ==================================================
   // ADMIN: REJECT APPLICATION
   // ==================================================
   async reject(id, reason, adminId) {
-    const app = await Application.findOne({
-      _id: id,
-      isDeleted: false,
-    });
-
+    const app = await Application.findOne({ _id: id, isDeleted: false });
     if (!app) throw new AppError("Application not found", 404);
 
     app.status = "rejected";
@@ -94,6 +111,16 @@ class ApplicationService {
 
     await app.save();
     return app;
+  }
+
+  // ==================================================
+  // USER: GET MY APPLICATIONS
+  // ==================================================
+  async getMyApplications(userId) {
+    return await Application.find({ userId, isDeleted: false })
+      .populate("planId")
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   // ==================================================
@@ -131,7 +158,6 @@ class ApplicationService {
     );
 
     if (!app) throw new AppError("Application not found", 404);
-
     return app;
   }
 }

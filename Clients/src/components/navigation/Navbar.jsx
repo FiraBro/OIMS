@@ -264,7 +264,7 @@ export default function Navbar() {
   }, [location.pathname]);
 
   const handleGetStarted = () => {
-    if (user) navigate("/apply");
+    if (user) navigate("/apply/plans");
     else navigate("/auth");
   };
 
@@ -633,7 +633,7 @@ export default function Navbar() {
                     <motion.div variants={menuItemVariants}>
                       <Button
                         onClick={() => {
-                          if (user) navigate("/apply");
+                          if (user) navigate("/apply/plans");
                           else navigate("/auth");
                           setIsMenuOpen(false);
                         }}

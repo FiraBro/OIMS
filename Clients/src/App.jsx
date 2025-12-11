@@ -3,7 +3,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 
 import HomePage from "./pages/home/HomePage";
-import PlanPage from "./pages/plan/InsurancePlansDashboard";
 import PlanDetail from "./pages/plan/PlanDetail"; // ✅ Import detail page
 import Layout from "./utils/Layout";
 import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";
@@ -17,6 +16,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 // Import the animated Navbar and PageTransition
 import { PageTransition } from "./components/navigation/Navbar";
+import PlansPage from "./pages/plan/PlanPages";
 
 const router = createBrowserRouter([
   {
@@ -32,14 +32,6 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "plans",
-        element: (
-          <PageTransition>
-            <PlanPage />
-          </PageTransition>
-        ),
-      },
-      {
         path: "plans/:id",
         element: (
           <PageTransition>
@@ -48,14 +40,6 @@ const router = createBrowserRouter([
         ),
       },
 
-      {
-        path: "apply",
-        element: (
-          <PageTransition>
-            <PolicyApplicationForm />
-          </PageTransition>
-        ),
-      },
       {
         path: "user-stats",
         element: (
@@ -77,6 +61,14 @@ const router = createBrowserRouter([
         element: (
           <PageTransition>
             <MyClaims />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "apply/plans",
+        element: (
+          <PageTransition>
+            <PlansPage />
           </PageTransition>
         ),
       },

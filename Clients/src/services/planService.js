@@ -1,12 +1,11 @@
-// services/planService.js
 import api from "./api";
 
-const planService = {
+const insurancePlanService = {
   // ==============================
-  // CREATE PLAN  (Admin)
+  // CREATE PLAN (Admin)
   // ==============================
   createPlan: async (data) => {
-    const res = await api.post("/plans", data);
+    const res = await api.post("/plans", data); // admin auth required
     return res.data;
   },
 
@@ -19,15 +18,7 @@ const planService = {
   },
 
   // ==============================
-  // GET PLAN BY ID
-  // ==============================
-  getPlanById: async (id) => {
-    const res = await api.get(`/plans/${id}`);
-    return res.data;
-  },
-
-  // ==============================
-  // SOFT DELETE PLAN (Admin)
+  // DELETE PLAN (Admin)
   // ==============================
   deletePlan: async (id) => {
     const res = await api.delete(`/plans/${id}`);
@@ -35,11 +26,31 @@ const planService = {
   },
 
   // ==============================
-  // LIST PLANS (ADMIN)
-  // Supports pagination + filters
+  // GET PLAN BY ID (Public)
+  // ==============================
+  getPlanById: async (id) => {
+    const res = await api.get(`/plans/id/${id}`);
+    return res.data;
+  },
+
+  // ==============================
+  // LIST PLANS (Admin)
   // ==============================
   listPlansAdmin: async (filters = {}) => {
-    const res = await api.get("/plans/admin", { params: filters });
+    const cleaned = {};
+    for (const key in filters) {
+      if (
+        filters[key] !== "" &&
+        filters[key] !== undefined &&
+        filters[key] !== null
+      ) {
+        cleaned[key] = filters[key];
+      }
+    }
+
+    const res = await api.get("/plans/admin", {
+      params: cleaned,
+    });
     return res.data;
   },
 
@@ -47,12 +58,26 @@ const planService = {
   // LIST PUBLIC PLANS
   // ==============================
   listPlansPublic: async (filters = {}) => {
-    const res = await api.get("/plans", { params: filters });
+    const cleaned = {};
+    for (const key in filters) {
+      if (
+        filters[key] !== "" &&
+        filters[key] !== undefined &&
+        filters[key] !== null
+      ) {
+        cleaned[key] = filters[key];
+      }
+    }
+
+    const res = await api.get("/plans", {
+      params: cleaned,
+    });
+
     return res.data;
   },
 
   // ==============================
-  // PREMIUM STATISTICS (Admin)
+  // PREMIUM STATISTICS
   // ==============================
   getPremiumStats: async () => {
     const res = await api.get("/plans/stats/premium");
@@ -60,7 +85,7 @@ const planService = {
   },
 
   // ==============================
-  // GET POPULAR PLANS (Public)
+  // GET POPULAR PLANS
   // ==============================
   getPopularPlans: async (limit = 4) => {
     const res = await api.get("/plans/popular", {
@@ -71,4 +96,4 @@ const planService = {
   },
 };
 
-export default planService;
+export default insurancePlanService;

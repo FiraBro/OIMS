@@ -17,6 +17,8 @@ import "react-toastify/dist/ReactToastify.css";
 // Import the animated Navbar and PageTransition
 import { PageTransition } from "./components/navigation/Navbar";
 import PlansPage from "./pages/plan/PlanPages";
+import ApplyPlan from "./pages/plan/ApplyPlan";
+import SupportPage from "./pages/support/SupportPage";
 
 const router = createBrowserRouter([
   {
@@ -39,7 +41,14 @@ const router = createBrowserRouter([
           </PageTransition>
         ),
       },
-
+      {
+        path: "apply/:id",
+        element: (
+          <PageTransition>
+            <ApplyPlan />
+          </PageTransition>
+        ),
+      },
       {
         path: "user-stats",
         element: (
@@ -69,6 +78,14 @@ const router = createBrowserRouter([
         element: (
           <PageTransition>
             <PlansPage />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "support",
+        element: (
+          <PageTransition>
+            <SupportPage />
           </PageTransition>
         ),
       },

@@ -299,7 +299,7 @@ export default function Navbar() {
       active: location.pathname === "/user-stats",
     },
     {
-      to: "/contact",
+      to: "/support",
       text: "Support",
       icon: <FiHelpCircle size={18} />,
       active: location.pathname === "/contact",

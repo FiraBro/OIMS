@@ -22,61 +22,60 @@ import {
 
 const router = express.Router();
 
-// ==================== Public Routes ====================
+/* ======================================================
+   PUBLIC ROUTES
+====================================================== */
 
-// Get all published plans with optional filters
+// 1️⃣ List all published plans
 router.get(
-  "/public",
+  "/",
   filterPlansValidator,
   handleValidation,
   listPlansPublicController
 );
 
-// Get popular plans
+// 2️⃣ Get popular plans
 router.get("/popular", getPopularPlansController);
 
-// Get premium statistics
-router.get("/stats", getPremiumStatsController);
+// 3️⃣ Get premium statistics
+router.get("/stats/premium", getPremiumStatsController);
 
-// Get single plan by ID (public)
-router.get("/public/:id", getPlanByIdController);
+// 4️⃣ Get single plan by ID (use /id/:id to avoid collisions)
+router.get("/id/:id", getPlanByIdController);
 
-// ==================== Admin Routes ====================
-
-// All routes below require authentication
+/* ======================================================
+   ADMIN ROUTES (all require authentication)
+====================================================== */
 router.use(protect);
 
-// Filter / List all plans (admin)
+// 1️⃣ List all plans (admin) with filters
 router.get(
-  "/admin/filter",
+  "/admin",
   restrictTo(ROLES.ADMIN),
   filterPlansValidator,
   handleValidation,
   listPlansAdminController
 );
 
-// Create a new plan
+// 2️⃣ Create a new plan
 router.post(
-  "/admin",
+  "/",
   restrictTo(ROLES.ADMIN),
   createPlanValidator,
   handleValidation,
   createPlanController
 );
 
-// Update an existing plan
+// 3️⃣ Update an existing plan
 router.patch(
-  "/admin/:id",
+  "/:id",
   restrictTo(ROLES.ADMIN),
   updatePlanValidator,
   handleValidation,
   updatePlanController
 );
 
-// Soft delete a plan
-router.delete("/admin/:id", restrictTo(ROLES.ADMIN), deletePlanController);
-
-// Get single plan by ID (admin)
-router.get("/admin/:id", restrictTo(ROLES.ADMIN), getPlanByIdController);
+// 4️⃣ Soft delete a plan
+router.delete("/:id", restrictTo(ROLES.ADMIN), deletePlanController);
 
 export default router;

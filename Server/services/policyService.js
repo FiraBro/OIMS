@@ -1,51 +1,9 @@
 import Policy from "../models/policy.js";
-import Plan from "../models/plan.js";
 import AppError from "../utils/AppError.js";
-import crypto from "crypto";
 
 class PolicyService {
   // ==================================================
-  // ENROLL USER INTO A POLICY (no transaction)
-  // ==================================================
-  async enrollPolicy(data, userId) {
-    const plan = await Plan.findOne({
-      _id: data.planId,
-      isDeleted: false,
-      status: "published",
-    }).lean();
-
-    if (!plan) throw new AppError("Insurance plan not found", 404);
-
-    // Validate dates
-    if (new Date(data.endDate) <= new Date(data.startDate)) {
-      throw new AppError("End date must be after start date", 400);
-    }
-
-    // Unique policy number
-    const policyNumber = `POL-${crypto.randomBytes(6).toString("hex")}`;
-
-    // Create policy with snapshot + premium frozen
-    const policy = await Policy.create({
-      userId,
-      planId: plan._id,
-      policyNumber,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      premium: plan.premium,
-      currency: plan.currency || "USD",
-      planSnapshot: {
-        name: plan.name,
-        coverageAmount: plan.coverageAmount,
-        planType: plan.planType,
-      },
-      createdBy: userId,
-    });
-
-    return policy;
-  }
-
-  // ==================================================
-  // GET ALL POLICIES OF LOGGED-IN USER
+  // USER: GET ALL POLICIES
   // ==================================================
   async getMyPolicies(userId) {
     return await Policy.find({ userId, isDeleted: false })
@@ -55,7 +13,7 @@ class PolicyService {
   }
 
   // ==================================================
-  // GET SINGLE POLICY BY ID
+  // USER: GET SINGLE POLICY
   // ==================================================
   async getPolicyById(id) {
     const policy = await Policy.findOne({ _id: id, isDeleted: false })
@@ -67,7 +25,7 @@ class PolicyService {
   }
 
   // ==================================================
-  // ADMIN: LIST POLICIES WITH PAGINATION
+  // ADMIN: LIST POLICIES
   // ==================================================
   async listPolicies({ page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;
@@ -95,8 +53,7 @@ class PolicyService {
   // ==================================================
   async updateStatus(id, status, adminId) {
     const allowed = ["active", "pending", "expired", "renewed", "cancelled"];
-    if (!allowed.includes(status))
-      throw new AppError("Invalid status value", 400);
+    if (!allowed.includes(status)) throw new AppError("Invalid status", 400);
 
     const updated = await Policy.findOneAndUpdate(
       { _id: id, isDeleted: false },
@@ -113,17 +70,15 @@ class PolicyService {
   // ==================================================
   async renewPolicy(id, newEndDate, adminId) {
     const policy = await Policy.findById(id);
-
     if (!policy || policy.isDeleted)
       throw new AppError("Policy not found", 404);
 
-    if (new Date(newEndDate) <= new Date(policy.endDate)) {
+    if (new Date(newEndDate) <= new Date(policy.endDate))
       throw new AppError("New end date must be after current end date", 400);
-    }
 
     policy.status = "renewed";
     policy.endDate = newEndDate;
-    policy.renewalCount += 1;
+    policy.renewalCount = (policy.renewalCount || 0) + 1;
     policy.lastRenewedAt = new Date();
     policy.updatedBy = adminId;
 
@@ -136,7 +91,6 @@ class PolicyService {
   // ==================================================
   async cancelPolicy(id, reason, adminId) {
     const policy = await Policy.findById(id);
-
     if (!policy || policy.isDeleted)
       throw new AppError("Policy not found", 404);
 

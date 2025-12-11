@@ -1,22 +1,9 @@
-import catchAsync from "../utils/catchAsync.js";
 import policyService from "../services/policyService.js";
+import catchAsync from "../utils/catchAsync.js";
 
-// =====================================
-// USER: Enroll Into a Policy
-// =====================================
-export const enrollPolicy = catchAsync(async (req, res) => {
-  const policy = await policyService.enrollPolicy(req.body, req.user.id);
-
-  res.status(201).json({
-    status: "success",
-    message: "Policy enrolled successfully",
-    data: policy,
-  });
-});
-
-// =====================================
-// USER: Get My Policies
-// =====================================
+// ==================================================
+// USER: GET MY POLICIES
+// ==================================================
 export const getMyPolicies = catchAsync(async (req, res) => {
   const policies = await policyService.getMyPolicies(req.user.id);
 
@@ -27,9 +14,9 @@ export const getMyPolicies = catchAsync(async (req, res) => {
   });
 });
 
-// =====================================
-// USER/ADMIN: Get Policy by ID
-// =====================================
+// ==================================================
+// USER: GET POLICY BY ID
+// ==================================================
 export const getPolicyById = catchAsync(async (req, res) => {
   const policy = await policyService.getPolicyById(req.params.id);
 
@@ -39,52 +26,51 @@ export const getPolicyById = catchAsync(async (req, res) => {
   });
 });
 
-// =====================================
-// ADMIN: List All Policies (Paginated)
-// =====================================
-export const listAllPolicies = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+// ==================================================
+// ADMIN: LIST POLICIES (Pagination)
+// ==================================================
+export const listPolicies = catchAsync(async (req, res) => {
+  const { page, limit } = req.query;
 
-  const result = await policyService.listPolicies({
-    page: Number(page),
-    limit: Number(limit),
+  const data = await policyService.listPolicies({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
   });
 
   res.status(200).json({
     status: "success",
-    pagination: {
-      page: Number(page),
-      limit: Number(limit),
-      total: result.total,
-    },
-    data: result.policies,
+    ...data,
   });
 });
 
-// =====================================
-// ADMIN: Update Policy Status
-// =====================================
-export const updateStatus = catchAsync(async (req, res) => {
-  const policy = await policyService.updateStatus(
+// ==================================================
+// ADMIN: UPDATE POLICY STATUS
+// ==================================================
+export const updatePolicyStatus = catchAsync(async (req, res) => {
+  const { status } = req.body;
+
+  const updated = await policyService.updateStatus(
     req.params.id,
-    req.body.status,
+    status,
     req.user.id
   );
 
   res.status(200).json({
     status: "success",
-    message: "Policy status updated",
-    data: policy,
+    message: "Policy status updated successfully",
+    data: updated,
   });
 });
 
-// =====================================
-// ADMIN: Renew Policy
-// =====================================
+// ==================================================
+// ADMIN: RENEW POLICY
+// ==================================================
 export const renewPolicy = catchAsync(async (req, res) => {
+  const { newEndDate } = req.body;
+
   const policy = await policyService.renewPolicy(
     req.params.id,
-    req.body.newEndDate,
+    newEndDate,
     req.user.id
   );
 
@@ -95,13 +81,15 @@ export const renewPolicy = catchAsync(async (req, res) => {
   });
 });
 
-// =====================================
-// ADMIN: Cancel Policy
-// =====================================
+// ==================================================
+// ADMIN: CANCEL POLICY
+// ==================================================
 export const cancelPolicy = catchAsync(async (req, res) => {
+  const { reason } = req.body;
+
   const policy = await policyService.cancelPolicy(
     req.params.id,
-    req.body.reason, // optional reason
+    reason,
     req.user.id
   );
 
@@ -112,11 +100,11 @@ export const cancelPolicy = catchAsync(async (req, res) => {
   });
 });
 
-// =====================================
-// ADMIN: Soft Delete Policy
-// =====================================
-export const softDeletePolicy = catchAsync(async (req, res) => {
-  const policy = await policyService.softDeletePolicy(
+// ==================================================
+// ADMIN: SOFT DELETE POLICY
+// ==================================================
+export const deletePolicy = catchAsync(async (req, res) => {
+  const deleted = await policyService.softDeletePolicy(
     req.params.id,
     req.user.id
   );
@@ -124,6 +112,6 @@ export const softDeletePolicy = catchAsync(async (req, res) => {
   res.status(200).json({
     status: "success",
     message: "Policy deleted successfully",
-    data: policy,
+    data: deleted,
   });
 });

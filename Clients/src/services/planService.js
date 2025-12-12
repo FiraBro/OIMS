@@ -1,99 +1,71 @@
 import api from "./api";
 
-const insurancePlanService = {
-  // ==============================
-  // CREATE PLAN (Admin)
-  // ==============================
-  createPlan: async (data) => {
-    const res = await api.post("/plans", data); // admin auth required
-    return res.data;
-  },
+// ======================================================
+// PUBLIC SERVICES
+// ======================================================
 
-  // ==============================
-  // UPDATE PLAN (Admin)
-  // ==============================
-  updatePlan: async (id, data) => {
-    const res = await api.patch(`/plans/${id}`, data);
-    return res.data;
-  },
-
-  // ==============================
-  // DELETE PLAN (Admin)
-  // ==============================
-  deletePlan: async (id) => {
-    const res = await api.delete(`/plans/${id}`);
-    return res.data;
-  },
-
-  // ==============================
-  // GET PLAN BY ID (Public)
-  // ==============================
-  getPlanById: async (id) => {
-    const res = await api.get(`/plans/id/${id}`);
-    return res.data;
-  },
-
-  // ==============================
-  // LIST PLANS (Admin)
-  // ==============================
-  listPlansAdmin: async (filters = {}) => {
-    const cleaned = {};
-    for (const key in filters) {
-      if (
-        filters[key] !== "" &&
-        filters[key] !== undefined &&
-        filters[key] !== null
-      ) {
-        cleaned[key] = filters[key];
-      }
-    }
-
-    const res = await api.get("/plans/admin", {
-      params: cleaned,
-    });
-    return res.data;
-  },
-
-  // ==============================
-  // LIST PUBLIC PLANS
-  // ==============================
-  listPlansPublic: async (filters = {}) => {
-    const cleaned = {};
-    for (const key in filters) {
-      if (
-        filters[key] !== "" &&
-        filters[key] !== undefined &&
-        filters[key] !== null
-      ) {
-        cleaned[key] = filters[key];
-      }
-    }
-
-    const res = await api.get("/plans", {
-      params: cleaned,
-    });
-
-    return res.data;
-  },
-
-  // ==============================
-  // PREMIUM STATISTICS
-  // ==============================
-  getPremiumStats: async () => {
-    const res = await api.get("/plans/stats/premium");
-    return res.data;
-  },
-
-  // ==============================
-  // GET POPULAR PLANS
-  // ==============================
-  getPopularPlans: async (limit = 4) => {
-    const res = await api.get("/plans/popular", {
-      params: { limit },
-    });
-
-    return res.data;
-  },
+// 1️⃣ List all published plans (public)
+const listPlansPublic = async (query = {}) => {
+  const res = await api.get("/plans", { params: query });
+  return res.data;
 };
 
-export default insurancePlanService;
+// 2️⃣ Get popular plans (public)
+const getPopularPlans = async () => {
+  const res = await api.get("/plans/popular");
+  return res.data;
+};
+
+// 3️⃣ Get premium stats (public)
+const getPremiumStats = async () => {
+  const res = await api.get("/plans/stats/premium");
+  return res.data;
+};
+
+// 4️⃣ Get a plan by ID (public)
+const getPlanById = async (id) => {
+  const res = await api.get(`/plans/id/${id}`);
+  return res.data;
+};
+
+// ======================================================
+// ADMIN SERVICES (must be authenticated)
+// ======================================================
+
+// 1️⃣ List all plans (admin)
+const listPlansAdmin = async (query = {}) => {
+  const res = await api.get("/plans/admin", { params: query });
+  return res.data;
+};
+
+// 2️⃣ Create a new plan
+const createPlan = async (data) => {
+  const res = await api.post("/plans", data);
+  return res.data;
+};
+
+// 3️⃣ Update an existing plan
+const updatePlan = async (id, data) => {
+  const res = await api.patch(`/plans/${id}`, data);
+  return res.data;
+};
+
+// 4️⃣ Soft delete a plan
+const deletePlan = async (id) => {
+  const res = await api.delete(`/plans/${id}`);
+  return res.data;
+};
+
+export const planService = {
+  // Public
+  listPlansPublic,
+  getPopularPlans,
+  getPremiumStats,
+  getPlanById,
+
+  // Admin
+  listPlansAdmin,
+  createPlan,
+  updatePlan,
+  deletePlan,
+};

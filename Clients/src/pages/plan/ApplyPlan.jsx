@@ -19,7 +19,7 @@ import {
   FiChevronRight,
 } from "react-icons/fi";
 
-import insurancePlanService from "@/services/planService";
+import { planService } from "@/services/planService";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -68,7 +68,7 @@ export default function ApplyPlan() {
     const fetchPlan = async () => {
       try {
         setLoading(true);
-        const res = await insurancePlanService.getPlanById(planId);
+        const res = await planService.getPlanById(planId);
         setPlan(res);
       } catch (err) {
         toast.error("Failed to load plan details");
@@ -138,7 +138,7 @@ export default function ApplyPlan() {
   const handleSubmit = async () => {
     try {
       const payload = { ...formData, planId };
-      await insurancePlanService.applyPlan(payload);
+      await planService.applyPlan(payload);
       toast.success(
         <div>
           <p className="font-semibold">Application Submitted!</p>

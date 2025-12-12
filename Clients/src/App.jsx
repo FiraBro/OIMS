@@ -1,25 +1,45 @@
-import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-
-import HomePage from "./pages/home/HomePage";
-import PlanDetail from "./pages/plan/PlanDetail"; // ✅ Import detail page
-import Layout from "./utils/Layout";
-import PolicyApplicationForm from "./pages/apply/PolicyApplicationForm";
-import UserApplications from "./pages/apply/UserApplications";
-import AuthPage from "./pages/auth/AuthPage";
-import ClaimSubmissionForm from "./pages/apply/ClaimsManagement";
-import MyClaims from "./components/claim/MyClaims";
-
+import React, { Suspense, lazy } from "react";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-// Import the animated Navbar and PageTransition
 import { PageTransition } from "./components/navigation/Navbar";
-import PlansPage from "./pages/plan/PlanPages";
-import ApplyPlan from "./pages/plan/ApplyPlan";
-import SupportPage from "./pages/support/SupportPage";
+import Layout from "./utils/Layout";
 
+// Lazy load pages for code splitting
+const HomePage = lazy(() => import("./pages/home/HomePage"));
+const PlanDetail = lazy(() => import("./pages/plan/PlanDetail"));
+const ApplyPlan = lazy(() => import("./pages/plan/ApplyPlan"));
+const PlansPage = lazy(() => import("./pages/plan/PlanPages"));
+const UserApplications = lazy(() => import("./pages/apply/UserApplications"));
+const ClaimSubmissionForm = lazy(() =>
+  import("./pages/apply/ClaimsManagement")
+);
+const MyClaims = lazy(() => import("./components/claim/MyClaims"));
+const SupportPage = lazy(() => import("./pages/support/SupportPage"));
+const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
+
+// Protected Route wrapper
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth" replace />;
+  return children;
+};
+
+// 404 Page
+const NotFoundPage = () => (
+  <PageTransition>
+    <div className="min-h-screen flex items-center justify-center">
+      <h1 className="text-3xl font-bold">404 - Page Not Found</h1>
+    </div>
+  </PageTransition>
+);
+
+// Router configuration
 const router = createBrowserRouter([
   {
     path: "/",
@@ -44,33 +64,41 @@ const router = createBrowserRouter([
       {
         path: "apply/:id",
         element: (
-          <PageTransition>
-            <ApplyPlan />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <ApplyPlan />
+            </PageTransition>
+          </ProtectedRoute>
         ),
       },
       {
         path: "user-stats",
         element: (
-          <PageTransition>
-            <UserApplications />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <UserApplications />
+            </PageTransition>
+          </ProtectedRoute>
         ),
       },
       {
         path: "claims/new",
         element: (
-          <PageTransition>
-            <ClaimSubmissionForm />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <ClaimSubmissionForm />
+            </PageTransition>
+          </ProtectedRoute>
         ),
       },
       {
         path: "show/claims",
         element: (
-          <PageTransition>
-            <MyClaims />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <MyClaims />
+            </PageTransition>
+          </ProtectedRoute>
         ),
       },
       {
@@ -89,10 +117,9 @@ const router = createBrowserRouter([
           </PageTransition>
         ),
       },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
-
-  // ⭐ Authentication page
   {
     path: "/auth",
     element: (
@@ -106,15 +133,24 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            Loading...
+          </div>
+        }
+      >
+        <RouterProvider router={router} />
+      </Suspense>
 
-      {/* 🔥 Toast System - Works Globally */}
+      {/* Toast system */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
         newestOnTop
         closeOnClick
         pauseOnHover
+        draggable
         theme="light"
       />
     </AuthProvider>

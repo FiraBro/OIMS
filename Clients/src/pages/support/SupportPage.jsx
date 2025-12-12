@@ -276,10 +276,10 @@ const SupportPage = () => {
                     <h3 className="font-semibold text-lg mb-2">Visit Us</h3>
                     <p className="text-gray-600 mb-3">Meet us in person</p>
                     <p className="font-semibold text-purple-600">
-                      Addis Ababa, Ethiopia
+                      Dire Dawa, Ethiopia
                     </p>
                     <p className="text-sm text-gray-500 mt-2">
-                      Bole Road, Plaza Building
+                      Taiwan Road, Shek Habib Building
                     </p>
                   </div>
                 </div>
@@ -301,7 +301,7 @@ const SupportPage = () => {
                           onChange={handleInputChange}
                           placeholder="Your name"
                           required
-                          className="bg-white"
+                          className="bg-white border-gray-200 focus:border-blue-200"
                         />
                       </div>
                       <div>
@@ -315,7 +315,7 @@ const SupportPage = () => {
                           onChange={handleInputChange}
                           placeholder="your@email.com"
                           required
-                          className="bg-white"
+                          className="bg-white border-gray-200 focus:border-blue-200"
                         />
                       </div>
                     </div>
@@ -348,7 +348,7 @@ const SupportPage = () => {
                         onChange={handleInputChange}
                         placeholder="How can we help?"
                         required
-                        className="bg-white"
+                        className="bg-white border-gray-200 focus:border-blue-200"
                       />
                     </div>
 
@@ -363,13 +363,13 @@ const SupportPage = () => {
                         placeholder="Describe your issue in detail..."
                         rows={4}
                         required
-                        className="bg-white"
+                        className="bg-white border-gray-200 focus:border-blue-200"
                       />
                     </div>
 
                     <Button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full bg-blue-600 hover:bg-blue-500 text-white cursor-pointer"
                     >
                       Send Message
                     </Button>
@@ -436,7 +436,7 @@ const SupportPage = () => {
             <Card className="shadow-lg border-0">
               <CardContent className="pt-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  Quick Resources
+                  Coming Soon...
                 </h2>
                 <div className="space-y-4">
                   {supportTopics.map((topic, index) => (
@@ -484,7 +484,7 @@ const SupportPage = () => {
             </Card>
 
             {/* FAQ Section */}
-            <Card className="shadow-lg border-0">
+            {/* <Card className="shadow-lg border-0">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-6">
                   <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
@@ -539,7 +539,7 @@ const SupportPage = () => {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Support Hours */}
             <Card className="shadow-lg border-0 bg-gradient-to-br from-gray-900 to-gray-800 text-white">

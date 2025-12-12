@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
@@ -20,6 +20,7 @@ import {
 } from "react-icons/fi";
 
 import { planService } from "@/services/planService";
+import { applicationService } from "@/services/applicationService";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 export default function ApplyPlan() {
   const { id: planId } = useParams();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null); // For file input
 
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,8 @@ export default function ApplyPlan() {
       try {
         setLoading(true);
         const res = await planService.getPlanById(planId);
-        setPlan(res);
+        console.log("res", res);
+        setPlan(res.data); // <-- use res.data instead of res
       } catch (err) {
         toast.error("Failed to load plan details");
       } finally {
@@ -85,9 +88,7 @@ export default function ApplyPlan() {
       setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
     }
   };
-
   const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 0));
-
   const goToStep = (stepIndex) => {
     if (stepIndex <= currentStep) setCurrentStep(stepIndex);
   };
@@ -134,11 +135,34 @@ export default function ApplyPlan() {
     setFormData((prev) => ({ ...prev, files: [...files] }));
   };
 
-  // Submit
   const handleSubmit = async () => {
     try {
-      const payload = { ...formData, planId };
-      await planService.applyPlan(payload);
+      const form = new FormData();
+
+      form.append("planId", planId);
+
+      // Add start and end dates (example: take from formData.personal.dob as placeholder)
+      form.append(
+        "startDate",
+        formData.personal.startDate || new Date().toISOString()
+      );
+      form.append(
+        "endDate",
+        formData.personal.endDate || new Date().toISOString()
+      );
+
+      // Add uploaded files
+      formData.files.forEach((file) => form.append("documents", file));
+
+      // You can also include other optional fields if backend expects them
+      // e.g., personal info, nominee info, medical info as JSON string
+      form.append("personal", JSON.stringify(formData.personal));
+      form.append("nominee", JSON.stringify(formData.nominee));
+      form.append("medical", JSON.stringify(formData.medical));
+      form.append("payment", JSON.stringify(formData.payment));
+
+      await applicationService.applyForPolicy(form);
+
       toast.success(
         <div>
           <p className="font-semibold">Application Submitted!</p>
@@ -147,6 +171,7 @@ export default function ApplyPlan() {
       );
       navigate("/my-applications");
     } catch (err) {
+      console.log(err);
       toast.error("Failed to submit application. Please try again.");
     }
   };
@@ -204,6 +229,7 @@ export default function ApplyPlan() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Plan Summary & Progress */}
           <div className="lg:col-span-1 space-y-6 ">
+            {/* Plan Summary Card */}
             <Card className="border-2 border-blue-100 shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-4">
@@ -333,27 +359,10 @@ export default function ApplyPlan() {
             >
               <Card className="shadow-lg border border-gray-200">
                 <CardContent className="pt-8">
-                  {/* Step Header */}
-                  <div className="mb-8">
-                    <div className="flex items-center mb-2">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <span className="font-bold text-blue-700">
-                          {currentStep + 1}
-                        </span>
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          {steps[currentStep].name} Details
-                        </h2>
-                        <p className="text-gray-600">
-                          Step {currentStep + 1} of {steps.length}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Step Content */}
-                  <div className="space-y-6 ">
+                  <div className="space-y-6">
+                    {/* -- Add other steps here ... Personal, Nominee, Medical -- */}
+
                     {/* Personal Information */}
                     {currentStep === 0 && (
                       <div className="grid md:grid-cols-2 gap-6">
@@ -550,27 +559,31 @@ export default function ApplyPlan() {
                             <p className="text-sm text-gray-500 mb-6">
                               Supported files: PDF, JPG, PNG (Max 10MB each)
                             </p>
+
+                            {/* Hidden file input */}
                             <input
                               type="file"
                               multiple
+                              ref={fileInputRef}
+                              className="hidden"
                               onChange={(e) =>
                                 handleFileChange(Array.from(e.target.files))
                               }
-                              className="hidden"
-                              id="file-upload"
                             />
-                            <label htmlFor="file-upload">
-                              <Button
-                                variant="outline"
-                                type="button"
-                                className="cursor-pointer border-gray-200"
-                              >
-                                <FiFile className="mr-2" />
-                                Choose Files
-                              </Button>
-                            </label>
+
+                            {/* Trigger Button */}
+                            <Button
+                              variant="outline"
+                              type="button"
+                              onClick={() => fileInputRef.current.click()}
+                              className="cursor-pointer border-gray-200"
+                            >
+                              <FiFile className="mr-2" />
+                              Choose Files
+                            </Button>
                           </div>
                         </div>
+
                         {formData.files.length > 0 && (
                           <div className="space-y-3">
                             <Label>Uploaded Files</Label>
@@ -603,7 +616,7 @@ export default function ApplyPlan() {
                     {/* Payment Information */}
                     {currentStep === 4 && (
                       <div className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
+                        <div className="grid md:grid-cols-2 gap-6 ">
                           <div>
                             <Label htmlFor="frequency" className="mb-2">
                               Payment Frequency
@@ -613,11 +626,12 @@ export default function ApplyPlan() {
                               onValueChange={(val) =>
                                 handleChange("payment", "frequency", val)
                               }
+                              className="border border-gray-200 hover:border-gray-300 focus:border-blue-400 focus:ring focus:ring-blue-200 rounded-lg"
                             >
-                              <SelectTrigger className="h-12">
+                              <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="bg-white border-gray-100">
+                              <SelectContent className="bg-white border border-gray-200 rounded-lg shadow-md">
                                 <SelectItem value="monthly">Monthly</SelectItem>
                                 <SelectItem value="quarterly">
                                   Quarterly
@@ -636,7 +650,7 @@ export default function ApplyPlan() {
                                 handleChange("payment", "method", val)
                               }
                             >
-                              <SelectTrigger className="h-12">
+                              <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-white border-gray-100">
@@ -691,7 +705,7 @@ export default function ApplyPlan() {
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-6">
-                          <Card>
+                          <Card className="border-blue-500">
                             <CardContent className="pt-6">
                               <h4 className="font-semibold text-gray-900 mb-4">
                                 Plan Details
@@ -724,7 +738,7 @@ export default function ApplyPlan() {
                             </CardContent>
                           </Card>
 
-                          <Card>
+                          <Card className="border-blue-500">
                             <CardContent className="pt-6">
                               <h4 className="font-semibold text-gray-900 mb-4">
                                 Personal Info
@@ -835,7 +849,7 @@ export default function ApplyPlan() {
                       <Button
                         onClick={handleSubmit}
                         disabled={!formData.agree}
-                        className="bg-green-600 hover:bg-green-700 gap-2"
+                        className="bg-green-600 hover:bg-green-700 gap-2 text-white cursor-pointer"
                       >
                         <FiCheckCircle /> Submit Application
                       </Button>
@@ -844,16 +858,6 @@ export default function ApplyPlan() {
                 </CardContent>
               </Card>
             </motion.div>
-
-            {/* Help Text */}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500">
-                Need help?{" "}
-                <a href="/support" className="text-blue-600 hover:underline">
-                  Contact our support team
-                </a>
-              </p>
-            </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,6 @@
+// ============================
+// PlansPage.jsx
+// ============================
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -16,13 +19,12 @@ import {
   Clock,
   Users,
   DollarSign,
-  Zap,
   Building,
   UserCheck,
   GraduationCap,
   Heart,
 } from "lucide-react";
-import insurancePlanService from "../../services/planService";
+import { planService } from "@/services/planService";
 
 export default function PlansPage() {
   const [plans, setPlans] = useState([]);
@@ -34,12 +36,11 @@ export default function PlansPage() {
   const searchTimeout = useRef(null);
 
   useEffect(() => {
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
+    const handler = setTimeout(() => {
       fetchPlans();
     }, 500);
 
-    return () => clearTimeout(searchTimeout.current);
+    return () => clearTimeout(handler);
   }, [planType, search]);
 
   const fetchPlans = async () => {
@@ -52,28 +53,29 @@ export default function PlansPage() {
       if (planType) filters.planType = planType;
       if (!search && !planType) filters.all = true;
 
-      const res = await insurancePlanService.listPlansPublic(filters);
+      const res = await planService.listPlansPublic(filters);
 
-      if (!res || res.error) {
-        setPlans([]);
-        return;
-      }
+      // Check if res is an array or has data
+      const data = Array.isArray(res) ? res : res?.data || [];
 
-      setPlans(Array.isArray(res) ? res : res.data || []);
+      setPlans(data);
     } catch (err) {
-      console.log("Failed to fetch plans:", err);
-
-      if (search || planType) {
-        setError("Failed to load plans. Please try again later.");
-      }
+      console.error("Failed to fetch plans:", err);
+      setError("Failed to load plans. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApply = (planId) => planId && navigate(`/apply/${planId}`);
-  const handleDetails = (planId) => planId && navigate(`/plans/${planId}`);
+  // ============================
+  // Navigation
+  // ============================
+  const handleApply = (plan) => navigate(`/apply/${plan._id}`);
+  const handleDetails = (planId) => navigate(`/plans/${planId}`);
 
+  // ============================
+  // Helpers
+  // ============================
   const getPlanIcon = (planType) => {
     switch ((planType || "").toLowerCase()) {
       case "corporate":
@@ -178,7 +180,7 @@ export default function PlansPage() {
           <p className="text-gray-500 text-center py-12">No plans found</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {plans.map((plan, index) => {
+            {plans.map((plan) => {
               const PlanIcon = getPlanIcon(plan.planType);
               const planColor = getPlanColor(plan.colorScheme);
 
@@ -187,10 +189,7 @@ export default function PlansPage() {
                   key={plan._id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.25, // very fast
-                    ease: "easeOut",
-                  }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
                 >
                   <Card className="border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group hover:scale-[1.02]">
                     <CardContent className="p-6">
@@ -209,7 +208,7 @@ export default function PlansPage() {
                           </div>
                           <div>
                             <h3 className="text-xl font-bold text-gray-900">
-                              {plan.name || "Unnamed Plan"}
+                              {plan.name}
                             </h3>
                             <p className="text-sm text-gray-500">
                               {plan.category || "General Plan"}
@@ -220,7 +219,7 @@ export default function PlansPage() {
 
                       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                         <p className="text-gray-700 mb-2 line-clamp-2">
-                          {plan.coverageAmount || "Comprehensive coverage plan"}
+                          {plan.coverageAmount}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
                           <span className="flex items-center gap-1">
@@ -237,23 +236,17 @@ export default function PlansPage() {
                       </div>
 
                       {plan.features && plan.features.length > 0 && (
-                        <div className="mb-6">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-blue-600" />
-                            Key Features
-                          </h4>
-                          <ul className="space-y-2">
-                            {plan.features.slice(0, 4).map((feature, idx) => (
-                              <li
-                                key={idx}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                                <span className="text-gray-700">{feature}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                        <ul className="space-y-2 mb-6">
+                          {plan.features.slice(0, 4).map((feature, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              {feature}
+                            </li>
+                          ))}
+                        </ul>
                       )}
 
                       <div className="space-y-4 mb-6">
@@ -262,11 +255,11 @@ export default function PlansPage() {
                             <div className="flex items-baseline gap-2">
                               <span className="text-3xl font-bold text-gray-900 flex items-baseline gap-1">
                                 {plan.currency === "USD" ? (
-                                  <DollarSign className="inline-block align-middle w-6 h-6" />
+                                  <DollarSign className="inline-block w-6 h-6" />
                                 ) : (
-                                  <span>{plan.currency}</span>
+                                  plan.currency
                                 )}
-                                <span>{plan.premium || 0}</span>
+                                {plan.premium || 0}
                               </span>
                               <span className="text-gray-500">
                                 /{plan.premiumFrequency || "month"}
@@ -282,14 +275,14 @@ export default function PlansPage() {
 
                     <CardFooter className="p-6 pt-0 flex flex-col gap-3">
                       <Button
-                        className={`w-full bg-gradient-to-r ${planColor} hover:opacity-90 text-white py-3 text-base font-medium transition-all duration-300 cursor-pointer`}
-                        onClick={() => handleApply(plan._id)}
+                        className={`w-full bg-gradient-to-r ${planColor} hover:opacity-90 text-white py-3 text-base font-medium`}
+                        onClick={() => handleApply(plan)}
                       >
                         Apply Now
                       </Button>
                       <Button
                         variant="outline"
-                        className="w-full border-gray-300 hover:bg-gray-50 cursor-pointer"
+                        className="w-full border-gray-300 hover:bg-gray-50"
                         onClick={() => handleDetails(plan._id)}
                       >
                         View Details

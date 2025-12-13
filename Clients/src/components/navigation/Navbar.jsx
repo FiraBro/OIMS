@@ -106,7 +106,7 @@ const UserDropdown = ({ user, isOpen, onClose, onLogout }) => {
     {
       icon: <FiFileText size={16} />,
       label: "My Applications",
-      onClick: () => navigate("/user-stats"),
+      onClick: () => navigate("/my-applications"),
     },
     {
       icon: <FiBell size={16} />,
@@ -293,10 +293,10 @@ export default function Navbar() {
       active: location.pathname === "/claims/new",
     },
     {
-      to: "/user-stats",
+      to: "/my-applications",
       text: "Applications",
       icon: <FiBarChart2 size={18} />,
-      active: location.pathname === "/user-stats",
+      active: location.pathname === "/my-applications",
     },
     {
       to: "/support",
@@ -578,7 +578,7 @@ export default function Navbar() {
                         {
                           icon: <FiFileText size={16} />,
                           label: "My Applications",
-                          onClick: () => navigate("/user-stats"),
+                          onClick: () => navigate("/my-applications"),
                         },
                         {
                           icon: <FiBell size={16} />,

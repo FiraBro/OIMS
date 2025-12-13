@@ -6,6 +6,7 @@ import api from "./api";
 
 // Apply for a policy (multipart/form-data)
 const applyForPolicy = async (formData) => {
+  console.log("Token from localStorage:", localStorage.getItem("token"));
   const res = await api.post("/applications/apply", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });

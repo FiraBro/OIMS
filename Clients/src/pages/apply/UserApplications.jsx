@@ -15,8 +15,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { applicationService } from "@/services/applicationService";
+import { resolveDocumentUrl } from "@/utils/resolveURL";
 
 export default function UserApplications() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState(null);
+
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,6 +29,15 @@ export default function UserApplications() {
   useEffect(() => {
     fetchApplications();
   }, []);
+  const openDocumentModal = (docUrl) => {
+    setCurrentDocument(docUrl);
+    setModalOpen(true);
+  };
+
+  const closeDocumentModal = () => {
+    setCurrentDocument(null);
+    setModalOpen(false);
+  };
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -228,7 +241,10 @@ export default function UserApplications() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() =>
-                                  window.open(app.documents[0].url, "_blank")
+                                  openDocumentModal(
+                                    resolveDocumentUrl(app.documents[0].url),
+                                    "_blank"
+                                  )
                                 }
                               >
                                 <FiFileText className="mr-2" />
@@ -248,6 +264,23 @@ export default function UserApplications() {
           )}
         </TabsContent>
       </Tabs>
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg max-w-3xl w-full p-4 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+              onClick={closeDocumentModal}
+            >
+              ✖
+            </button>
+            <iframe
+              src={currentDocument}
+              className="w-full h-[600px]"
+              title="Document Preview"
+            ></iframe>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

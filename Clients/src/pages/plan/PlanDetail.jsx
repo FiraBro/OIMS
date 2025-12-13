@@ -11,7 +11,8 @@ import {
   Star,
   CheckCircle2,
 } from "lucide-react";
-import { getPlanById } from "../../services/planService";
+import { planService } from "@/services/planService";
+
 import { toast } from "react-toastify"; // ✅ Import toast
 
 export default function PlanDetail() {
@@ -27,7 +28,8 @@ export default function PlanDetail() {
     const fetchPlan = async () => {
       try {
         setLoading(true);
-        const data = await getPlanById(id);
+        const data = await planService.getPlanById(id);
+        console.log("data", data);
         setPlan(data?.data || null);
 
         if (!data?.data) {

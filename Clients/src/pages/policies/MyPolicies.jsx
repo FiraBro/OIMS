@@ -93,9 +93,11 @@ export default function MyPolicies() {
           variant="outline"
           onClick={fetchPolicies}
           disabled={loading}
-          className="flex items-center gap-2 mt-4 md:mt-0"
+          className="flex items-center gap-2 mt-4 md:mt-0 border-gray-300"
         >
-          <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <FiRefreshCw
+            className={`w-4 h-4 ${loading ? "animate-spin" : ""} `}
+          />
           Refresh
         </Button>
       </div>
@@ -160,10 +162,16 @@ export default function MyPolicies() {
                                 <Badge className="bg-green-100 text-green-700 border-green-200">
                                   {details.status}
                                 </Badge>
-                                <Badge variant="outline">
+                                <Badge
+                                  variant="outline"
+                                  className="border-gray-300"
+                                >
                                   Policy: {details.policyNumber}
                                 </Badge>
-                                <Badge variant="outline">
+                                <Badge
+                                  variant="outline"
+                                  className="border-gray-300"
+                                >
                                   Premium: ${details.premium}{" "}
                                   {policy.planId?.premiumFrequency ||
                                     "per month"}

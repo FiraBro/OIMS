@@ -1,162 +1,253 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { policyService } from "../../services/policyService";
+import { motion } from "framer-motion";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  FiFileText,
+  FiRefreshCw,
+  FiAlertTriangle,
+  FiClock,
+  FiCheckCircle,
+  FiXCircle,
+} from "react-icons/fi";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { applicationService } from "@/services/applicationService";
 
-/**
- * Displays a user's insurance applications with relevant details and actions
- * @returns {JSX.Element} UserApplications component
- */
 export default function UserApplications() {
-  const [applications, setApplications] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [apps, setApps] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const data = await policyService.getUserApplications();
-        setApplications(data);
-      } catch (err) {
-        console.error("Error fetching applications:", err);
-        setError("Failed to load applications. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchApplications();
   }, []);
 
-  const statusColors = {
-    pending: "bg-amber-100 text-amber-800",
-    approved: "bg-emerald-100 text-emerald-800",
-    rejected: "bg-rose-100 text-rose-800",
-    default: "bg-blue-100 text-blue-800",
+  const fetchApplications = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await applicationService.getMyApplications();
+      console.log("res", res);
+      setApps(res.data || res);
+    } catch (err) {
+      setError(err);
+    }
+
+    setLoading(false);
   };
 
-  const getStatusColor = (status) => {
-    const lowerStatus = status.toLowerCase();
-    return statusColors[lowerStatus] || statusColors.default;
+  const getStatusDetails = (status) => {
+    const s = (status || "pending").toLowerCase();
+    switch (s) {
+      case "approved":
+        return {
+          class: "bg-green-100 text-green-700 border-green-200",
+          icon: <FiCheckCircle className="w-4 h-4" />,
+          label: "Approved",
+        };
+      case "rejected":
+        return {
+          class: "bg-red-100 text-red-700 border-red-200",
+          icon: <FiXCircle className="w-4 h-4" />,
+          label: "Rejected",
+        };
+      default:
+        return {
+          class: "bg-yellow-100 text-yellow-700 border-yellow-200",
+          icon: <FiClock className="w-4 h-4" />,
+          label: "Pending",
+        };
+    }
   };
 
-  const renderApplicationCard = (app) => (
-    <div
-      key={app._id}
-      className="border border-gray-200 rounded-lg p-6 mb-4 shadow-sm bg-gradient-to-br from-white to-gray-50 hover:shadow-lg transition-all duration-300"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-1">
-          <h3 className="font-semibold text-indigo-600">Plan</h3>
-          <p className="text-gray-800 font-medium">
-            {app.planId?.name || "N/A"}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <h3 className="font-semibold text-indigo-600">Status</h3>
-          <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-              app.status
-            )}`}
-          >
-            {app.status.toLowerCase()}
-          </span>
-        </div>
-        <div className="space-y-1">
-          <h3 className="font-semibold text-indigo-600">Policy Number</h3>
-          <p className="text-gray-800 font-mono font-medium">
-            {app.policyNumber || "Not assigned"}
-          </p>
-        </div>
-      </div>
-      {app.policyNumber && (
-        <div className="mt-6 text-right">
-          <Link
-            to={`/claim?policyNumber=${app.policyNumber}`}
-            className="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                clipRule="evenodd"
-              />
-            </svg>
-            File Claim
-          </Link>
-        </div>
-      )}
-    </div>
-  );
+  const formatDate = (date) =>
+    date
+      ? new Date(date).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })
+      : "-";
+
+  const filteredApps = apps.filter((a) => {
+    if (activeTab === "all") return true;
+    return (a.status || "").toLowerCase() === activeTab;
+  });
+
+  const getStatusCount = (status) =>
+    apps.filter((a) => (a.status || "").toLowerCase() === status).length;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <header className="mb-8">
-        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-          My Applications
-        </h2>
-        <p className="text-gray-600 mt-2">
-          View and manage your insurance applications
-        </p>
-      </header>
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
+          <p className="text-gray-500 mt-2">
+            View and track your submitted policy applications
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={fetchApplications}
+          disabled={loading}
+          className="flex items-center gap-2 mt-4 md:mt-0"
+        >
+          <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        </div>
-      ) : error ? (
-        <div className="bg-rose-50 border-l-4 border-rose-500 p-4 mb-6 rounded-lg">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-rose-500"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-4 w-full max-w-md">
+          <TabsTrigger value="all">
+            All <Badge variant="secondary">{apps.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="pending">
+            Pending{" "}
+            <Badge variant="secondary">{getStatusCount("pending")}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="approved">
+            Approved{" "}
+            <Badge variant="secondary">{getStatusCount("approved")}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            Rejected{" "}
+            <Badge variant="secondary">{getStatusCount("rejected")}</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          {/* Loading */}
+          {loading && (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="rounded-xl border border-gray-100">
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Skeleton className="h-4 w-32" />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-rose-700">{error}</p>
+          )}
+
+          {/* Error */}
+          {!loading && error && (
+            <Card className="border-red-200 bg-red-50/50">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <FiAlertTriangle className="text-red-500 w-6 h-6" />
+                  <div>
+                    <h3 className="font-semibold text-lg text-red-800">
+                      Failed to Load Applications
+                    </h3>
+                    <p className="text-red-600 mt-1">{error.message}</p>
+
+                    <Button
+                      variant="outline"
+                      onClick={fetchApplications}
+                      className="mt-4"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Empty */}
+          {!loading && !error && filteredApps.length === 0 && (
+            <Card className="rounded-xl border-dashed border-gray-300">
+              <CardContent className="p-12 text-center">
+                <FiFileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  No applications found
+                </h3>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Applications List */}
+          {!loading && !error && filteredApps.length > 0 && (
+            <div className="grid gap-4">
+              {filteredApps.map((app, index) => {
+                const status = getStatusDetails(app.status);
+
+                return (
+                  <motion.div
+                    key={app._id || index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                  >
+                    <Card className="rounded-xl border border-gray-200 hover:shadow-md transition">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-center">
+                          <CardTitle>
+                            Plan: {app.planId?.name || "Plan"}
+                          </CardTitle>
+                          <Badge className={status.class}>
+                            {status.icon} {status.label}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <Separator />
+
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div>
+                            <p className="text-sm text-gray-500">Submitted</p>
+                            <p className="font-medium">
+                              {formatDate(app.createdAt)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-500">Duration</p>
+                            <p className="font-medium">
+                              {formatDate(app.startDate)} →{" "}
+                              {formatDate(app.endDate)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm text-gray-500">Documents</p>
+                            {app.documents?.length > 0 ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  window.open(app.documents[0].url, "_blank")
+                                }
+                              >
+                                <FiFileText className="mr-2" />
+                                View File
+                              </Button>
+                            ) : (
+                              <p className="text-gray-500">None</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
-          </div>
-        </div>
-      ) : applications.length === 0 ? (
-        <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-lg">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-indigo-500"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-indigo-700">
-                You don't have any applications yet.
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {applications.map(renderApplicationCard)}
-        </div>
-      )}
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -37,6 +37,30 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+const calculatePolicyDates = (frequency) => {
+  const startDate = new Date();
+
+  const endDate = new Date(startDate);
+
+  switch (frequency) {
+    case "monthly":
+      endDate.setMonth(endDate.getMonth() + 1);
+      break;
+    case "quarterly":
+      endDate.setMonth(endDate.getMonth() + 3);
+      break;
+    case "yearly":
+      endDate.setFullYear(endDate.getFullYear() + 1);
+      break;
+    default:
+      endDate.setMonth(endDate.getMonth() + 1);
+  }
+
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+  };
+};
 
 export default function ApplyPlan() {
   const { id: planId } = useParams();
@@ -45,6 +69,9 @@ export default function ApplyPlan() {
 
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [policyDates, setPolicyDates] = useState(() =>
+    calculatePolicyDates("monthly")
+  );
 
   const steps = [
     { id: 0, name: "Personal", icon: <FiUser /> },
@@ -61,7 +88,7 @@ export default function ApplyPlan() {
     nominee: {},
     medical: {},
     files: [],
-    payment: { frequency: "monthly", method: "online" },
+    payment: { frequency: "monthly", method: "bank" },
     agree: false,
   });
 
@@ -130,6 +157,14 @@ export default function ApplyPlan() {
       [section]: { ...prev[section], [field]: value },
     }));
   };
+  useEffect(() => {
+    console.log("Frequency:", formData.payment.frequency);
+
+    const dates = calculatePolicyDates(formData.payment.frequency);
+    console.log("Dates:", dates);
+
+    setPolicyDates(dates);
+  }, [formData.payment.frequency]);
 
   const handleFileChange = (files) => {
     setFormData((prev) => ({ ...prev, files: [...files] }));
@@ -137,42 +172,80 @@ export default function ApplyPlan() {
 
   const handleSubmit = async () => {
     try {
+      // Ensure terms are agreed
+      if (!formData.agree) {
+        toast.error("You must agree to terms");
+        return;
+      }
+
+      // Ensure payment method is bank transfer
+      if (formData.payment.method !== "bank") {
+        toast.error("Payment method must be Bank Transfer");
+        return;
+      }
+
+      // Ensure at least one screenshot is uploaded
+      if (formData.files.length === 0) {
+        toast.error("Please upload a screenshot of your bank transfer");
+        return;
+      }
+
       const form = new FormData();
 
+      // Nested objects must be stringified
+      form.append(
+        "personal",
+        JSON.stringify({
+          fullName: formData.personal.fullName,
+          email: formData.personal.email,
+          phone: formData.personal.phone,
+          dob: formData.personal.dob,
+        })
+      );
+
+      form.append(
+        "nominee",
+        JSON.stringify({
+          name: formData.nominee.name,
+          relationship: formData.nominee.relationship,
+        })
+      );
+
+      form.append(
+        "medical",
+        JSON.stringify({
+          history: formData.medical.history,
+        })
+      );
+
+      form.append(
+        "payment",
+        JSON.stringify({
+          frequency: formData.payment.frequency,
+          method: formData.payment.method,
+        })
+      );
+
+      form.append("startDate", policyDates.startDate);
+      form.append("endDate", policyDates.endDate);
       form.append("planId", planId);
+      form.append("agree", String(Boolean(formData.agree)));
 
-      // Add start and end dates (example: take from formData.personal.dob as placeholder)
-      form.append(
-        "startDate",
-        formData.personal.startDate || new Date().toISOString()
-      );
-      form.append(
-        "endDate",
-        formData.personal.endDate || new Date().toISOString()
-      );
-
-      // Add uploaded files
+      // Append uploaded files (transfer screenshot)
       formData.files.forEach((file) => form.append("documents", file));
 
-      // You can also include other optional fields if backend expects them
-      // e.g., personal info, nominee info, medical info as JSON string
-      form.append("personal", JSON.stringify(formData.personal));
-      form.append("nominee", JSON.stringify(formData.nominee));
-      form.append("medical", JSON.stringify(formData.medical));
-      form.append("payment", JSON.stringify(formData.payment));
+      // 🔍 Debug
+      for (let pair of form.entries()) {
+        console.log(pair[0], pair[1]);
+      }
 
       await applicationService.applyForPolicy(form);
 
-      toast.success(
-        <div>
-          <p className="font-semibold">Application Submitted!</p>
-          <p className="text-sm">We'll review your application shortly</p>
-        </div>
-      );
+      toast.success("Application submitted successfully");
       navigate("/my-applications");
     } catch (err) {
-      console.log(err);
-      toast.error("Failed to submit application. Please try again.");
+      console.error(err);
+      toast.error("Failed to submit application");
     }
   };
 
@@ -361,8 +434,6 @@ export default function ApplyPlan() {
                 <CardContent className="pt-8">
                   {/* Step Content */}
                   <div className="space-y-6">
-                    {/* -- Add other steps here ... Personal, Nominee, Medical -- */}
-
                     {/* Personal Information */}
                     {currentStep === 0 && (
                       <div className="grid md:grid-cols-2 gap-6">
@@ -512,7 +583,7 @@ export default function ApplyPlan() {
                     )}
 
                     {/* Medical History */}
-                    {currentStep === 2 && plan.requiresMedical && (
+                    {currentStep === 2 && plan.category && (
                       <div className="space-y-6">
                         <div className="bg-yellow-50 p-4 rounded-lg">
                           <div className="flex items-center">
@@ -616,75 +687,100 @@ export default function ApplyPlan() {
                     {/* Payment Information */}
                     {currentStep === 4 && (
                       <div className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6 ">
-                          <div>
-                            <Label htmlFor="frequency" className="mb-2">
-                              Payment Frequency
-                            </Label>
-                            <Select
-                              value={formData.payment.frequency}
-                              onValueChange={(val) =>
-                                handleChange("payment", "frequency", val)
-                              }
-                              className="border border-gray-200 hover:border-gray-300 focus:border-blue-400 focus:ring focus:ring-blue-200 rounded-lg"
-                            >
-                              <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-gray-200 rounded-lg shadow-md">
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                                <SelectItem value="quarterly">
-                                  Quarterly
-                                </SelectItem>
-                                <SelectItem value="yearly">Yearly</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="method" className="mb-2">
-                              Payment Method
-                            </Label>
-                            <Select
-                              value={formData.payment.method}
-                              onValueChange={(val) =>
-                                handleChange("payment", "method", val)
-                              }
-                            >
-                              <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border-gray-100">
-                                <SelectItem value="online">
-                                  Online Payment
-                                </SelectItem>
-                                <SelectItem value="bank">
-                                  Bank Transfer
-                                </SelectItem>
-                                <SelectItem value="mobile">
-                                  Mobile Payment
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div>
+                          <Label htmlFor="frequency" className="mb-2">
+                            Payment Frequency
+                          </Label>
+                          <Select
+                            value={formData.payment.frequency}
+                            onValueChange={(val) =>
+                              handleChange("payment", "frequency", val)
+                            }
+                            className="border border-gray-200 hover:border-gray-300 focus:border-blue-400 focus:ring focus:ring-blue-200 rounded-lg"
+                          >
+                            <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white border border-gray-200 rounded-lg shadow-md">
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="quarterly">
+                                Quarterly
+                              </SelectItem>
+                              <SelectItem value="yearly">Yearly</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                          <CardContent className="pt-6">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-gray-600">Total Premium</p>
-                                <p className="text-3xl font-bold text-gray-900">
-                                  {plan.premium}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  per {formData.payment.frequency}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-gray-600">Coverage</p>
-                                <p className="text-xl font-semibold text-gray-900">
-                                  {plan.coverageAmount}
-                                </p>
-                              </div>
+
+                        {/* Bank Transfer Info */}
+                        <Card className="bg-blue-50 border-blue-200">
+                          <CardContent className="pt-6 space-y-4">
+                            <h4 className="font-semibold text-gray-900">
+                              Bank Transfer
+                            </h4>
+                            <p className="text-gray-600">
+                              Please transfer the total premium to the account
+                              below and upload a screenshot as proof.
+                            </p>
+                            <div className="bg-white p-4 rounded-lg border border-gray-200">
+                              <p>
+                                <span className="font-semibold">Bank:</span> ABC
+                                Bank
+                              </p>
+                              <p>
+                                <span className="font-semibold">
+                                  Account Name:
+                                </span>{" "}
+                                XYZ Insurance
+                              </p>
+                              <p>
+                                <span className="font-semibold">
+                                  Account Number:
+                                </span>{" "}
+                                1234567890
+                              </p>
+                              <p>
+                                <span className="font-semibold">Branch:</span>{" "}
+                                Main Branch
+                              </p>
+                              <p>
+                                <span className="font-semibold">Amount:</span>{" "}
+                                {plan.premium} ETB
+                              </p>
+                            </div>
+
+                            {/* Upload Transfer Receipt */}
+                            <div className="mt-4">
+                              <Label className="mb-2">
+                                Upload Transfer Screenshot
+                              </Label>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                onChange={(e) =>
+                                  handleFileChange([
+                                    ...formData.files,
+                                    ...Array.from(e.target.files),
+                                  ])
+                                }
+                              />
+                              {formData.files.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {formData.files.map((file, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                                    >
+                                      <span className="text-sm">
+                                        {file.name}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {(file.size / 1024 / 1024).toFixed(2)}{" "}
+                                        MB
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -707,31 +803,28 @@ export default function ApplyPlan() {
                         <div className="grid md:grid-cols-2 gap-6">
                           <Card className="border-blue-500">
                             <CardContent className="pt-6">
-                              <h4 className="font-semibold text-gray-900 mb-4">
-                                Plan Details
+                              <h4 className="font-semibold mb-4">
+                                Policy Period
                               </h4>
-                              <div className="space-y-3">
+                              <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">
-                                    Plan Name
+                                    Start Date
                                   </span>
-                                  <span className="font-medium">
-                                    {plan.name}
+                                  <span>
+                                    {new Date(
+                                      policyDates.startDate
+                                    ).toDateString()}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">
-                                    Coverage
+                                    End Date
                                   </span>
-                                  <span className="font-medium">
-                                    {plan.coverageAmount}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Premium</span>
-                                  <span className="font-medium text-green-600">
-                                    {plan.premium} /{" "}
-                                    {formData.payment.frequency}
+                                  <span>
+                                    {new Date(
+                                      policyDates.endDate
+                                    ).toDateString()}
                                   </span>
                                 </div>
                               </div>

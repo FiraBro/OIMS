@@ -1,16 +1,16 @@
 import React, { Suspense, lazy } from "react";
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Navigate,
-} from "react-router-dom";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+import { AuthProvider } from "./contexts/AuthContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { PageTransition } from "./components/navigation/Navbar";
-import Layout from "./utils/Layout";
 
-// Lazy load pages for code splitting
+import Layout from "./utils/Layout";
+import ProtectedRoute from "./components/Auth/ProtectRoutes";
+import { PageTransition } from "./components/navigation/Navbar";
+import MyPolicies from "./pages/policies/MyPolicies";
+
+/* ---------------- Lazy Loaded Pages ---------------- */
 const HomePage = lazy(() => import("./pages/home/HomePage"));
 const PlanDetail = lazy(() => import("./pages/plan/PlanDetail"));
 const ApplyPlan = lazy(() => import("./pages/plan/ApplyPlan"));
@@ -23,14 +23,7 @@ const MyClaims = lazy(() => import("./components/claim/MyClaims"));
 const SupportPage = lazy(() => import("./pages/support/SupportPage"));
 const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
 
-// Protected Route wrapper
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/auth" replace />;
-  return children;
-};
-
-// 404 Page
+/* ---------------- 404 Page ---------------- */
 const NotFoundPage = () => (
   <PageTransition>
     <div className="min-h-screen flex items-center justify-center">
@@ -39,7 +32,7 @@ const NotFoundPage = () => (
   </PageTransition>
 );
 
-// Router configuration
+/* ---------------- Router ---------------- */
 const router = createBrowserRouter([
   {
     path: "/",
@@ -72,7 +65,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "user-stats",
+        path: "my-applications",
         element: (
           <ProtectedRoute>
             <PageTransition>
@@ -117,6 +110,14 @@ const router = createBrowserRouter([
           </PageTransition>
         ),
       },
+      {
+        path: "policy",
+        element: (
+          <PageTransition>
+            <MyPolicies />
+          </PageTransition>
+        ),
+      },
       { path: "*", element: <NotFoundPage /> },
     ],
   },
@@ -130,6 +131,7 @@ const router = createBrowserRouter([
   },
 ]);
 
+/* ---------------- App Root ---------------- */
 export default function App() {
   return (
     <AuthProvider>
@@ -143,7 +145,7 @@ export default function App() {
         <RouterProvider router={router} />
       </Suspense>
 
-      {/* Toast system */}
+      {/* Global Toast */}
       <ToastContainer
         position="top-right"
         autoClose={3000}

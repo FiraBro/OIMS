@@ -5,5 +5,12 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1",
   withCredentials: true, // ensures HTTP-only cookies are sent
 });
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token"); // wherever you store JWT
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export default api;

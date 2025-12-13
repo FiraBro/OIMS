@@ -9,83 +9,145 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
+import { FiShield, FiCalendar, FiDollarSign } from "react-icons/fi";
 
 export default function PolicyActions({ policy }) {
-  const [showDetails, setShowDetails] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const handleRenew = () => {
-    // 🔹 Replace this with your renewal API call
-    console.log("Renewing policy:", policy.policyNumber);
-    alert(`Renewal triggered for ${policy.policyNumber}`);
-  };
+  const plan = policy.planId || {};
+
+  const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : "-");
 
   return (
-    <div className="flex gap-2 items-center">
-      {/* Renew Policy */}
-      <Button
-        size="sm"
-        variant="secondary"
-        className="ml-auto"
-        onClick={handleRenew}
-      >
+    <div className="flex gap-2">
+      <Button size="sm" variant="secondary" onClick={() => alert("Renew flow")}>
         Renew Policy
       </Button>
 
-      {/* View Full Details Modal */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button size="sm" variant="default">
-            View Full Details
-          </Button>
+          <Button size="sm">View Full Details</Button>
         </DialogTrigger>
-        <DialogContent className="max-w-2xl bg-white">
+
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-white">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
+            className="p-6"
           >
+            {/* Header */}
             <DialogHeader>
-              <DialogTitle>{policy.name}</DialogTitle>
-              <DialogDescription>
-                Detailed info about the policy.
+              <DialogTitle className="text-2xl font-bold">
+                {plan.name}
+              </DialogTitle>
+              <DialogDescription className="text-gray-500">
+                Policy No: {policy.policyNumber}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 mt-4">
-              <p>
-                <strong>Policy Number:</strong> {policy.policyNumber}
-              </p>
-              <p>
-                <strong>Category:</strong>{" "}
-                {policy.planId?.category || policy.category}
-              </p>
-              <p>
-                <strong>Coverage:</strong>{" "}
-                {policy.planId?.coverage || policy.coverage}
-              </p>
-              <p>
-                <strong>Premium:</strong> {policy.premium}{" "}
-                {policy.currency || "USD"}
-              </p>
-              <p>
-                <strong>Status:</strong> {policy.status}
-              </p>
-              <p>
-                <strong>Start → End:</strong>{" "}
-                {new Date(policy.startDate).toLocaleDateString()} →{" "}
-                {new Date(policy.endDate).toLocaleDateString()}
-              </p>
-              {policy.documents?.length > 0 && (
+            {/* Status + Category */}
+            <div className="flex gap-2 mt-4">
+              <Badge className="bg-green-100 text-green-700">
+                {policy.status}
+              </Badge>
+              <Badge variant="outline" className="border-gray-400">
+                {plan.category}
+              </Badge>
+            </div>
+
+            <Separator className="my-6" />
+
+            {/* Overview */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="flex gap-3 items-start">
+                <FiDollarSign className="text-indigo-600 mt-1" />
                 <div>
-                  <strong>Documents:</strong>
-                  <ul className="list-disc ml-5 mt-1">
+                  <p className="text-sm text-gray-500">Premium</p>
+                  <p className="font-semibold">
+                    ${policy.premium} / {plan.premiumFrequency}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <FiCalendar className="text-indigo-600 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-500">Validity</p>
+                  <p className="font-semibold">
+                    {formatDate(policy.startDate)} →{" "}
+                    {formatDate(policy.endDate)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <FiShield className="text-indigo-600 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-500">Coverage Amount</p>
+                  <p className="font-semibold">
+                    ${plan.coverageAmount?.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Separator className="my-6" />
+
+            {/* Description */}
+            <div>
+              <h4 className="font-semibold mb-2">Coverage Summary</h4>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {plan.coverage}
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">Description</h4>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                {plan.description}
+              </p>
+            </div>
+
+            {/* Key Info */}
+            <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <div>
+                <h4 className="font-semibold mb-2">Policy Details</h4>
+                <ul className="text-sm space-y-1 text-gray-700">
+                  <li>Network Size: {plan.networkSize}</li>
+                  <li>Deductible: ${plan.deductible}</li>
+                  <li>Claim Settlement: {plan.claimSettlementRatio}%</li>
+                  <li>Avg Claim Time: {plan.averageClaimTime} days</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Key Features</h4>
+                <div className="flex flex-wrap gap-2">
+                  {plan.features?.slice(0, 6).map((f, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {f}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Documents */}
+            {policy.documents?.length > 0 && (
+              <>
+                <Separator className="my-6" />
+                <div>
+                  <h4 className="font-semibold mb-2">Documents</h4>
+                  <ul className="list-disc ml-5 text-sm">
                     {policy.documents.map((doc) => (
                       <li key={doc._id}>
                         <a
                           href={doc.url}
                           target="_blank"
-                          className="text-blue-600 underline"
+                          className="text-indigo-600 underline"
                         >
                           {doc.name}
                         </a>
@@ -93,11 +155,16 @@ export default function PolicyActions({ policy }) {
                     ))}
                   </ul>
                 </div>
-              )}
-            </div>
+              </>
+            )}
 
             <DialogClose asChild>
-              <Button className="mt-6 w-full">Close</Button>
+              <Button
+                className="mt-8 w-full border-blue-600 cursor-pointer"
+                variant="outline"
+              >
+                Close
+              </Button>
             </DialogClose>
           </motion.div>
         </DialogContent>

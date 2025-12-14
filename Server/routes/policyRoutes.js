@@ -5,33 +5,48 @@ import { ROLES } from "../constants/roles.js";
 import {
   getMyPolicies,
   getPolicyById,
-  listPolicies, // FIX
-  updatePolicyStatus, // FIX
-  renewPolicy,
+  listPolicies,
+  updatePolicyStatus,
+  requestPolicyRenewal, // user requests renewal
+  approvePolicyRenewal, // admin approves renewal
   cancelPolicy,
-  deletePolicy, // FIX
+  deletePolicy,
 } from "../controllers/policyController.js";
 
 import {
   updateStatusValidator,
   paginationValidator,
+  requestRenewalValidator,
 } from "../validators/policyValidator.js";
 
 import { handleValidation } from "../utils/handleValidation.js";
 
 const router = express.Router();
 
-// USER ROUTE
+// ======================
+// USER ROUTES
+// ======================
 router.get("/my", protect, getMyPolicies);
 
+// User requests renewal (bank transfer)
+router.post(
+  "/:id/renew",
+  protect,
+  requestRenewalValidator,
+  handleValidation,
+  requestPolicyRenewal
+);
+
+// ======================
 // ADMIN ROUTES
+// ======================
 router.get(
   "/",
   protect,
   restrictTo(ROLES.ADMIN),
   paginationValidator,
   handleValidation,
-  listPolicies // FIX
+  listPolicies
 );
 
 router.get("/:id", protect, restrictTo(ROLES.ADMIN), getPolicyById);
@@ -42,13 +57,19 @@ router.put(
   restrictTo(ROLES.ADMIN),
   updateStatusValidator,
   handleValidation,
-  updatePolicyStatus // FIX
+  updatePolicyStatus
 );
 
-router.put("/:id/renew", protect, restrictTo(ROLES.ADMIN), renewPolicy);
+// Admin approves pending renewal
+router.post(
+  "/:id/renew/approve",
+  protect,
+  restrictTo(ROLES.ADMIN),
+  approvePolicyRenewal
+);
 
 router.put("/:id/cancel", protect, restrictTo(ROLES.ADMIN), cancelPolicy);
 
-router.delete("/:id", protect, restrictTo(ROLES.ADMIN), deletePolicy); // FIX
+router.delete("/:id", protect, restrictTo(ROLES.ADMIN), deletePolicy);
 
 export default router;

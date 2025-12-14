@@ -41,3 +41,11 @@ export const getPremiumStatsController = catchAsync(async (req, res) => {
   const stats = await InsurancePlanService.getPremiumStats();
   res.json({ status: "success", data: stats });
 });
+export const getPopularPlansController = async (req, res, next) => {
+  try {
+    const plans = await InsurancePlanService.getPopularPlans();
+    res.status(200).json({ status: "success", data: plans });
+  } catch (err) {
+    next(err);
+  }
+};

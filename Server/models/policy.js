@@ -20,10 +20,9 @@ const policySchema = new mongoose.Schema(
     // Status
     status: {
       type: String,
-      enum: ["pending", "active", "expired", "renewed", "cancelled"],
-      default: "pending",
+      enum: ["active", "expired", "pending_renewal", "renewed", "cancelled"],
+      default: "active",
     },
-
     // Dates
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },

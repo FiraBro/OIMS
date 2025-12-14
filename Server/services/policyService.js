@@ -52,8 +52,17 @@ class PolicyService {
   // ADMIN: UPDATE POLICY STATUS
   // ==================================================
   async updateStatus(id, status, adminId) {
-    const allowed = ["active", "pending", "expired", "renewed", "cancelled"];
-    if (!allowed.includes(status)) throw new AppError("Invalid status", 400);
+    const allowed = [
+      "active",
+      "pending",
+      "expired",
+      "pending_renewal",
+      "cancelled",
+    ];
+
+    if (!allowed.includes(status)) {
+      throw new AppError("Invalid status", 400);
+    }
 
     const updated = await Policy.findOneAndUpdate(
       { _id: id, isDeleted: false },
@@ -66,18 +75,87 @@ class PolicyService {
   }
 
   // ==================================================
-  // ADMIN: RENEW POLICY
+  // USER: REQUEST POLICY RENEWAL (BANK TRANSFER)
   // ==================================================
-  async renewPolicy(id, newEndDate, adminId) {
-    const policy = await Policy.findById(id);
-    if (!policy || policy.isDeleted)
+  async requestRenewal(policyId, userId, paymentReference) {
+    const policy = await Policy.findById(policyId);
+
+    if (!policy || policy.isDeleted) {
       throw new AppError("Policy not found", 404);
+    }
 
-    if (new Date(newEndDate) <= new Date(policy.endDate))
-      throw new AppError("New end date must be after current end date", 400);
+    if (!["active", "expired"].includes(policy.status)) {
+      throw new AppError("Policy not eligible for renewal", 400);
+    }
 
-    policy.status = "renewed";
-    policy.endDate = newEndDate;
+    // Grace period: 30 days after expiry
+    if (policy.status === "expired") {
+      const daysExpired =
+        (Date.now() - new Date(policy.endDate)) / (1000 * 60 * 60 * 24);
+
+      if (daysExpired > 30) {
+        throw new AppError("Renewal grace period expired", 400);
+      }
+    }
+
+    // Prevent duplicate pending renewals
+    const hasPending = policy.renewalHistory?.some(
+      (r) => r.paymentStatus === "pending"
+    );
+
+    if (hasPending) {
+      throw new AppError("A renewal request is already pending", 400);
+    }
+
+    // Calculate new end date (1 year extension)
+    const newEndDate = new Date(policy.endDate);
+    newEndDate.setFullYear(newEndDate.getFullYear() + 1);
+
+    policy.renewalHistory = policy.renewalHistory || [];
+    policy.renewalHistory.push({
+      oldEndDate: policy.endDate,
+      newEndDate,
+      premium: policy.premium,
+      paymentMethod: "bank_transfer",
+      paymentStatus: "pending",
+      paymentReference,
+      requestedAt: new Date(),
+    });
+
+    policy.status = "pending_renewal";
+    policy.updatedBy = userId;
+
+    await policy.save();
+
+    return {
+      message: "Renewal request submitted. Awaiting payment verification.",
+    };
+  }
+
+  // ==================================================
+  // ADMIN: APPROVE RENEWAL (AFTER BANK VERIFICATION)
+  // ==================================================
+  async approveRenewal(policyId, adminId) {
+    const policy = await Policy.findById(policyId);
+
+    if (!policy || policy.isDeleted) {
+      throw new AppError("Policy not found", 404);
+    }
+
+    const renewal = [...(policy.renewalHistory || [])]
+      .reverse()
+      .find((r) => r.paymentStatus === "pending");
+
+    if (!renewal) {
+      throw new AppError("No pending renewal found", 400);
+    }
+
+    renewal.paymentStatus = "verified";
+    renewal.approvedAt = new Date();
+    renewal.approvedBy = adminId;
+
+    policy.endDate = renewal.newEndDate;
+    policy.status = "active";
     policy.renewalCount = (policy.renewalCount || 0) + 1;
     policy.lastRenewedAt = new Date();
     policy.updatedBy = adminId;

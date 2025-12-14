@@ -2,15 +2,18 @@ import Application from "../models/application.js";
 import Policy from "../models/policy.js";
 import { validatePlan, validateDates } from "../utils/validation.js";
 import AppError from "../utils/AppError.js";
-import mongoose from "mongoose";
+
 import crypto from "crypto";
+
+import Plan from "../models/plan.js"; // ✅ FIXED
+
 class ApplicationService {
   // ==================================================
   // USER: APPLY FOR A POLICY
   // ==================================================
   async apply(data, userId) {
+    // Validate plan
     const plan = await validatePlan(data.planId);
-    validateDates(data.startDate, data.endDate);
 
     // Check for existing active policy
     const existingPolicy = await Policy.findOne({
@@ -25,14 +28,18 @@ class ApplicationService {
         400
       );
 
-    // Create application
+    // Create application with full formData
     const application = await Application.create({
       userId,
       planId: plan._id,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      documents: data.documents || [],
+      personal: data.personal || {},
+      nominee: data.nominee || {},
+      medical: data.medical || {},
+      payment: data.payment || {},
+      agree: data.agree || false,
+      documents: data.documents || [], // files
       createdBy: userId,
+      status: "pending",
     });
 
     return application;
@@ -41,17 +48,21 @@ class ApplicationService {
   // ==================================================
   // ADMIN: APPROVE APPLICATION
   // ==================================================
+
   async approve(id, adminId) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
       const app = await Application.findOne({
         _id: id,
         isDeleted: false,
-      }).session(session);
+      });
+
       if (!app) throw new AppError("Application not found", 404);
       if (app.status !== "pending")
         throw new AppError("Only pending applications can be approved", 400);
+
+      // Load the plan using real model
+      const planData = await Plan.findById(app.planId); // ✅ FIXED
+      if (!planData) throw new AppError("Plan not found", 404);
 
       // Check for existing active policy
       const existingPolicy = await Policy.findOne({
@@ -59,41 +70,43 @@ class ApplicationService {
         planId: app.planId,
         status: "active",
         isDeleted: false,
-      }).session(session);
+      });
+
       if (existingPolicy)
         throw new AppError(
           "User already has an active policy for this plan",
           400
         );
 
-      // Update application
+      // Generate start and end dates based on plan
+      const startDate = new Date();
+      const endDate = new Date();
+      const durationMonths = planData.validityPeriod
+        ? planData.validityPeriod / 30
+        : 12;
+
+      endDate.setMonth(endDate.getMonth() + durationMonths);
+
+      // Approve application
       app.status = "approved";
       app.updatedBy = adminId;
-      await app.save({ session });
+      await app.save();
 
       // Create policy
-      const policy = await Policy.create(
-        [
-          {
-            userId: app.userId,
-            planId: app.planId,
-            startDate: app.startDate,
-            endDate: app.endDate,
-            status: "active",
-            policyNumber: `POL-${crypto.randomBytes(6).toString("hex")}`,
-            createdBy: adminId,
-          },
-        ],
-        { session }
-      );
+      const policy = await Policy.create({
+        userId: app.userId,
+        planId: app.planId,
+        startDate,
+        endDate,
+        premium: planData.premium,
+        coverageAmount: planData.coverageAmount,
+        status: "active",
+        policyNumber: `POL-${crypto.randomBytes(6).toString("hex")}`,
+        createdBy: adminId,
+      });
 
-      await session.commitTransaction();
-      session.endSession();
-
-      return { application: app, policy: policy[0] };
+      return { application: app, policy };
     } catch (err) {
-      await session.abortTransaction();
-      session.endSession();
       throw err;
     }
   }

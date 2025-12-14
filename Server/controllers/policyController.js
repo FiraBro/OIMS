@@ -15,7 +15,45 @@ export const getMyPolicies = catchAsync(async (req, res) => {
 });
 
 // ==================================================
-// USER: GET POLICY BY ID
+// USER: REQUEST POLICY RENEWAL
+// ==================================================
+export const requestPolicyRenewal = catchAsync(async (req, res) => {
+  const { paymentReference } = req.body;
+
+  const result = await policyService.requestRenewal(
+    req.params.id,
+    req.user.id,
+    paymentReference
+  );
+
+  res.status(200).json({
+    status: "success",
+    message: "Renewal request submitted successfully. Awaiting admin approval.",
+    data: result,
+  });
+});
+
+// ==================================================
+// ADMIN: APPROVE POLICY RENEWAL
+// ==================================================
+export const approvePolicyRenewal = catchAsync(async (req, res) => {
+  const { newEndDate } = req.body;
+
+  const policy = await policyService.renewPolicy(
+    req.params.id,
+    newEndDate,
+    req.user.id
+  );
+
+  res.status(200).json({
+    status: "success",
+    message: "Policy renewed successfully",
+    data: policy,
+  });
+});
+
+// ==================================================
+// USER/ADMIN: GET POLICY BY ID
 // ==================================================
 export const getPolicyById = catchAsync(async (req, res) => {
   const policy = await policyService.getPolicyById(req.params.id);
@@ -59,25 +97,6 @@ export const updatePolicyStatus = catchAsync(async (req, res) => {
     status: "success",
     message: "Policy status updated successfully",
     data: updated,
-  });
-});
-
-// ==================================================
-// ADMIN: RENEW POLICY
-// ==================================================
-export const renewPolicy = catchAsync(async (req, res) => {
-  const { newEndDate } = req.body;
-
-  const policy = await policyService.renewPolicy(
-    req.params.id,
-    newEndDate,
-    req.user.id
-  );
-
-  res.status(200).json({
-    status: "success",
-    message: "Policy renewed successfully",
-    data: policy,
   });
 });
 

@@ -25,13 +25,15 @@ export const updatePlanValidator = [
 ];
 
 export const filterPlansValidator = [
-  query("page").optional().isInt({ min: 1 }),
-  query("limit").optional().isInt({ min: 1 }),
-  query("sortBy").optional().isString(),
-  query("order").optional().isIn(["asc", "desc"]),
-  query("planType").optional().isIn(["individual", "family", "student"]),
-  query("status").optional().isIn(["draft", "published"]),
-  query("minPremium").optional().isFloat({ min: 0 }),
-  query("maxPremium").optional().isFloat({ min: 0 }),
-  query("search").optional().isString(),
+  query("page").optional({ checkFalsy: true }).isInt({ min: 1 }),
+  query("limit").optional({ checkFalsy: true }).isInt({ min: 1 }),
+  query("sortBy").optional({ checkFalsy: true }).isString(),
+  query("order").optional({ checkFalsy: true }).isIn(["asc", "desc"]),
+  query("planType")
+    .optional({ checkFalsy: true })
+    .isIn(["individual", "family", "student", "group", "senior", "corporate"]),
+  query("status").optional({ checkFalsy: true }).isIn(["draft", "published"]),
+  query("minPremium").optional({ checkFalsy: true }).isFloat({ min: 0 }),
+  query("maxPremium").optional({ checkFalsy: true }).isFloat({ min: 0 }),
+  query("search").optional({ checkFalsy: true }).isString(),
 ];

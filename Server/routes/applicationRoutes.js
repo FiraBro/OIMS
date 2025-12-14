@@ -7,7 +7,7 @@ import {
   listApplications,
   deleteApplication,
 } from "../controllers/applicationController.js";
-
+import upload from "../middlewares/upload.js";
 import { protect, restrictTo } from "../middlewares/protect.js";
 import { ROLES } from "../constants/roles.js";
 
@@ -16,14 +16,14 @@ const router = express.Router();
 // ===========================
 // USER ROUTES
 // ===========================
-router.post("/apply", protect, restrictTo(ROLES.USER), applyForPolicy);
-
-router.get(
-  "/my-applications",
+router.post(
+  "/apply",
   protect,
-  restrictTo(ROLES.USER),
-  getMyApplications
+  upload.array("documents"), // Use single() for one file, or array() for multiple
+  applyForPolicy
 );
+
+router.get("/my-applications", protect, getMyApplications);
 
 // ===========================
 // ADMIN ROUTES

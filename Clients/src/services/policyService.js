@@ -35,8 +35,13 @@ const updatePolicyStatus = async (id, status) => {
 };
 
 // Renew a policy
-const renewPolicy = async (id) => {
-  const res = await api.put(`/policies/${id}/renew`);
+const requestPolicyRenewal = async (id, data) => {
+  // data = { newEndDate, paymentReference }
+  const res = await api.post(`/policies/${id}/renew`, data);
+  return res.data;
+};
+const approvePolicyRenewal = async (id) => {
+  const res = await api.post(`/policies/${id}/renew/approve`);
   return res.data;
 };
 
@@ -57,7 +62,8 @@ export const policyService = {
   listPolicies,
   getPolicyById,
   updatePolicyStatus,
-  renewPolicy,
+  requestPolicyRenewal,
+  approvePolicyRenewal,
   cancelPolicy,
   deletePolicy,
 };

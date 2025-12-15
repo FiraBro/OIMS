@@ -69,10 +69,10 @@ export default function AuthForm() {
       email: formData.email,
       password: formData.password,
     });
-
+    console.log("result", result);
     setIsLoading(false);
 
-    if (result.success) {
+    if (result.accessToken) {
       toast.success("Login successful!");
       navigate("/"); // redirect after success
     } else {

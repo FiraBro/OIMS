@@ -43,6 +43,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MyClaims() {
   const [claims, setClaims] = useState([]);
@@ -50,6 +51,7 @@ export default function MyClaims() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const fetchClaims = async () => {
@@ -66,8 +68,13 @@ export default function MyClaims() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     fetchClaims();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     let result = claims;
@@ -154,6 +161,23 @@ export default function MyClaims() {
   const handleDownloadDocument = (claimId) => {
     console.log("Download document for claim:", claimId);
   };
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <Card className="max-w-md w-full border-yellow-200 bg-yellow-50">
+          <CardContent className="p-10 text-center">
+            <Shield className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900">
+              Login Required
+            </h2>
+            <p className="text-gray-600 mt-2">
+              Please log in to view and manage your claims.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -295,11 +319,11 @@ export default function MyClaims() {
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
-
                 <Button
+                  className="gap-2 border border-gray-300"
                   variant="outline"
                   onClick={fetchClaims}
-                  className="gap-2 border border-gray-300"
+                  disabled={!isAuthenticated}
                 >
                   <RefreshCw className="h-4 w-4" />
                   Refresh

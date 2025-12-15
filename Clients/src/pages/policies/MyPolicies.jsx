@@ -8,15 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { FiFileText, FiRefreshCw } from "react-icons/fi";
 import { policyService } from "@/services/policyService";
 import PolicyActions from "@/components/modal/PolicyActions";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function MyPolicies() {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("");
+  const { isAuthenticated, authReady } = useAuth();
 
   useEffect(() => {
+    if (!authReady || !isAuthenticated) return;
     fetchPolicies();
-  }, []);
+  }, [authReady, isAuthenticated]);
 
   const fetchPolicies = async () => {
     setLoading(true);

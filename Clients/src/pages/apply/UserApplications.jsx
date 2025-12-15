@@ -16,64 +16,82 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { applicationService } from "@/services/applicationService";
 import { resolveDocumentUrl } from "@/utils/resolveURL";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function UserApplications() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [currentDocument, setCurrentDocument] = useState(null);
+  const { isAuthenticated } = useAuth();
 
   const [apps, setApps] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
-  const openDocumentModal = (docUrl) => {
-    setCurrentDocument(docUrl);
-    setModalOpen(true);
-  };
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState(null);
 
-  const closeDocumentModal = () => {
-    setCurrentDocument(null);
-    setModalOpen(false);
-  };
+  /* ==============================
+     FETCH DATA (AUTH-GUARDED)
+  ============================== */
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchApplications();
+  }, [isAuthenticated]);
 
   const fetchApplications = async () => {
-    setLoading(true);
-    setError(null);
-
     try {
+      setLoading(true);
+      setError(null);
+
       const res = await applicationService.getMyApplications();
-      console.log("res", res);
-      setApps(res.data || res);
+      setApps(res?.data || res || []);
     } catch (err) {
       setError(err);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
+  /* ==============================
+     AUTH UI GUARD
+  ============================== */
+  if (!isAuthenticated) {
+    return (
+      <div className="p-6 max-w-3xl mx-auto">
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-10 text-center">
+            <FiAlertTriangle className="w-10 h-10 mx-auto text-yellow-600 mb-4" />
+            <h2 className="text-xl font-semibold">Login Required</h2>
+            <p className="text-gray-600 mt-2">
+              Please log in to view your applications.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  /* ==============================
+     HELPERS
+  ============================== */
   const getStatusDetails = (status) => {
-    const s = (status || "pending").toLowerCase();
-    switch (s) {
+    switch ((status || "pending").toLowerCase()) {
       case "approved":
         return {
-          class: "bg-green-100 text-green-700 border-green-200",
-          icon: <FiCheckCircle className="w-4 h-4" />,
           label: "Approved",
+          class: "bg-green-100 text-green-700",
+          icon: <FiCheckCircle className="w-4 h-4" />,
         };
       case "rejected":
         return {
-          class: "bg-red-100 text-red-700 border-red-200",
-          icon: <FiXCircle className="w-4 h-4" />,
           label: "Rejected",
+          class: "bg-red-100 text-red-700",
+          icon: <FiXCircle className="w-4 h-4" />,
         };
       default:
         return {
-          class: "bg-yellow-100 text-yellow-700 border-yellow-200",
-          icon: <FiClock className="w-4 h-4" />,
           label: "Pending",
+          class: "bg-yellow-100 text-yellow-700",
+          icon: <FiClock className="w-4 h-4" />,
         };
     }
   };
@@ -87,21 +105,23 @@ export default function UserApplications() {
         })
       : "-";
 
-  const filteredApps = apps.filter((a) => {
-    if (activeTab === "all") return true;
-    return (a.status || "").toLowerCase() === activeTab;
-  });
+  const filteredApps = apps.filter((app) =>
+    activeTab === "all" ? true : (app.status || "").toLowerCase() === activeTab
+  );
 
   const getStatusCount = (status) =>
     apps.filter((a) => (a.status || "").toLowerCase() === status).length;
 
+  /* ==============================
+     RENDER
+  ============================== */
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Applications</h1>
-          <p className="text-gray-500 mt-2">
+          <h1 className="text-3xl font-bold">My Applications</h1>
+          <p className="text-gray-500">
             View and track your submitted policy applications
           </p>
         </div>
@@ -109,30 +129,26 @@ export default function UserApplications() {
           variant="outline"
           onClick={fetchApplications}
           disabled={loading}
-          className="flex items-center gap-2 mt-4 md:mt-0"
         >
-          <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <FiRefreshCw className={loading ? "animate-spin" : ""} />
           Refresh
         </Button>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-4 max-w-md">
           <TabsTrigger value="all">
-            All <Badge variant="secondary">{apps.length}</Badge>
+            All <Badge>{apps.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="pending">
-            Pending{" "}
-            <Badge variant="secondary">{getStatusCount("pending")}</Badge>
+            Pending <Badge>{getStatusCount("pending")}</Badge>
           </TabsTrigger>
           <TabsTrigger value="approved">
-            Approved{" "}
-            <Badge variant="secondary">{getStatusCount("approved")}</Badge>
+            Approved <Badge>{getStatusCount("approved")}</Badge>
           </TabsTrigger>
           <TabsTrigger value="rejected">
-            Rejected{" "}
-            <Badge variant="secondary">{getStatusCount("rejected")}</Badge>
+            Rejected <Badge>{getStatusCount("rejected")}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -141,143 +157,102 @@ export default function UserApplications() {
           {loading && (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="rounded-xl border border-gray-100">
-                  <CardHeader>
-                    <Skeleton className="h-6 w-48" />
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Skeleton className="h-4 w-32" />
-                  </CardContent>
-                </Card>
+                <Skeleton key={i} className="h-24 w-full" />
               ))}
             </div>
           )}
 
           {/* Error */}
           {!loading && error && (
-            <Card className="border-red-200 bg-red-50/50">
+            <Card className="border-red-200 bg-red-50">
               <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <FiAlertTriangle className="text-red-500 w-6 h-6" />
-                  <div>
-                    <h3 className="font-semibold text-lg text-red-800">
-                      Failed to Load Applications
-                    </h3>
-                    <p className="text-red-600 mt-1">{error.message}</p>
-
-                    <Button
-                      variant="outline"
-                      onClick={fetchApplications}
-                      className="mt-4"
-                    >
-                      Retry
-                    </Button>
-                  </div>
-                </div>
+                <p className="text-red-600">{error.message}</p>
               </CardContent>
             </Card>
           )}
 
           {/* Empty */}
           {!loading && !error && filteredApps.length === 0 && (
-            <Card className="rounded-xl border-dashed border-gray-300">
+            <Card className="border-dashed">
               <CardContent className="p-12 text-center">
                 <FiFileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                  No applications found
-                </h3>
+                <p>No applications found</p>
               </CardContent>
             </Card>
           )}
 
-          {/* Applications List */}
-          {!loading && !error && filteredApps.length > 0 && (
-            <div className="grid gap-4">
-              {filteredApps.map((app, index) => {
-                const status = getStatusDetails(app.status);
+          {/* List */}
+          {!loading &&
+            !error &&
+            filteredApps.map((app, index) => {
+              const status = getStatusDetails(app.status);
 
-                return (
-                  <motion.div
-                    key={app._id || index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
-                    <Card className="rounded-xl border border-gray-200 hover:shadow-md transition">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-center">
-                          <CardTitle>
-                            Plan: {app.planId?.name || "Plan"}
-                          </CardTitle>
-                          <Badge className={status.class}>
-                            {status.icon} {status.label}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-
-                      <Separator />
-
-                      <CardContent className="pt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div>
-                            <p className="text-sm text-gray-500">Submitted</p>
-                            <p className="font-medium">
-                              {formatDate(app.createdAt)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-500">Duration</p>
-                            <p className="font-medium">
-                              {formatDate(app.startDate)} →{" "}
-                              {formatDate(app.endDate)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-sm text-gray-500">Documents</p>
-                            {app.documents?.length > 0 ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  openDocumentModal(
-                                    resolveDocumentUrl(app.documents[0].url),
-                                    "_blank"
-                                  )
-                                }
-                              >
-                                <FiFileText className="mr-2" />
-                                View File
-                              </Button>
-                            ) : (
-                              <p className="text-gray-500">None</p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+              return (
+                <motion.div
+                  key={app._id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className="mb-4">
+                    <CardHeader>
+                      <div className="flex justify-between">
+                        <CardTitle>{app.planId?.name}</CardTitle>
+                        <Badge className={status.class}>
+                          {status.icon} {status.label}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <Separator />
+                    <CardContent className="grid md:grid-cols-3 gap-4 pt-6">
+                      <div>
+                        <p className="text-sm text-gray-500">Submitted</p>
+                        {formatDate(app.createdAt)}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Duration</p>
+                        {formatDate(app.startDate)} → {formatDate(app.endDate)}
+                      </div>
+                      <div>
+                        {app.documents?.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setCurrentDocument(
+                                resolveDocumentUrl(app.documents[0].url)
+                              );
+                              setModalOpen(true);
+                            }}
+                          >
+                            <FiFileText className="mr-2" />
+                            View File
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
         </TabsContent>
       </Tabs>
+
+      {/* Document Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg max-w-3xl w-full p-4 relative">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-3xl p-4 relative">
             <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-              onClick={closeDocumentModal}
+              onClick={() => setModalOpen(false)}
+              className="absolute top-2 right-2"
             >
               ✖
             </button>
             <iframe
               src={currentDocument}
               className="w-full h-[600px]"
-              title="Document Preview"
-            ></iframe>
+              title="Document"
+            />
           </div>
         </div>
       )}

@@ -14,6 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { applicationService } from "@/services/applicationService";
 import { resolveDocumentUrl } from "@/utils/resolveURL";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,9 +36,9 @@ export default function UserApplications() {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentDocument, setCurrentDocument] = useState(null);
 
-  /* ==============================
-     FETCH DATA (AUTH-GUARDED)
-  ============================== */
+  /* =======================
+     FETCH (AUTH GUARDED)
+  ======================= */
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchApplications();
@@ -41,7 +48,6 @@ export default function UserApplications() {
     try {
       setLoading(true);
       setError(null);
-
       const res = await applicationService.getMyApplications();
       setApps(res?.data || res || []);
     } catch (err) {
@@ -51,9 +57,9 @@ export default function UserApplications() {
     }
   };
 
-  /* ==============================
+  /* =======================
      AUTH UI GUARD
-  ============================== */
+  ======================= */
   if (!isAuthenticated) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
@@ -70,9 +76,9 @@ export default function UserApplications() {
     );
   }
 
-  /* ==============================
+  /* =======================
      HELPERS
-  ============================== */
+  ======================= */
   const getStatusDetails = (status) => {
     switch ((status || "pending").toLowerCase()) {
       case "approved":
@@ -112,9 +118,9 @@ export default function UserApplications() {
   const getStatusCount = (status) =>
     apps.filter((a) => (a.status || "").toLowerCase() === status).length;
 
-  /* ==============================
+  /* =======================
      RENDER
-  ============================== */
+  ======================= */
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
@@ -165,8 +171,8 @@ export default function UserApplications() {
           {/* Error */}
           {!loading && error && (
             <Card className="border-red-200 bg-red-50">
-              <CardContent className="p-6">
-                <p className="text-red-600">{error.message}</p>
+              <CardContent className="p-6 text-red-600">
+                {error.message}
               </CardContent>
             </Card>
           )}
@@ -194,7 +200,7 @@ export default function UserApplications() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className="mb-4">
+                  <Card className="mb-4 border-gray-300">
                     <CardHeader>
                       <div className="flex justify-between">
                         <CardTitle>{app.planId?.name}</CardTitle>
@@ -209,10 +215,12 @@ export default function UserApplications() {
                         <p className="text-sm text-gray-500">Submitted</p>
                         {formatDate(app.createdAt)}
                       </div>
+
                       <div>
                         <p className="text-sm text-gray-500">Duration</p>
                         {formatDate(app.startDate)} → {formatDate(app.endDate)}
                       </div>
+
                       <div>
                         {app.documents?.length > 0 && (
                           <Button
@@ -224,7 +232,9 @@ export default function UserApplications() {
                               );
                               setModalOpen(true);
                             }}
+                            className="border-gray-300 cursor-pointer"
                           >
+                            >
                             <FiFileText className="mr-2" />
                             View File
                           </Button>
@@ -238,24 +248,25 @@ export default function UserApplications() {
         </TabsContent>
       </Tabs>
 
-      {/* Document Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-3xl p-4 relative">
-            <button
-              onClick={() => setModalOpen(false)}
-              className="absolute top-2 right-2"
-            >
-              ✖
-            </button>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden bg-white">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200/60">
+            <DialogTitle className="text-lg font-semibold border-gray-300">
+              Document Preview
+            </DialogTitle>
+          </div>
+
+          {/* Document Container */}
+          <div className="flex-1 overflow-auto bg-gray-50 flex justify-center py-6">
             <iframe
               src={currentDocument}
-              className="w-full h-[600px]"
               title="Document"
+              className="w-[900px] h-full bg-white rounded-md shadow"
             />
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

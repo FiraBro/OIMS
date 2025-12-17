@@ -1,3 +1,4 @@
+// app.jsx (simplified - no ThemeProvider needed)
 import React, { Suspense, lazy } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
@@ -9,6 +10,9 @@ import Layout from "./utils/Layout";
 import ProtectedRoute from "./components/Auth/ProtectRoutes";
 import { PageTransition } from "./components/navigation/Navbar";
 import MyPolicies from "./pages/policies/MyPolicies";
+import AdminLayout from "./utils/AdminLayout";
+import DashboardPage from "./pages/admin/Dashboard";
+import Claim from "./pages/admin/Claim";
 
 /* ---------------- Lazy Loaded Pages ---------------- */
 const HomePage = lazy(() => import("./pages/home/HomePage"));
@@ -22,15 +26,6 @@ const ClaimSubmissionForm = lazy(() =>
 const MyClaims = lazy(() => import("./components/claim/MyClaims"));
 const SupportPage = lazy(() => import("./pages/support/SupportPage"));
 const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
-
-/* ---------------- 404 Page ---------------- */
-const NotFoundPage = () => (
-  <PageTransition>
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-3xl font-bold">404 - Page Not Found</h1>
-    </div>
-  </PageTransition>
-);
 
 /* ---------------- Router ---------------- */
 const router = createBrowserRouter([
@@ -111,23 +106,44 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "policy",
+        path: "my-policies",
         element: (
-          <PageTransition>
-            <MyPolicies />
-          </PageTransition>
+          <ProtectedRoute>
+            <PageTransition>
+              <MyPolicies />
+            </PageTransition>
+          </ProtectedRoute>
         ),
       },
+
       { path: "*", element: <NotFoundPage /> },
     ],
   },
   {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      {
+        path: "dashboard",
+        element: (
+          <ProtectedRoute requireAdmin={true}>
+            <DashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "claim",
+        element: (
+          <ProtectedRoute requireAdmin={true}>
+            <Claim />
+          </ProtectedRoute>
+        ),
+      },
+    ],
+  },
+  {
     path: "/auth",
-    element: (
-      <PageTransition>
-        <AuthPage />
-      </PageTransition>
-    ),
+    element: <AuthPage />,
   },
 ]);
 
@@ -135,17 +151,10 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <AuthProvider>
-      <Suspense
-        fallback={
-          <div className="min-h-screen flex items-center justify-center">
-            Loading...
-          </div>
-        }
-      >
+      <Suspense fallback={<LoadingSpinner />}>
         <RouterProvider router={router} />
       </Suspense>
 
-      {/* Global Toast */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -156,5 +165,23 @@ export default function App() {
         theme="light"
       />
     </AuthProvider>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+    </div>
+  );
+}
+
+function NotFoundPage() {
+  return (
+    <PageTransition>
+      <div className="min-h-screen flex items-center justify-center">
+        <h1 className="text-3xl font-bold">404 - Page Not Found</h1>
+      </div>
+    </PageTransition>
   );
 }

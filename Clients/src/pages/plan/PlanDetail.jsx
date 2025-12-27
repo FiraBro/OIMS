@@ -23,26 +23,52 @@ export default function PlanDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch Plan
+  // Updated Fetch Plan with Cleanup logic
   useEffect(() => {
+    // 1. Immediate exit if there is no ID
+    if (!id) return;
+
+    let isMounted = true;
+
     const fetchPlan = async () => {
       try {
         setLoading(true);
-        const data = await planService.getPlanById(id);
-        console.log("data", data);
-        setPlan(data?.data || null);
+        setError(null); // Clear previous errors immediately
 
-        if (!data?.data) {
-          toast.warn("Plan not found!"); // ⚠️ Toast warning if no plan
+        const data = await planService.getPlanById(id);
+
+        if (isMounted) {
+          if (data?.data) {
+            setPlan(data.data);
+          } else {
+            // Instead of a hard error, handle "Not Found" gracefully
+            setError("Plan not found.");
+          }
         }
       } catch (err) {
-        setError("Failed to load plan details.");
-        toast.error("Failed to load plan details."); // ❌ Toast error
+        // 2. Log exactly what the error is to debug
+        console.error("Plan Detail Fetch Error:", err);
+
+        if (isMounted) {
+          setError("Failed to load plan details.");
+          // Only toast if we are CERTAIN we are still on the page
+          toast.error("Could not find that insurance plan.", {
+            toastId: "fetch-error", // Prevents duplicate toasts
+          });
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
+
     fetchPlan();
+
+    return () => {
+      isMounted = false;
+      // 3. Clear all toasts when leaving the page to prevent them
+      // from showing up on the Home Page
+      toast.dismiss();
+    };
   }, [id]);
 
   // Icon Based on Plan Type

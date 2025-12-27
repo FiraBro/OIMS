@@ -1,4 +1,4 @@
-// app.jsx (simplified - no ThemeProvider needed)
+// app.jsx
 import React, { Suspense, lazy } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
@@ -27,6 +27,9 @@ const MyClaims = lazy(() => import("./components/claim/MyClaims"));
 const SupportPage = lazy(() => import("./pages/support/SupportPage"));
 const AuthPage = lazy(() => import("./pages/auth/AuthPage"));
 
+// ADDED: Profile Page Lazy Import
+const ProfilePage = lazy(() => import("./pages/profile/ProfilePage"));
+
 /* ---------------- Router ---------------- */
 const router = createBrowserRouter([
   {
@@ -47,6 +50,17 @@ const router = createBrowserRouter([
           <PageTransition>
             <PlanDetail />
           </PageTransition>
+        ),
+      },
+      // ADDED: Profile Route (Protected)
+      {
+        path: "profile",
+        element: (
+          <ProtectedRoute>
+            <PageTransition>
+              <ProfilePage />
+            </PageTransition>
+          </ProtectedRoute>
         ),
       },
       {
@@ -158,11 +172,15 @@ export default function App() {
       <ToastContainer
         position="top-right"
         autoClose={3000}
+        hideProgressBar={false}
         newestOnTop
         closeOnClick
-        pauseOnHover
+        rtl={false}
+        pauseOnFocusLoss
         draggable
+        pauseOnHover
         theme="light"
+        limit={3} // Recommended for Senior devs: prevents toast spamming
       />
     </AuthProvider>
   );
@@ -170,8 +188,11 @@ export default function App() {
 
 function LoadingSpinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
+      <div className="relative">
+        <div className="h-16 w-16 rounded-full border-t-4 border-b-4 border-blue-500 animate-spin"></div>
+        <div className="absolute top-0 left-0 h-16 w-16 rounded-full border-t-4 border-b-4 border-blue-200 opacity-20"></div>
+      </div>
     </div>
   );
 }
@@ -179,8 +200,20 @@ function LoadingSpinner() {
 function NotFoundPage() {
   return (
     <PageTransition>
-      <div className="min-h-screen flex items-center justify-center">
-        <h1 className="text-3xl font-bold">404 - Page Not Found</h1>
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-4">
+        <h1 className="text-6xl font-black text-gray-200 mb-4">404</h1>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          Page Not Found
+        </h2>
+        <p className="text-gray-500 mb-6">
+          The insurance portal you are looking for doesn't exist.
+        </p>
+        <button
+          onClick={() => (window.location.href = "/")}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Return Home
+        </button>
       </div>
     </PageTransition>
   );

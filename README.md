@@ -1,77 +1,62 @@
-# Online Health Insurance Management System
+# Online Insurance Management System (OIMS)
 
-A modern, full-featured digital insurance platform that seamlessly connects customers with administrators, simplifying policy management, claims processing, and overall health insurance operations.
+A modern, full-featured digital insurance platform that seamlessly connects customers with administrators, simplifying policy management, claims processing, and multi-line insurance operations.
 
 ## Overview
 
-OHIMS (Online Health Insurance Management System) is a comprehensive platform designed to streamline health insurance processes. Customers can apply for insurance plans, submit documents, and track applications, while admins can manage policies, applications, and claims efficiently. Whether you are a customer or an administrator, OHIMS provides a secure, intuitive, and scalable solution.
+**OIMS** is a comprehensive platform designed to streamline insurance processes across multiple sectors, including Life, Auto, Property, and Travel. Customers can apply for various coverage plans, manage digital document vaults, and track claims, while admins can oversee policies, verify applications, and process settlements efficiently. Whether for individual protection or corporate risk management, OIMS provides a secure, intuitive, and scalable solution.
 
 ## Key Features
 
 ### For Customers
 
-Personalized Dashboard: Track your policies, claims, and personal information.
-
-Policy Application: Easily apply for insurance plans and upload required documents.
-
-Application Tracking: Get real-time updates on the status of your policy applications.
-
-Claims Submission: Submit and monitor claims online with document uploads.
-
-Notifications & Alerts: Receive timely updates about application and claim status.
+- **Personalized Dashboard:** Track all your active policies, pending claims, and coverage limits in one place.
+- **Multi-Line Policy Application:** Apply for various insurance products and upload required documentation instantly.
+- **Application Tracking:** Get real-time updates on the status of your policy underwriting and approvals.
+- **Digital Claims Submission:** Submit incident reports and monitor claim settlements with integrated document uploads.
+- **Notifications & Alerts:** Receive timely reminders for premium payments and policy renewals.
 
 ### For Admins
 
-Admin Dashboard: Comprehensive view of users, policies, claims, and overall platform analytics.
-
-Policy Management: Create, update, and manage insurance plans with full CRUD functionality.
-
-Application Verification: Review, approve, or reject customer policy applications.
-
-Claims Management: Process and verify claims, request additional documents, and finalize approvals.
-
-User Management: Manage customer accounts and provide support.
+- **Admin Command Center:** Comprehensive view of total policyholders, active premiums, pending claims, and platform analytics.
+- **Product Management:** Create, update, and manage diverse insurance plans with full CRUD functionality.
+- **Underwriting & Verification:** Review, approve, or reject customer applications with centralized document access.
+- **Claims Processing:** Verify incident reports, request additional evidence, and finalize financial settlements.
+- **User Governance:** Manage customer accounts and provide administrative support.
 
 ### Platform-Wide
 
-Secure Authentication: JWT-based login with role-based access control.
-
-Responsive Design: Works seamlessly on desktop, tablet, and mobile devices.
-
-Scalable Architecture: Built to handle increasing numbers of users, policies, and claims.
-
-Cloud Storage: Store uploaded documents securely using Cloudinary.
+- **Secure Authentication:** JWT-based login with Role-Based Access Control (RBAC).
+- **Responsive Design:** A seamless experience across desktop, tablet, and mobile devices.
+- **Scalable Infrastructure:** Built to handle high volumes of users, policies, and heavy document processing.
+- **Cloud Document Vault:** Store sensitive insurance files securely using Cloudinary.
 
 ## Tech Stack
 
-Frontend: React.js / Tailwind CSS  
-
-Backend: Node.js (Express)  
-
-Database: MongoDB  
-
-Authentication: JWT / Role-Based Access  
-
-File Uploads: Multer / Cloudinary  
-
-Deployment: Docker  
+- **Frontend:** React.js / Tailwind CSS / Framer Motion
+- **Backend:** Node.js (Express)
+- **Database:** MongoDB
+- **Authentication:** JWT / Role-Based Access
+- **File Uploads:** Multer / Cloudinary
+- **Deployment:** Docker
 
 ## Infrastructure
 
-Containerization: Docker & Docker Compose   
+**Containerization:** Docker & Docker Compose for consistent environment orchestration.
 
 ## Quick Start with Docker
 
-Docker Engine 20.10+  
+### Prerequisites
 
-Docker Compose 2.0+  
+- Docker Engine 20.10+
+- Docker Compose 2.0+
+- Git
 
-Git
 ### 1. Clone the Repository
 
-```bash
-git clone https://github.com/FiraBro/OHIMS.git
-cd OHIMS
+````bash
+git clone [https://github.com/FiraBro/OIMS.git](https://github.com/FiraBro/OIMS.git)
+cd OIMS
 ```
 
 ### 2. Environment Configuration
@@ -89,11 +74,10 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 SMTP_HOST=your_smtp_host
 SMTP_USER=your_email
 SMTP_PASS=your_email_password
-```
+````
 
 ### 3. Start the Applications
 
 ```bash
 docker-compose up -d
 ```
-

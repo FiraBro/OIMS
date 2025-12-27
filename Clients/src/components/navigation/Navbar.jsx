@@ -113,6 +113,7 @@ const UserDropdown = ({ user, isOpen, onClose, onLogout }) => {
       label: "Notifications",
       onClick: () => navigate("/notifications"),
     },
+
     {
       icon: <FiCreditCard size={16} />,
       label: "Billing",
@@ -264,7 +265,7 @@ export default function Navbar() {
   }, [location.pathname]);
 
   const handleGetStarted = () => {
-    if (user) navigate("/apply/plans");
+    if (user) navigate("/plans");
     else navigate("/auth");
   };
 
@@ -295,9 +296,16 @@ export default function Navbar() {
     {
       to: "/my-applications",
       text: "Applications",
-      icon: <FiBarChart2 size={18} />,
       active: location.pathname === "/my-applications",
+      icon: <FiBarChart2 size={18} />,
     },
+    {
+      to: "/my-policies", // 🔹 added 'to' for proper routing
+      text: "My Policies",
+      icon: <FiShield size={16} />,
+      active: location.pathname === "/my-policies", // 🔹 ensure matches your route
+    },
+
     {
       to: "/support",
       text: "Support",
@@ -379,9 +387,9 @@ export default function Navbar() {
                 >
                   <Button
                     onClick={handleGetStarted}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow transition-all duration-150"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow transition-all duration-150 cursor-pointer"
                   >
-                    Apply Now
+                    All Plans
                   </Button>
                 </motion.div>
 
@@ -633,13 +641,13 @@ export default function Navbar() {
                     <motion.div variants={menuItemVariants}>
                       <Button
                         onClick={() => {
-                          if (user) navigate("/apply/plans");
+                          if (user) navigate("/plans");
                           else navigate("/auth");
                           setIsMenuOpen(false);
                         }}
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm hover:shadow py-3"
                       >
-                        {user ? "Apply Now" : "Get Started Free"}
+                        {user ? "All PLans" : "Get Started Free"}
                       </Button>
                     </motion.div>
 

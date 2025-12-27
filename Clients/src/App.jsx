@@ -90,7 +90,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "apply/plans",
+        path: "plans",
         element: (
           <PageTransition>
             <PlansPage />

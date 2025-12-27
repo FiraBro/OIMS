@@ -3,27 +3,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiMessageSquare,
   FiPhone,
-  FiMail,
-  FiHelpCircle,
   FiClock,
-  FiMapPin,
   FiSearch,
   FiChevronDown,
   FiChevronUp,
-  FiAlertCircle,
-  FiBookOpen,
-  FiVideo,
-  FiArrowRight,
   FiShield,
   FiBriefcase,
   FiHome,
   FiTruck,
 } from "react-icons/fi";
+
+// Shadcn UI Imports
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const GeneralSupportPage = () => {
   const [expandedFaq, setExpandedFaq] = useState(null);
@@ -53,7 +56,7 @@ const GeneralSupportPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#FAFBFF]">
+    <div className="min-h-screen bg-[#FAFBFF] pb-20">
       {/* Premium Hero Section */}
       <section className="relative overflow-hidden bg-[#0A1128] py-24">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
@@ -62,25 +65,25 @@ const GeneralSupportPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <Badge className="mb-4 bg-blue-500/20 text-blue-400 border-none px-4">
-              Help & Support
+            <Badge className="mb-4 bg-blue-500/20 text-blue-400 border-none px-4 py-1">
+              OIMS Global Support
             </Badge>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              OIMS Global <span className="text-blue-500">Support Center</span>
+              How can we <span className="text-blue-500">help you today?</span>
             </h1>
             <p className="text-gray-400 text-lg mb-10 max-w-2xl mx-auto">
-              Expert assistance for Life, Motor, and Property insurance
-              management.
+              Secure assistance for your Life, Motor, and Property insurance
+              assets.
             </p>
 
             <div className="relative max-w-2xl mx-auto">
               <div className="relative flex items-center bg-white rounded-2xl p-2 shadow-2xl">
                 <FiSearch className="ml-4 text-gray-400 w-5 h-5" />
                 <Input
-                  placeholder="Ask a question (e.g., 'how to file a car claim'...)"
-                  className="border-none focus-visible:ring-0 text-gray-800 text-lg"
+                  placeholder="Search policy guides, claims, and more..."
+                  className="border-none focus-visible:ring-0 text-gray-800 text-lg shadow-none"
                 />
-                <Button className="rounded-xl px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold">
+                <Button className="rounded-xl px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold h-12 transition-all">
                   Search
                 </Button>
               </div>
@@ -116,10 +119,12 @@ const GeneralSupportPage = () => {
           ].map((dept, i) => (
             <Card
               key={i}
-              className={`cursor-pointer transition-all border border-gray-100 shadow-sm ${dept.color}`}
+              className={`cursor-pointer transition-all border-none shadow-lg shadow-blue-900/5 ${dept.color} hover:-translate-y-1`}
             >
               <CardContent className="p-6 text-center flex flex-col items-center">
-                <div className="mb-3 text-2xl text-gray-600">{dept.icon}</div>
+                <div className="mb-3 text-2xl text-blue-600/80">
+                  {dept.icon}
+                </div>
                 <p className="font-bold text-gray-800 text-sm">{dept.label}</p>
               </CardContent>
             </Card>
@@ -132,42 +137,53 @@ const GeneralSupportPage = () => {
           {/* Main Support Form */}
           <div className="lg:col-span-7">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">
-              Submit a Formal Inquiry
+              Open a Support Ticket
             </h2>
-            <form className="space-y-6">
+            <form className="space-y-6 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600">
+                  <Label className="text-sm font-bold text-gray-600">
                     Inquiry Category
-                  </label>
-                  <select className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option>General Policy Question</option>
-                    <option>New Asset Registration</option>
-                    <option>Claim Status Update</option>
-                    <option>Premium & Billing</option>
-                  </select>
+                  </Label>
+                  <Select>
+                    <SelectTrigger className="h-12 rounded-xl border-gray-200 focus:ring-blue-500">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#fff] border border-gray-200 shadow-lg">
+                      <SelectItem value="general">
+                        General Policy Question
+                      </SelectItem>
+                      <SelectItem value="asset">
+                        New Asset Registration
+                      </SelectItem>
+                      <SelectItem value="claim">Claim Status Update</SelectItem>
+                      <SelectItem value="billing">Premium & Billing</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-600">
+                  <Label className="text-sm font-bold text-gray-600">
                     Policy Number (Optional)
-                  </label>
+                  </Label>
                   <Input
                     placeholder="e.g. POL-88902"
-                    className="h-12 rounded-xl"
+                    className="h-12 rounded-xl border-gray-200 focus:border-blue-500"
                   />
                 </div>
               </div>
+
               <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-600">
+                <Label className="text-sm font-bold text-gray-600">
                   Detailed Message
-                </label>
+                </Label>
                 <Textarea
-                  placeholder="Please describe your request in detail..."
-                  className="min-h-[160px] rounded-2xl"
+                  placeholder="Describe your request in detail..."
+                  className="min-h-[160px] rounded-2xl border-gray-200 focus:border-blue-500 bg-gray-50/30"
                 />
               </div>
-              <Button className="bg-blue-600 text-white px-10 h-12 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700">
-                Send Ticket
+
+              <Button className="w-full md:w-auto bg-blue-600 text-white px-10 h-12 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all">
+                Submit Ticket
               </Button>
             </form>
           </div>
@@ -175,8 +191,8 @@ const GeneralSupportPage = () => {
           {/* FAQ and Contact Sidebar */}
           <div className="lg:col-span-5 space-y-8">
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-50 bg-gray-50/50 font-bold">
-                Common Inquiries
+              <div className="p-6 border-b border-gray-100 bg-gray-50/50 font-bold text-gray-800">
+                Common Questions
               </div>
               <div className="divide-y divide-gray-50">
                 {generalFaqs.map((faq) => (
@@ -185,15 +201,15 @@ const GeneralSupportPage = () => {
                       onClick={() =>
                         setExpandedFaq(expandedFaq === faq.id ? null : faq.id)
                       }
-                      className="w-full flex justify-between items-center text-left"
+                      className="w-full flex justify-between items-center text-left group"
                     >
-                      <span className="font-semibold text-gray-700 pr-4">
+                      <span className="font-semibold text-gray-700 group-hover:text-blue-600 transition-colors pr-4">
                         {faq.question}
                       </span>
                       {expandedFaq === faq.id ? (
-                        <FiChevronUp />
+                        <FiChevronUp className="text-blue-600" />
                       ) : (
-                        <FiChevronDown />
+                        <FiChevronDown className="text-gray-400" />
                       )}
                     </button>
                     <AnimatePresence>
@@ -201,7 +217,8 @@ const GeneralSupportPage = () => {
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: "auto", opacity: 1 }}
-                          className="mt-3 text-sm text-gray-500"
+                          exit={{ height: 0, opacity: 0 }}
+                          className="mt-3 text-sm text-gray-500 leading-relaxed"
                         >
                           {faq.answer}
                         </motion.div>
@@ -213,14 +230,15 @@ const GeneralSupportPage = () => {
             </div>
 
             {/* Quick Contact Card */}
-            <Card className="bg-gray-900 text-white rounded-3xl border-none shadow-2xl p-4">
-              <CardContent className="space-y-6 pt-4">
+            <Card className="bg-[#0A1128] text-white rounded-3xl border-none shadow-2xl p-4 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16" />
+              <CardContent className="space-y-6 pt-4 relative z-10">
                 <div className="flex items-center space-x-4">
                   <div className="p-3 bg-white/10 rounded-xl">
-                    <FiPhone />
+                    <FiPhone className="text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                       Global Hotline
                     </p>
                     <p className="text-lg font-bold">+251 123 456 789</p>
@@ -228,10 +246,10 @@ const GeneralSupportPage = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="p-3 bg-white/10 rounded-xl">
-                    <FiClock />
+                    <FiClock className="text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                       Support Window
                     </p>
                     <p className="text-lg font-bold">08:00 - 18:00 (EAT)</p>
@@ -244,9 +262,13 @@ const GeneralSupportPage = () => {
       </div>
 
       {/* Floating Chat */}
-      <Button className="fixed bottom-10 right-10 bg-blue-600 hover:bg-blue-700 text-white p-4 h-16 w-16 rounded-full shadow-2xl shadow-blue-500/50">
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="fixed bottom-10 right-10 bg-blue-600 hover:bg-blue-700 text-white p-4 h-16 w-16 rounded-full shadow-2xl shadow-blue-500/50 flex items-center justify-center"
+      >
         <FiMessageSquare size={24} />
-      </Button>
+      </motion.button>
     </div>
   );
 };

@@ -7,24 +7,24 @@ export default function HeroSection() {
   return (
     <section className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-6">
       <div className="max-w-3xl text-center">
-        {/* Headline */}
+        {/* Headline - Updated to focus on Insurance Management */}
         <motion.h1
           className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          Your Health, Our Priority
+          Your Protection, Our Priority
         </motion.h1>
 
-        {/* Subtext */}
+        {/* Subtext - Updated to general insurance management */}
         <motion.p
           className="mt-4 text-lg md:text-xl text-gray-600"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.8 }}
         >
-          Apply, manage, and track your health insurance seamlessly.
+          Apply, manage, and track your insurance policies seamlessly.
         </motion.p>
 
         {/* Buttons */}
@@ -34,17 +34,26 @@ export default function HeroSection() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.8 }}
         >
-          <Button size="lg" className="px-8 flex items-center gap-2">
-            Explore Plans <FiArrowRight />
-          </Button>
+          {/* Explore Button - Redirects to /plan */}
+          <Link to="/apply/plans">
+            <Button
+              size="lg"
+              className="px-8 flex items-center gap-2 w-full md:w-auto cursor-pointer"
+            >
+              Explore Plans <FiArrowRight />
+            </Button>
+          </Link>
 
-          <Button
-            size="lg"
-            variant="outline"
-            className="px-8 border-2 border-blue-500 text-blue-600 hover:bg-blue-50"
-          >
-            <Link to="/auth">Login / Register</Link>
-          </Button>
+          {/* Login Button - Redirects to /auth */}
+          <Link to="/auth">
+            <Button
+              size="lg"
+              variant="outline"
+              className="px-8 border-2 border-blue-500 text-blue-600 hover:bg-blue-50 w-full md:w-auto cursor-pointer"
+            >
+              Login / Register
+            </Button>
+          </Link>
         </motion.div>
       </div>
     </section>

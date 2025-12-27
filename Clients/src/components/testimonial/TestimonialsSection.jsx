@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, Star, Quote } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -7,160 +7,121 @@ const testimonials = [
   {
     name: "Samuel Kebede",
     role: "Small Business Owner",
-    image: "https://i.pravatar.cc/150?img=1",
+    image: "https://i.pravatar.cc/150?img=11",
     review:
-      "The system made insurance applications effortless. Uploading documents and tracking my application was incredibly simple.",
+      "The system made insurance applications effortless. Tracking my status in real-time saved me hours of follow-up.",
     rating: 5,
   },
   {
     name: "Abdi Mohammed",
-    role: "Teacher",
+    role: "High School Teacher",
     image: "https://i.pravatar.cc/150?img=12",
     review:
-      "Very intuitive system! Customer support was great and the platform feels very secure and professional.",
-    rating: 4,
-  },
-  {
-    name: "Hana Ali",
-    role: "Freelancer",
-    image: "https://i.pravatar.cc/150?img=5",
-    review:
-      "I love the clean UI and fast processing. The real-time status updates helped me stay informed throughout the whole process.",
+      "Incredibly intuitive! The platform feels very secure and the customer support was top-notch throughout.",
     rating: 5,
   },
   {
-    name: "Meron Tekle",
-    role: "Entrepreneur",
-    image: "https://i.pravatar.cc/150?img=8",
+    name: "Hana Ali",
+    role: "Digital Freelancer",
+    image: "https://i.pravatar.cc/150?img=5",
     review:
-      "Streamlined process from start to finish. Saved me hours of paperwork and follow-ups!",
+      "Clean UI and fast processing. The status updates helped me stay informed through every single step.",
     rating: 5,
   },
 ];
 
 export default function TestimonialsCarousel() {
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(0); // 1 = next, -1 = prev
+  const [direction, setDirection] = useState(0);
 
   const next = () => {
-    setDirection(1); // next → move left
+    setDirection(1);
     setIndex((prev) => (prev + 1) % testimonials.length);
   };
 
   const prev = () => {
-    setDirection(-1); // prev → move right
+    setDirection(-1);
     setIndex((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
   };
 
-  // Auto-rotate every 5s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      next();
-    }, 100000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <section className="py-20 px-4 bg-gray-100">
-      <div className="max-w-7xl mx-auto text-center mb-16">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-medium mb-4">
-          <Star className="h-3.5 w-3.5 fill-current" />
-          Trusted by Professionals
+    <section className="py-24 px-6 bg-white relative overflow-hidden">
+      {/* Subtle Background Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-50/50 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="max-w-5xl mx-auto relative z-10">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 tracking-tight">
+            Client Stories
+          </h2>
         </div>
-        <h2 className="text-5xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">
-          What Our Clients Say
-        </h2>
-        <p className="text-gray-600 mt-4 text-lg max-w-2xl mx-auto">
-          Join thousands of satisfied users who transformed their experience
-          with our platform.
-        </p>
-      </div>
 
-      <div className="relative flex items-center justify-center gap-8">
-        {/* Left Button */}
-        <button
-          onClick={prev}
-          className="hidden md:flex items-center justify-center p-4 rounded-2xl bg-white shadow-lg hover:shadow-xl hover:-translate-x-1 transition-all duration-300 group z-10"
-        >
-          <ArrowLeft className="h-6 w-6 text-gray-600 group-hover:text-gray-900 transition-colors" />
-        </button>
-
-        {/* Main Carousel */}
-        <div className="w-full max-w-4xl">
+        <div className="relative min-h-[400px]">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={index}
-              custom={direction}
-              initial={{ opacity: 0, x: direction > 0 ? 100 : -100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: direction > 0 ? -100 : 100 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 1.05, y: -10 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              className="flex flex-col items-center text-center"
             >
-              <div className="relative bg-white rounded-8xl p-8 md:p-12 shadow-xl overflow-hidden">
-                <Quote className="absolute -top-6 -left-6 h-24 w-24 text-blue-100 rotate-180" />
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-                  {/* Avatar */}
-                  <div className="relative">
-                    <Avatar className="h-28 w-28 border-4 border-white shadow-lg">
-                      <AvatarImage
-                        src={testimonials[index].image}
-                        alt={testimonials[index].name}
-                      />
-                      <AvatarFallback>
-                        {testimonials[index].name.substring(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
+              {/* Profile Image with Ring */}
+              <div className="relative mb-8">
+                <div className="absolute inset-0 rounded-full bg-blue-600/10 scale-125 animate-pulse" />
+                <Avatar className="h-24 w-24 border-4 border-white shadow-xl relative z-10">
+                  <AvatarImage src={testimonials[index].image} />
+                  <AvatarFallback>{testimonials[index].name[0]}</AvatarFallback>
+                </Avatar>
+              </div>
 
-                    <div className="absolute -bottom-2 -right-2 flex items-center gap-1 bg-white px-3 py-1.5 rounded-full shadow-lg">
-                      <Star className="h-4 w-4 fill-yellow-400" />
-                      <span className="text-sm font-bold">
-                        {testimonials[index].rating}.0
-                      </span>
-                    </div>
-                  </div>
+              {/* Review Text - Now balanced and clamped */}
+              <div className="max-w-2xl px-4">
+                <Quote className="w-10 h-10 text-blue-600/20 mx-auto mb-6" />
+                <p className="text-xl md:text-2xl font-medium text-gray-700 leading-snug md:leading-relaxed">
+                  {testimonials[index].review}
+                </p>
 
-                  {/* Content */}
-                  <div className="flex-1 text-center md:text-left">
-                    <p className="text-lg text-gray-700 leading-relaxed font-medium mb-6">
-                      "{testimonials[index].review}"
-                    </p>
-
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {testimonials[index].name}
-                    </h3>
-                    <p className="text-gray-500 font-medium">
-                      {testimonials[index].role}
-                    </p>
-                  </div>
+                <div className="mt-8">
+                  <h4 className="text-lg font-bold text-gray-900">
+                    {testimonials[index].name}
+                  </h4>
+                  <p className="text-sm text-blue-600 font-semibold uppercase tracking-widest mt-1">
+                    {testimonials[index].role}
+                  </p>
                 </div>
               </div>
             </motion.div>
           </AnimatePresence>
+
+          {/* Minimal Controls */}
+          <div className="flex justify-center items-center gap-12 mt-12">
+            <button
+              onClick={prev}
+              className="p-3 text-gray-400 hover:text-blue-600 transition-colors"
+            >
+              <ArrowLeft size={28} />
+            </button>
+
+            <div className="flex gap-2">
+              {testimonials.map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 transition-all duration-300 rounded-full ${
+                    index === i ? "w-8 bg-blue-600" : "w-2 bg-gray-200"
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={next}
+              className="p-3 text-gray-400 hover:text-blue-600 transition-colors"
+            >
+              <ArrowRight size={28} />
+            </button>
+          </div>
         </div>
-
-        {/* Right Button */}
-        <button
-          onClick={next}
-          className="hidden md:flex items-center justify-center p-4 rounded-2xl bg-white shadow-lg hover:shadow-xl hover:translate-x-1 transition-all duration-300 group z-10"
-        >
-          <ArrowRight className="h-6 w-6 text-gray-600 group-hover:text-gray-900 transition-colors" />
-        </button>
-      </div>
-
-      {/* Mobile Navigation */}
-      <div className="flex justify-center items-center gap-4 mt-8 md:hidden">
-        <button
-          onClick={prev}
-          className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl transition-all"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <button
-          onClick={next}
-          className="p-3 rounded-full bg-white shadow-lg hover:shadow-xl transition-all"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </button>
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion"; // Import motion
+import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,17 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { duration: 0.5 } },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.5 },
+  },
+  // ADDED: Card lift and scale animation on hover
+  hover: {
+    y: -10,
+    scale: 1.02,
+    transition: { type: "spring", stiffness: 300, damping: 20 },
+  },
 };
 
 export default function PlansPreview() {
@@ -142,15 +152,16 @@ export default function PlansPreview() {
               <motion.div
                 key={plan._id}
                 variants={cardVariants}
-                whileHover="hover" // This triggers the "hover" state in children
+                whileHover="hover" // Triggers BOTH card lift and badge fade
+                className="h-full"
               >
-                <Card className="relative border border-gray-200 shadow-lg transition-all duration-300 overflow-hidden h-full">
+                <Card className="relative border border-gray-200 shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col">
                   {plan.isPopular && (
                     <motion.div
                       className="absolute top-4 right-4 z-10"
                       initial={{ opacity: 0, x: 10 }}
                       variants={{
-                        hover: { opacity: 1, x: 0 }, // Appears only on hover
+                        hover: { opacity: 1, x: 0 }, // Badge fades in on hover
                       }}
                       transition={{ duration: 0.3 }}
                     >
@@ -161,7 +172,7 @@ export default function PlansPreview() {
                     </motion.div>
                   )}
 
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 flex-grow">
                     <div className="flex items-start justify-between mb-6">
                       <div className="flex items-center gap-3">
                         <div

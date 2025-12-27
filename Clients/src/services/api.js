@@ -35,36 +35,46 @@
 // );
 
 // export default api;
-
 import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1",
-  withCredentials: true, // if backend uses cookies
+  withCredentials: true, // keep ONLY if backend uses cookies
 });
 
-// Attach token automatically
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+/* =====================================
+   🔹 REQUEST INTERCEPTOR
+   Attach JWT token automatically
+===================================== */
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
 
-// Handle 401 globally
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+/* =====================================
+   🔹 RESPONSE INTERCEPTOR
+   Handle auth errors globally
+===================================== */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message || "";
+    const message = error.response?.data?.message?.toLowerCase() || "";
 
-    if (status === 401) {
-      // Token expired → clear auth and redirect
-      if (message.toLowerCase().includes("expired")) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/login";
-      }
+    // 🔐 Token expired → force logout
+    if (status === 401 && message.includes("expired")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
     }
+
     return Promise.reject(error);
   }
 );

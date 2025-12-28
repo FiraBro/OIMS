@@ -548,6 +548,7 @@ export default function MyClaims() {
                 <Button
                   variant="outline"
                   className="gap-2 border cursor-pointer border-gray-300"
+                  onClick={() => navigate("/support")}
                 >
                   <AlertCircle className="h-4 w-4" />
                   Get Help

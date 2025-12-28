@@ -19,11 +19,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Upload, FileText, Shield, DollarSign } from "lucide-react";
-import api from "@/services/api";
-
+import { claimService } from "@/services/claimService"; // Adjust path as needed
 export default function ClaimsManagement() {
   const [formData, setFormData] = useState({
-    policyNumber: "",
+    policyId: "", // Changed from policyNumber to policyId
     claimType: "",
     description: "",
     amount: "",
@@ -55,35 +54,33 @@ export default function ClaimsManagement() {
 
     try {
       const data = new FormData();
-      Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
-      });
 
-      if (file) data.append("document", file);
+      // Ensure these keys match your Backend Validator
+      data.append("policyId", formData.policyId); // Send policyId (ID or Number)
+      data.append("claimType", formData.claimType);
+      data.append("description", formData.description);
+      data.append("amount", formData.amount);
 
-      await api.post("/claims/create", data);
-      toast.success(
-        "Claim submitted successfully! Our team will review it shortly."
-      );
+      if (file) {
+        data.append("document", file); // Must match upload.single("document")
+      }
 
-      setFormData({
-        policyNumber: "",
-        claimType: "",
-        description: "",
-        amount: "",
-      });
+      // ✅ USE YOUR SERVICE HERE
+      await claimService.createClaim(data);
+
+      toast.success("Claim submitted successfully!");
+
+      // Reset Form
+      setFormData({ policyId: "", claimType: "", description: "", amount: "" });
       setFile(null);
       setFileName("");
     } catch (err) {
-      toast.error(
-        err.response?.data?.message ||
-          "Failed to submit claim. Please try again."
-      );
+      const errorMsg = err.response?.data?.message || "Failed to submit claim.";
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
   const claimTypes = [
     { value: "Accident", label: "Accident Claim" },
     { value: "Medical", label: "Medical Expense" },
@@ -191,9 +188,9 @@ export default function ClaimsManagement() {
                         Policy Number *
                       </Label>
                       <Input
-                        id="policyNumber"
-                        name="policyNumber"
-                        value={formData.policyNumber}
+                        id="policyId" // Matches state
+                        name="policyId" // Matches state
+                        value={formData.policyId}
                         onChange={handleChange}
                         placeholder="e.g., POL-2024-001234"
                         className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"

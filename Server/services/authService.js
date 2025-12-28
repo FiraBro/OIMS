@@ -192,3 +192,21 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
     accessToken,
   };
 };
+
+// services/authService.js (Backend)
+
+export const getMeService = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError("No user found with that ID", 404);
+  }
+
+  return {
+    id: user._id,
+    fullName: user.fullName,
+    email: user.email,
+    role: user.role,
+    isVerified: user.isVerified,
+  };
+};

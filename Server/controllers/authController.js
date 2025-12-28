@@ -11,12 +11,35 @@ export const register = catchAsync(async (req, res) => {
 // =============================== LOGIN ===============================
 export const login = catchAsync(async (req, res) => {
   const { accessToken, user } = await authService.loginUser(req.body);
-  res.json({ status: "success", data: { accessToken, user } });
+
+  const cookieOptions = {
+    // Cookie expires in 1 day (standard practice)
+    expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    httpOnly: true, // Prevents XSS attacks
+    secure: process.env.NODE_ENV === "production", // Only send over HTTPS in production
+    sameSite: "Lax",
+  };
+
+  // Set the cookie in the response
+  res.cookie("jwt", accessToken, cookieOptions);
+
+  // Still send the user data and token (optional) to the frontend
+  res.json({
+    status: "success",
+    data: { accessToken, user },
+  });
 });
 
 // =============================== LOGOUT ===============================
 export const logout = catchAsync(async (req, res) => {
   await authService.logoutUser();
+
+  // Clear the cookie by setting it to expire immediately
+  res.cookie("jwt", "loggedout", {
+    expires: new Date(Date.now() + 10 * 1000), // expires in 10 seconds
+    httpOnly: true,
+  });
+
   res.json({ status: "success", message: "Logged out successfully" });
 });
 
@@ -62,4 +85,15 @@ export const changePassword = catchAsync(async (req, res) => {
 export const updateEmail = catchAsync(async (req, res) => {
   const result = await authService.updateEmail(req.user.id, req.body.newEmail);
   res.json({ status: "success", data: result });
+});
+
+// =============================== GET ME ===============================
+export const getMe = catchAsync(async (req, res, next) => {
+  // Use the ID attached by the 'protect' middleware
+  const user = await authService.getMeService(req.user.id);
+
+  res.status(200).json({
+    status: "success",
+    data: { user },
+  });
 });

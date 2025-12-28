@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/services/api";
+import { claimService } from "@/services/claimService"; // Import the service
 import {
   Card,
   CardContent,
@@ -56,12 +56,15 @@ export default function MyClaims() {
 
   const fetchClaims = async () => {
     try {
-      const res = await api.get("/claims/my-claims");
-      const claimsData = res.data.claims || [];
+      setLoading(true);
+      const response = await claimService.getMyClaims(); // Use service method
+      console.log("Fetched claims:", response);
+      const claimsData = response.claims || response.data || [];
       setClaims(claimsData);
       setFilteredClaims(claimsData);
     } catch (err) {
       console.error("Error fetching claims:", err);
+      // Optionally show error to user
     } finally {
       setLoading(false);
     }
@@ -106,6 +109,7 @@ export default function MyClaims() {
       case "rejected":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
       case "under review":
+      case "processing":
         return <Search className="h-4 w-4 text-blue-500" />;
       default:
         return <AlertTriangle className="h-4 w-4 text-gray-500" />;
@@ -158,9 +162,16 @@ export default function MyClaims() {
     navigate("/claims/new");
   };
 
-  const handleDownloadDocument = (claimId) => {
-    console.log("Download document for claim:", claimId);
+  const handleDownloadDocument = async (claimId) => {
+    try {
+      console.log("Download document for claim:", claimId);
+      // You can implement document download logic here
+      // For example: claimService.downloadClaimDocument(claimId)
+    } catch (err) {
+      console.error("Error downloading document:", err);
+    }
   };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
@@ -199,7 +210,12 @@ export default function MyClaims() {
     total: claims.length,
     approved: claims.filter((c) => c.status?.toLowerCase() === "approved")
       .length,
-    pending: claims.filter((c) => c.status?.toLowerCase() === "pending").length,
+    pending: claims.filter(
+      (c) =>
+        c.status?.toLowerCase() === "pending" ||
+        c.status?.toLowerCase() === "processing" ||
+        c.status?.toLowerCase() === "under review"
+    ).length,
     totalAmount: claims.reduce(
       (sum, claim) => sum + (parseFloat(claim.amount) || 0),
       0
@@ -207,7 +223,7 @@ export default function MyClaims() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff]  p-4 md:p-8">
+    <div className="min-h-screen bg-[#fff] p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -315,6 +331,7 @@ export default function MyClaims() {
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="under review">Under Review</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>

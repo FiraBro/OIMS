@@ -37,38 +37,52 @@ export const validate = (req, res, next) => {
 // Create Claim Validator
 // ---------------------------
 export const createClaimValidator = [
-  body("policyId").notEmpty().withMessage("Policy ID is required"),
+  // 1. Policy ID or Number - Updated message to reflect it can be either
+  body("policyId")
+    .notEmpty()
+    .withMessage("Policy ID or Policy Number is required")
+    .trim(),
+
+  // 2. Claim Type
   body("claimType")
     .notEmpty()
     .withMessage("Claim type is required")
     .isIn(ALLOWED_CLAIM_TYPES)
-    .withMessage(
-      `Claim type must be one of: ${ALLOWED_CLAIM_TYPES.join(", ")}`
-    ),
+    .withMessage(`Allowed types: ${ALLOWED_CLAIM_TYPES.join(", ")}`),
+
+  // 3. Description
   body("description")
     .notEmpty()
     .withMessage("Description is required")
     .isLength({ min: 10 })
-    .withMessage("Description should be at least 10 characters"),
+    .withMessage("Description should be at least 10 characters")
+    .trim(),
+
+  // 4. Amount
   body("amount")
     .notEmpty()
     .withMessage("Claim amount is required")
     .isFloat({ min: 0.01 })
     .withMessage("Claim amount must be a positive number"),
+
+  // 5. Document (File) Validation
+  // We use check() or body() here, but the logic stays in the custom block
   body("document").custom((value, { req }) => {
-    const file = req.file;
-    if (!file) throw new AppError("Supporting document is required", 400);
-    if (!ALLOWED_FILE_TYPES.includes(file.mimetype))
-      throw new AppError(
-        "Invalid file type. Only PDF, JPG, PNG are allowed",
-        400
-      );
-    if (file.size > MAX_FILE_SIZE)
-      throw new AppError("File size must be less than 10MB", 400);
+    if (!req.file) {
+      throw new Error("Supporting document (PDF/Image) is required");
+    }
+
+    if (!ALLOWED_FILE_TYPES.includes(req.file.mimetype)) {
+      throw new Error("Invalid file type. Only PDF, JPG, and PNG are allowed");
+    }
+
+    if (req.file.size > MAX_FILE_SIZE) {
+      throw new Error("File size must be less than 10MB");
+    }
+
     return true;
   }),
 ];
-
 // ---------------------------
 // Update Claim Status Validator
 // ---------------------------

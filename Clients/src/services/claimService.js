@@ -6,7 +6,7 @@ import api from "./api";
 
 // 1️⃣ Create a claim (with file upload)
 const createClaim = async (formData) => {
-  const res = await api.post("/claims", formData, {
+  const res = await api.post("/claims/create", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;

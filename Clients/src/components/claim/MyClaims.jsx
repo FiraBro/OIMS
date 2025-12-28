@@ -129,7 +129,7 @@ export default function MyClaims() {
     return (
       <Badge
         variant={variantMap[statusLower] || "outline"}
-        className="flex items-center gap-1.5"
+        className="flex items-center gap-1.5 border-gray-300"
       >
         {getStatusIcon(status)}
         <span className="capitalize">{status || "Unknown"}</span>
@@ -384,10 +384,10 @@ export default function MyClaims() {
                 )}
               </div>
             ) : (
-              <div className="rounded-md border border-gray-300">
-                <Table className="border border-gray-300">
-                  <TableHeader>
-                    <TableRow>
+              <div className="rounded-md border border-gray-100">
+                <Table className="border border-gray-200">
+                  <TableHeader className="border-b border-gray-100">
+                    <TableRow className="border-b border-gray-200 mt-2">
                       <TableHead className="w-[180px]">Claim ID</TableHead>
                       <TableHead>Policy Number</TableHead>
                       <TableHead>Type</TableHead>

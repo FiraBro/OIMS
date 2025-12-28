@@ -172,80 +172,52 @@ export default function ApplyPlan() {
 
   const handleSubmit = async () => {
     try {
-      // Ensure terms are agreed
-      if (!formData.agree) {
-        toast.error("You must agree to terms");
-        return;
-      }
-
-      // Ensure payment method is bank transfer
-      if (formData.payment.method !== "bank") {
-        toast.error("Payment method must be Bank Transfer");
-        return;
-      }
-
-      // Ensure at least one screenshot is uploaded
-      if (formData.files.length === 0) {
-        toast.error("Please upload a screenshot of your bank transfer");
-        return;
-      }
-
       const form = new FormData();
 
-      // Nested objects must be stringified
-      form.append(
-        "personal",
-        JSON.stringify({
-          fullName: formData.personal.fullName,
-          email: formData.personal.email,
-          phone: formData.personal.phone,
-          dob: formData.personal.dob,
-        })
-      );
+      // 1. Ensure clean objects (remove nulls/undefined)
+      const personal = {
+        fullName: formData.personal.fullName || "",
+        email: formData.personal.email || "",
+        phone: formData.personal.phone || "",
+        dob: formData.personal.dob || "",
+      };
 
-      form.append(
-        "nominee",
-        JSON.stringify({
-          name: formData.nominee.name,
-          relationship: formData.nominee.relationship,
-        })
-      );
+      const nominee = {
+        name: formData.nominee.name || "",
+        relationship: formData.nominee.relationship || "",
+      };
 
-      form.append(
-        "medical",
-        JSON.stringify({
-          history: formData.medical.history,
-        })
-      );
+      const medical = {
+        history: formData.medical.history || "",
+      };
 
-      form.append(
-        "payment",
-        JSON.stringify({
-          frequency: formData.payment.frequency,
-          method: formData.payment.method,
-        })
-      );
+      const payment = {
+        frequency: formData.payment.frequency || "monthly",
+        method: formData.payment.method || "bank",
+      };
 
-      form.append("startDate", policyDates.startDate);
-      form.append("endDate", policyDates.endDate);
+      // 2. Append to match controller's JSON.parse() lines
+      form.append("personal", JSON.stringify(personal));
+      form.append("nominee", JSON.stringify(nominee));
+      form.append("medical", JSON.stringify(medical));
+      form.append("payment", JSON.stringify(payment));
+
       form.append("planId", planId);
-      form.append("agree", String(Boolean(formData.agree)));
+      form.append("agree", String(formData.agree));
 
-      // Append uploaded files (transfer screenshot)
-      formData.files.forEach((file) => form.append("documents", file));
-
-      // 🔍 Debug
-      for (let pair of form.entries()) {
-        console.log(pair[0], pair[1]);
-      }
+      // 3. Append files - field name MUST be "documents"
+      formData.files.forEach((file) => {
+        form.append("documents", file);
+      });
 
       await applicationService.applyForPolicy(form);
-
-      toast.success("Application submitted successfully");
+      toast.success("Application submitted!");
       navigate("/my-applications");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to submit application");
+      console.error("Payload Error:", err.response?.data);
+      toast.error(
+        err.response?.data?.message || "Check your input and try again"
+      );
     }
   };
 

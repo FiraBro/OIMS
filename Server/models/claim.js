@@ -4,7 +4,8 @@ const claimSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   policyNumber: { type: String, required: true },
   reason: { type: String, required: true },
-  claimAmount: { type: Number },
+  claimType: { type: String, required: true },
+  amount: { type: Number },
   document: { type: String },
   status: {
     type: String,

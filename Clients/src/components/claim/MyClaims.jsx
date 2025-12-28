@@ -421,7 +421,7 @@ export default function MyClaims() {
                         </TableCell>
                         <TableCell>{getStatusBadge(claim.status)}</TableCell>
                         <TableCell className="text-gray-500">
-                          {formatDate(claim.createdAt)}
+                          {formatDate(claim.submittedAt)}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

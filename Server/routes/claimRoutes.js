@@ -18,7 +18,7 @@ const router = express.Router();
 
 // Create new claim with file upload & validation
 router.post(
-  "/",
+  "/create",
   protect,
   upload.single("document"), // use your middleware here
   createClaimValidator,

@@ -21,62 +21,59 @@ export default function RegisterForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateCurrentStep = () => {
-    switch (activeStep) {
-      case 0:
-        if (!formData.fullName.trim()) {
-          toast.error("Please enter your full name");
-          return false;
-        }
-        if (!formData.email.trim()) {
-          toast.error("Please enter your email");
-          return false;
-        }
-        if (!formData.password.trim()) {
-          toast.error("Please enter a password");
-          return false;
-        }
-        if (formData.password !== formData.passwordConfirm) {
-          toast.error("Passwords do not match");
-          return false;
-        }
-        return true;
-      default:
-        return true;
+    if (activeStep === 0) {
+      if (!formData.fullName.trim()) {
+        toast.error("Please enter your full name");
+        return false;
+      }
+      if (!formData.email.trim()) {
+        toast.error("Please enter your email");
+        return false;
+      }
+      if (!formData.password.trim()) {
+        toast.error("Please enter a password");
+        return false;
+      }
+      if (formData.password !== formData.passwordConfirm) {
+        toast.error("Passwords do not match");
+        return false;
+      }
     }
+    return true;
   };
-
-  const nextStep = () => {
-    if (validateCurrentStep()) setActiveStep(activeStep + 1);
-  };
-  const prevStep = () => setActiveStep(activeStep - 1);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!validateCurrentStep()) return;
+
     if (activeStep === steps.length - 1) {
       if (!acceptTerms) {
         toast.error("Please accept the terms and conditions");
         return;
       }
-      onSubmit(); // calls register(formData)
+      onSubmit(); // ✅ clean call
     } else {
-      nextStep();
+      setActiveStep((prev) => prev + 1);
     }
   };
 
   return (
     <div className="space-y-6">
       <StepIndicator steps={steps} activeStep={activeStep} />
+
       <form onSubmit={handleSubmit}>
         {activeStep === 0 && (
           <AccountStep
             formData={formData}
             onChange={onChange}
             showPassword={showPassword}
-            setShowPassword={setShowPassword}
+            setShowPassword={setShowPassword} // ✅ must exist
             showConfirmPassword={showConfirmPassword}
-            setShowConfirmPassword={setShowConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword} // ✅ must exist
           />
         )}
+
         {activeStep === 1 && (
           <PersonalInfoStep formData={formData} onChange={onChange} />
         )}
@@ -89,40 +86,33 @@ export default function RegisterForm({
           />
         )}
 
-        <div className="flex justify-between pt-8 border-t border-gray-200">
+        <div className="flex justify-between pt-8 border-t">
           {activeStep > 0 ? (
-            <Button type="button" variant="outline" onClick={prevStep}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setActiveStep(activeStep - 1)}
+            >
               ← Previous
             </Button>
           ) : (
-            <div></div>
+            <div />
           )}
 
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-500 text-white"
-            disabled={
-              isLoading || (activeStep === steps.length - 1 && !acceptTerms)
-            }
-          >
+          <Button type="submit" disabled={isLoading}>
             {isLoading
               ? "Processing..."
               : activeStep === steps.length - 1
-              ? "Create account"
+              ? "Create Account"
               : "Next Step →"}
           </Button>
         </div>
       </form>
 
-      <div className="text-center pt-4 border-t border-gray-200">
-        <p className="text-sm text-gray-600">
+      <div className="text-center pt-4">
+        <p className="text-sm">
           Already have an account?{" "}
-          <Button
-            type="button"
-            variant="link"
-            onClick={onSwitchToLogin}
-            className="text-blue-500 cursor-pointer font-semibold p-0 h-auto"
-          >
+          <Button variant="link" onClick={onSwitchToLogin}>
             Sign in here
           </Button>
         </p>

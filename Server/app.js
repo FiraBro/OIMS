@@ -1,4 +1,3 @@
-// app.js
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -52,7 +51,7 @@ app.use(`/api/${versions}/user`, userRouter);
 app.use(`/api/${versions}/notifications`, notificationRouter);
 app.use("/api/admin", adminRoutes);
 
-app.use("/api/applications", applicationRoutes);
+app.use(`/api/${versions}/applications`, applicationRoutes);
 
 // ===== 404 Handler (No *) =====
 app.use((req, res, next) => {

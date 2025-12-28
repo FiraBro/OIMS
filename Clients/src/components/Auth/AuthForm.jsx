@@ -26,13 +26,13 @@ export default function AuthForm() {
     address: { street: "", city: "", state: "", zip: "", country: "" },
   });
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) navigate("/");
   }, [user, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
+
     if (name.startsWith("address.")) {
       const key = name.split(".")[1];
       setFormData((prev) => ({
@@ -47,7 +47,7 @@ export default function AuthForm() {
     }
   };
 
-  const resetForm = () =>
+  const resetForm = () => {
     setFormData({
       fullName: "",
       email: "",
@@ -59,8 +59,9 @@ export default function AuthForm() {
       profilePicture: null,
       address: { street: "", city: "", state: "", zip: "", country: "" },
     });
+  };
 
-  // =================== LOGIN ===================
+  // ================= LOGIN =================
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -69,31 +70,42 @@ export default function AuthForm() {
       email: formData.email,
       password: formData.password,
     });
-    console.log("result", result);
+    console.log("LOGIN RESULT:", result);
     setIsLoading(false);
 
-    if (result.accessToken) {
+    if (result.status === "success") {
       toast.success("Login successful!");
-      navigate("/"); // redirect after success
+      navigate("/");
     } else {
-      toast.error(result.message || "Invalid credentials.");
+      toast.error(result?.message || "Invalid credentials");
     }
   };
 
-  // =================== REGISTER ===================
+  // ================= REGISTER =================
   const handleRegister = async () => {
-    // e.preventDefault();
     setIsLoading(true);
 
-    const result = await register(formData);
+    const payload = {
+      fullName: formData.fullName,
+      email: formData.email,
+      password: formData.password,
+      passwordConfirm: formData.password,
+
+      phone: formData.phone, // ✅ REQUIRED
+      dateOfBirth: formData.dateOfBirth, // ✅ REQUIRED
+    };
+
+    console.log("REGISTER PAYLOAD:", payload);
+
+    const result = await register(payload);
 
     setIsLoading(false);
 
-    if (result.success) {
-      toast.success("Account created successfully!");
-      navigate("/login"); // redirect after success
+    if (result?.id) {
+      toast.success("Account created! Please verify your email.");
+      navigate("/login");
     } else {
-      toast.error(result.message || "Registration failed. Try again.");
+      toast.error(result?.message || "Registration failed");
     }
   };
 
@@ -105,34 +117,26 @@ export default function AuthForm() {
           initial={{ opacity: 0, scale: 0.97, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: -10 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="w-full max-w-6xl bg-white rounded-3xl shadow-xl p-10 border border-gray-100"
+          transition={{ duration: 0.35 }}
+          className="w-full max-w-6xl bg-white rounded-3xl shadow-xl p-10"
         >
           {/* Header */}
           <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">
+            <h2 className="text-3xl font-bold">
               {activeMode === "login" ? "Welcome Back" : "Create Your Account"}
             </h2>
-            <p className="text-gray-500 text-sm mt-1">
-              {activeMode === "login"
-                ? "Sign in to continue to your dashboard"
-                : "Join us and manage your insurance easily"}
-            </p>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="flex mb-8 rounded-xl bg-gray-100 p-1">
+          {/* Switch */}
+          <div className="flex mb-8 bg-gray-100 rounded-xl p-1">
             <button
               onClick={() => {
                 setActiveMode("login");
                 resetForm();
               }}
-              className={`flex-1 py-2 text-center text-sm rounded-lg transition ${
-                activeMode === "login"
-                  ? "bg-white shadow font-medium"
-                  : "text-gray-500 hover:text-gray-700"
+              className={`flex-1 py-2 rounded-lg ${
+                activeMode === "login" ? "bg-white shadow" : ""
               }`}
-              disabled={isLoading}
             >
               Sign In
             </button>
@@ -141,51 +145,30 @@ export default function AuthForm() {
                 setActiveMode("register");
                 resetForm();
               }}
-              className={`flex-1 py-2 text-center text-sm rounded-lg transition ${
-                activeMode === "register"
-                  ? "bg-white shadow font-medium"
-                  : "text-gray-500 hover:text-gray-700"
+              className={`flex-1 py-2 rounded-lg ${
+                activeMode === "register" ? "bg-white shadow" : ""
               }`}
-              disabled={isLoading}
             >
               Register
             </button>
           </div>
 
-          {/* Forms */}
           <AnimatePresence mode="wait">
             {activeMode === "login" ? (
-              <motion.div
-                key="login-form"
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 40 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-              >
-                <LoginForm
-                  formData={formData}
-                  onChange={handleChange}
-                  onSubmit={handleLogin}
-                  isLoading={isLoading}
-                  onSwitchToRegister={() => setActiveMode("register")}
-                />
-              </motion.div>
+              <LoginForm
+                formData={formData}
+                onChange={handleChange}
+                onSubmit={handleLogin}
+                isLoading={isLoading}
+              />
             ) : (
-              <motion.div
-                key="register-form"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
-                transition={{ duration: 0.35, ease: "easeOut" }}
-              >
-                <RegisterForm
-                  formData={formData}
-                  onChange={handleChange}
-                  onSubmit={handleRegister}
-                  isLoading={isLoading}
-                  onSwitchToLogin={() => setActiveMode("login")}
-                />
-              </motion.div>
+              <RegisterForm
+                formData={formData}
+                onChange={handleChange}
+                onSubmit={handleRegister}
+                isLoading={isLoading}
+                onSwitchToLogin={() => setActiveMode("login")}
+              />
             )}
           </AnimatePresence>
         </motion.div>

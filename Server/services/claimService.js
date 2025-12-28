@@ -4,25 +4,57 @@ import AppError from "../utils/AppError.js";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
 import NotificationService from "./notificationService.js"; // <-- for creating notifications
+import mongoose from "mongoose"; // Required for isValidObjectId check
 
 class ClaimService {
   // ---------------------------
   // Existing methods
   // ---------------------------
-  async createClaim(data, userId) {
-    const policy = await Policy.findOne({
-      _id: data.policyId,
-      userId,
-      isDeleted: false,
-    });
-    if (!policy) throw new AppError("Policy not found", 404);
 
+  async createClaim(data, userId) {
+    // 1. Find the policy by ID OR by Policy Number
+    // We check if data.policyId is a valid MongoDB ID format before searching by _id
+    const isId = mongoose.isValidObjectId(data.policyId);
+
+    const policy = await Policy.findOne({
+      $and: [
+        {
+          $or: [
+            { _id: isId ? data.policyId : null },
+            { policyNumber: data.policyId },
+          ],
+        },
+        { userId: userId }, // Security: Must belong to the logged-in user
+        { isDeleted: false },
+      ],
+    });
+
+    if (!policy) {
+      throw new AppError(
+        "Policy not found, unauthorized, or has been deleted.",
+        404
+      );
+    }
+
+    // 2. Generate unique claim number
     const claimNumber = `CLM-${crypto.randomBytes(6).toString("hex")}`;
 
+    // 3. Create the claim using data from both the request and the found policy
     const claim = await Claim.create({
-      ...data,
+      // Fields from the Frontend request
+      claimType: data.claimType,
+      description: data.description,
+      amount: data.amount,
+      reason: data.description, // Mapping description to reason per your Model
+      documentUrl: data.documentUrl,
+
+      // Fields from the Policy we just found (The "Source of Truth")
+      policyId: policy._id,
+      policyNumber: policy.policyNumber,
+      user: userId, // Mapping userId to user per your Model
+
+      // System generated fields
       claimNumber,
-      userId,
       createdBy: userId,
     });
 
@@ -30,9 +62,12 @@ class ClaimService {
   }
 
   async getMyClaims(userId) {
-    return await Claim.find({ userId, isDeleted: false })
-      .populate("policyId")
-      .sort({ createdAt: -1 })
+    return await Claim.find({
+      user: userId, // Match schema field "user"
+      // Removed "isDeleted" because it's not in your schema
+    })
+      .populate("user", "fullName email") // Optional: get user details
+      .sort({ submittedAt: -1 }) // Match schema field "submittedAt"
       .lean();
   }
 

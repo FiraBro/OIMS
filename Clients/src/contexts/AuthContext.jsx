@@ -1,105 +1,118 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "../services/api";
-import {
-  login as loginRequest,
-  register as registerRequest,
-  logout as logoutRequest,
-} from "../services/authService";
+import * as authService from "@/services/authService";
 
-const AuthContext = createContext();
+const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
-  const [accessToken, setAccessToken] = useState(() => {
-    return localStorage.getItem("accessToken") || null;
-  });
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
-  // Persist to localStorage
+  /* =====================================
+   🔹 HYDRATE AUTH (ONCE)
+  ===================================== */
   useEffect(() => {
-    if (user) localStorage.setItem("user", JSON.stringify(user));
-    else localStorage.removeItem("user");
+    try {
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("token");
+
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser));
+        setAccessToken(storedToken);
+      }
+    } catch (err) {
+      console.error("Auth hydration failed", err);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+    } finally {
+      setAuthReady(true);
+    }
+  }, []);
+
+  /* =====================================
+   🔹 SYNC STATE → localStorage
+  ===================================== */
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
+    }
   }, [user]);
 
   useEffect(() => {
-    if (accessToken) localStorage.setItem("accessToken", accessToken);
-    else localStorage.removeItem("accessToken");
+    if (accessToken) {
+      localStorage.setItem("token", accessToken);
+    } else {
+      localStorage.removeItem("token");
+    }
   }, [accessToken]);
 
-  useEffect(() => {
-    setLoading(false);
-  }, []);
+  /* =====================================
+   🔹 LOGIN
+  ===================================== */
+  const login = async (credentials) => {
+    const res = await authService.login(credentials);
 
-  const login = async ({ email, password }) => {
-    try {
-      const res = await api.post("/auth/login", { email, password });
-      const { user, accessToken } = res.data.data; // ✅ extract correctly
-
-      // Store user in state and localStorage
-      setUser(user);
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", accessToken);
-
-      return { success: true, user };
-    } catch (err) {
-      console.error(err);
-      return {
-        success: false,
-        message: err.response?.data?.message || "Login failed",
-      };
+    if (res.status === "success" && res.data) {
+      setUser(res.data.user);
+      setAccessToken(res.data.accessToken);
+    } else {
+      // Optional: handle error response
+      throw new Error(res?.message || "Login failed");
     }
+
+    return res;
   };
 
-  const register = async (userData) => {
-    try {
-      const res = await registerRequest(userData);
-
-      if (res?.status === "success") {
-        setUser(res.user);
-        return { success: true };
-      } else {
-        return {
-          success: false,
-          message: res?.message || "Registration failed",
-        };
-      }
-    } catch (err) {
-      return {
-        success: false,
-        message: err.response?.data?.message || "Registration failed",
-      };
-    }
-  };
-
+  /* =====================================
+   🔹 LOGOUT (FAIL-SAFE)
+  ===================================== */
   const logout = async () => {
     try {
-      await logoutRequest();
-    } catch (err) {
-      console.error(err);
+      await authService.logout();
+    } catch {
+      // backend failure should NOT block UI logout
     } finally {
       setUser(null);
       setAccessToken(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
     }
   };
+
+  /* =====================================
+   🔹 GUARD
+  ===================================== */
+  if (!authReady) return null;
 
   return (
     <AuthContext.Provider
       value={{
         user,
         accessToken,
-        loading,
+        authReady,
+        isAuthenticated: Boolean(user && accessToken),
+
         login,
-        register,
         logout,
-        isAuthenticated: !!user,
+        register: authService.register,
+        forgotPassword: authService.forgotPassword,
+        resetPassword: authService.resetPassword,
+        verifyEmail: authService.verifyEmail,
+        resendVerificationEmail: authService.resendVerificationEmail,
+        changePassword: authService.changePassword,
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+  return context;
+};

@@ -310,7 +310,7 @@ export default function Navbar() {
       to: "/support",
       text: "Support",
       icon: <FiHelpCircle size={18} />,
-      active: location.pathname === "/contact",
+      active: location.pathname === "/support",
     },
   ];
 

@@ -311,7 +311,7 @@ export default function UserProfile() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className=" border-gray-400">
                 Download
               </Button>
             </motion.div>

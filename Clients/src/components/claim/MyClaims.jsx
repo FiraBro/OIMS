@@ -31,6 +31,7 @@ import {
   Eye,
   RefreshCw,
   AlertTriangle,
+  DollarSign,
   Shield,
 } from "lucide-react";
 import {
@@ -247,61 +248,105 @@ export default function MyClaims() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Claims */}
-          <Card className="border border-gray-200 bg-gradient-to-br from-blue-50 to-blue-100">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-700">
-                  Total Claims
-                </p>
-                <p className="mt-2 text-3xl font-bold text-blue-900">
-                  {stats.total}
-                </p>
+          <Card className="relative overflow-hidden border-none shadow-sm bg-white hover:shadow-md transition-shadow">
+            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    Total Claims
+                  </p>
+                  <h3 className="mt-1 text-3xl font-bold text-gray-900">
+                    {stats.total}
+                  </h3>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-xl">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
               </div>
-              <FileText className="h-10 w-10 text-blue-600" />
+              <div className="mt-4 flex items-center text-sm">
+                <span className="text-gray-400 font-medium">
+                  Lifetime Submissions
+                </span>
+              </div>
             </CardContent>
           </Card>
 
           {/* Approved Claims */}
-          <Card className="border border-gray-200 bg-gradient-to-br from-green-50 to-green-100">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-700">Approved</p>
-                <p className="mt-2 text-3xl font-bold text-green-900">
-                  {stats.approved}
-                </p>
+          <Card className="relative overflow-hidden border-none shadow-sm bg-white hover:shadow-md transition-shadow">
+            <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    Approved
+                  </p>
+                  <h3 className="mt-1 text-3xl font-bold text-emerald-600">
+                    {stats.approved}
+                  </h3>
+                </div>
+                <div className="p-3 bg-emerald-50 rounded-xl">
+                  <CheckCircle className="h-6 w-6 text-emerald-600" />
+                </div>
               </div>
-              <CheckCircle className="h-10 w-10 text-green-600" />
+              <div className="mt-4 flex items-center text-sm">
+                <span className="text-emerald-600 font-medium">
+                  {stats.total > 0
+                    ? Math.round((stats.approved / stats.total) * 100)
+                    : 0}
+                  % Success Rate
+                </span>
+              </div>
             </CardContent>
           </Card>
 
           {/* Pending Claims */}
-          <Card className="border border-gray-200 bg-gradient-to-br from-amber-50 to-amber-100">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-amber-700">Pending</p>
-                <p className="mt-2 text-3xl font-bold text-amber-900">
-                  {stats.pending}
-                </p>
+          <Card className="relative overflow-hidden border-none shadow-sm bg-white hover:shadow-md transition-shadow">
+            <div className="absolute top-0 left-0 w-1 h-full bg-amber-500" />
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    In Review
+                  </p>
+                  <h3 className="mt-1 text-3xl font-bold text-amber-600">
+                    {stats.pending}
+                  </h3>
+                </div>
+                <div className="p-3 bg-amber-50 rounded-xl">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                </div>
               </div>
-              <Clock className="h-10 w-10 text-amber-600" />
+              <div className="mt-4 flex items-center text-sm">
+                <span className="text-gray-400 font-medium italic">
+                  Awaiting Assessment
+                </span>
+              </div>
             </CardContent>
           </Card>
 
           {/* Total Amount */}
-          <Card className="border border-gray-200 bg-gradient-to-br from-purple-50 to-purple-100">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-purple-700">
-                  Total Amount
-                </p>
-                <p className="mt-2 text-3xl font-bold text-purple-900">
-                  {formatCurrency(stats.totalAmount)}
-                </p>
+          <Card className="relative overflow-hidden border-none shadow-sm bg-slate-900 text-white hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Claim Value
+                  </p>
+                  <h3 className="mt-1 text-2xl font-bold text-white">
+                    {stats.totalAmount}
+                  </h3>
+                </div>
+                <div className="p-3 bg-slate-800 rounded-xl border border-slate-700">
+                  <DollarSign className="h-6 w-6 text-emerald-400" />
+                </div>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-600">
-                <span className="font-bold text-white">$</span>
+              <div className="mt-4 flex items-center text-sm">
+                <span className="text-slate-400 font-medium">
+                  Estimated Payout
+                </span>
               </div>
             </CardContent>
           </Card>

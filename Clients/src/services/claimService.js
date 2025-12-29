@@ -15,6 +15,7 @@ const createClaim = async (formData) => {
 // 2️⃣ Get my claims (logged-in user)
 const getMyClaims = async () => {
   const res = await api.get("/claims/me");
+  console.log("getMyClaims response:", res);
   return res.data;
 };
 

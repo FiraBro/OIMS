@@ -7,17 +7,14 @@ import api from "./api";
 // Apply for a policy (multipart/form-data)
 const applyForPolicy = async (formData) => {
   console.log("Token from localStorage:", localStorage.getItem("token"));
-  const res = await api.post("/applications/apply", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-  console.log("res", res);
+  const res = await api.post("/applications/apply", formData); // no manual headers
   return res.data;
 };
 
 // Get logged-in user's applications
 const getMyApplications = async () => {
   const res = await api.get("/applications/my-applications");
-  console.log(res);
+  console.log("getMyApplications response:", res);
   return res.data;
 };
 

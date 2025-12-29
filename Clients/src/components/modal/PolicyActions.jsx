@@ -11,94 +11,21 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FiShield, FiCalendar, FiDollarSign } from "react-icons/fi";
-import { policyService } from "@/services/policyService";
 
-export default function PolicyActions({ policy, onPolicyUpdated }) {
+export default function AdminPolicyActions({ policy }) {
   const [open, setOpen] = useState(false);
-  const [showRenewForm, setShowRenewForm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [paymentReference, setPaymentReference] = useState("");
 
   const plan = policy.planId || {};
   const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : "-");
 
-  /* ---------------- Submit Renewal ---------------- */
-  const handleRenewSubmit = async (e) => {
-    e.preventDefault();
-    if (!paymentReference) return;
-
-    try {
-      setLoading(true);
-
-      const response = await policyService.requestPolicyRenewal(policy._id, {
-        paymentReference,
-      });
-
-      setShowRenewForm(false);
-      setPaymentReference("");
-
-      onPolicyUpdated?.(response.data);
-    } catch (err) {
-      console.error(err);
-      alert(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to submit renewal request"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-3">
-      {/* ---------------- Renewal Button ---------------- */}
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => setShowRenewForm((prev) => !prev)}
-      >
-        {showRenewForm ? "Cancel Renewal" : "Renew Policy"}
-      </Button>
-
-      {/* ---------------- Renewal Form ---------------- */}
-      <AnimatePresence>
-        {showRenewForm && (
-          <motion.form
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="flex flex-col gap-3 p-4 border rounded-md bg-gray-50 overflow-hidden"
-            onSubmit={handleRenewSubmit}
-          >
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Bank Transfer Reference
-              </label>
-              <input
-                type="text"
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="e.g. CBE123456789"
-                className="mt-1 block w-full border rounded-md p-2"
-                required
-              />
-            </div>
-
-            <Button type="submit" disabled={loading}>
-              {loading ? "Processing..." : "Submit Renewal"}
-            </Button>
-          </motion.form>
-        )}
-      </AnimatePresence>
-
-      {/* ---------------- Policy Details Modal ---------------- */}
+    <div>
+      {/* View Details Button */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger>
-          <Button size="sm">View Full Details</Button>
+        <DialogTrigger asChild>
+          <Button size="sm">View Details</Button>
         </DialogTrigger>
 
         <DialogContent className="max-w-3xl p-0 overflow-hidden bg-gray-50 border border-gray-200">
@@ -111,20 +38,20 @@ export default function PolicyActions({ policy, onPolicyUpdated }) {
             {/* Header */}
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">
-                {plan.name}
+                {plan.name || "Policy Details"}
               </DialogTitle>
               <DialogDescription className="text-gray-500">
-                Policy No: {policy.policyNumber}
+                Policy No: {policy.policyNumber || "N/A"}
               </DialogDescription>
             </DialogHeader>
 
-            {/* Status + Category */}
-            <div className="flex gap-2 mt-4">
-              <Badge className="bg-green-100 text-green-700">
+            {/* Status & Category */}
+            <div className="flex gap-2 mt-4 flex-wrap">
+              <Badge className="bg-blue-100 text-blue-700">
                 {policy.status}
               </Badge>
               <Badge variant="outline" className="border-gray-400">
-                {plan.category}
+                {plan.category || "Uncategorized"}
               </Badge>
             </div>
 
@@ -137,10 +64,12 @@ export default function PolicyActions({ policy, onPolicyUpdated }) {
                 <div>
                   <p className="text-sm text-gray-500">Premium</p>
                   <p className="font-semibold">
-                    ${policy.premium} / {plan.premiumFrequency}
+                    ${policy.premium || plan.premium} /{" "}
+                    {plan.premiumFrequency || "period"}
                   </p>
                 </div>
               </div>
+
               <div className="flex gap-3 items-start">
                 <FiCalendar className="text-indigo-600 mt-1" />
                 <div>
@@ -151,12 +80,13 @@ export default function PolicyActions({ policy, onPolicyUpdated }) {
                   </p>
                 </div>
               </div>
+
               <div className="flex gap-3 items-start">
                 <FiShield className="text-indigo-600 mt-1" />
                 <div>
                   <p className="text-sm text-gray-500">Coverage Amount</p>
                   <p className="font-semibold">
-                    ${plan.coverageAmount?.toLocaleString()}
+                    ${plan.coverageAmount?.toLocaleString() || "N/A"}
                   </p>
                 </div>
               </div>
@@ -168,35 +98,44 @@ export default function PolicyActions({ policy, onPolicyUpdated }) {
             <div>
               <h4 className="font-semibold mb-2">Coverage Summary</h4>
               <p className="text-sm text-gray-600 leading-relaxed">
-                {plan.coverage}
+                {plan.coverage || "No coverage details available"}
               </p>
             </div>
 
-            {/* Key Info */}
+            {/* Policy Details */}
             <div className="grid md:grid-cols-2 gap-6 mt-6">
               <div>
-                <h4 className="font-semibold mb-2">Policy Details</h4>
+                <h4 className="font-semibold mb-2">Policy Information</h4>
                 <ul className="text-sm space-y-1 text-gray-700">
-                  <li>Network Size: {plan.networkSize}</li>
-                  <li>Deductible: ${plan.deductible}</li>
-                  <li>Claim Settlement: {plan.claimSettlementRatio}%</li>
+                  <li>Network Size: {plan.networkSize || "N/A"}</li>
+                  <li>Deductible: ${plan.deductible || "N/A"}</li>
+                  <li>
+                    Claim Settlement:{" "}
+                    {plan.claimSettlementRatio
+                      ? `${plan.claimSettlementRatio}%`
+                      : "N/A"}
+                  </li>
                 </ul>
               </div>
 
               <div>
                 <h4 className="font-semibold mb-2">Key Features</h4>
                 <div className="flex flex-wrap gap-2">
-                  {plan.features?.slice(0, 6).map((f, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">
-                      {f}
-                    </Badge>
-                  ))}
+                  {plan.features?.length ? (
+                    plan.features.slice(0, 6).map((f, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {f}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No features listed</p>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Close Button */}
-            <DialogClose>
+            <DialogClose asChild>
               <Button className="mt-8 w-full border-blue-600" variant="outline">
                 Close
               </Button>

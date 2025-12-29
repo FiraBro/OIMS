@@ -47,7 +47,7 @@ router.get(
 );
 
 // Update claim status
-router.patch(
+router.put(
   "/:id/status",
   protect,
   restrictTo(ROLES.ADMIN),

@@ -83,17 +83,16 @@ class ClaimService {
     return claim;
   }
 
-  async listAllClaims({ page, limit }) {
+  async listAllClaims({ page = 1, limit = 10 }) {
     const skip = (page - 1) * limit;
 
-    const claims = await Claim.find({ isDeleted: false })
-      .populate("policyId")
-      .populate("userId")
+    const claims = await Claim.find({})
+      .populate("user")
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 });
+      .sort({ submittedAt: -1 });
 
-    const total = await Claim.countDocuments({ isDeleted: false });
+    const total = await Claim.countDocuments();
 
     return { claims, total };
   }

@@ -98,19 +98,23 @@ class ClaimService {
   }
 
   async updateStatus(id, status, adminId) {
+    // Find and update claim
     const claim = await Claim.findOneAndUpdate(
-      { _id: id, isDeleted: false },
-      { status, updatedBy: adminId },
+      { _id: id }, // removed isDeleted
+      { status, updatedBy: adminId }, // optional, add field to schema
       { new: true }
-    ).populate("userId");
+    ).populate("user"); // correct field
 
     if (!claim) throw new AppError("Claim not found", 404);
 
     try {
-      const subject = `Your claim ${claim.claimNumber} status has been updated`;
-      const text = `Hello ${claim.userId.fullName},\n\nYour claim status has been updated to "${status}".\n\nThank you.`;
+      const subject = `Your claim ${claim.policyNumber} status has been updated`;
+      const text = `Hello ${
+        claim.user.fullName || "User"
+      },\n\nYour claim status has been updated to "${status}".\n\nThank you.`;
+
       await sendEmail({
-        email: claim.userId.email,
+        email: claim.user.email,
         subject,
         text,
       });

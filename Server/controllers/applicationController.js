@@ -6,15 +6,20 @@ import catchAsync from "../utils/catchAsync.js";
 
 export const applyForPolicy = async (req, res) => {
   try {
-    const personal = JSON.parse(req.body.personal);
-    const nominee = JSON.parse(req.body.nominee);
-    const medical = JSON.parse(req.body.medical);
-    const payment = JSON.parse(req.body.payment);
+    // Safety check: if req.body.personal is missing, JSON.parse will receive an empty string/undefined and crash.
+    // We use a fallback to "{}" string so it parses to an empty object.
+    const personal = JSON.parse(req.body.personal || "{}");
+    const nominee = JSON.parse(req.body.nominee || "{}");
+    const medical = JSON.parse(req.body.medical || "{}");
+    const payment = JSON.parse(req.body.payment || "{}");
+
     const planId = req.body.planId;
     const agree = req.body.agree === "true";
-    const documents = req.files.map((file) => ({
+
+    // Ensure req.files exists (Multer puts files here)
+    const documents = (req.files || []).map((file) => ({
       name: file.originalname,
-      url: file.path, // or a full URL if you serve static files
+      url: file.path,
       uploadedAt: new Date(),
     }));
 

@@ -1,20 +1,14 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { claimService } from "@/services/claimService";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -23,57 +17,58 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Upload, Pencil, X } from "lucide-react";
-import { toast } from "react-toastify";
-import { motion } from "framer-motion";
-import axios from "axios";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Shield,
+  RefreshCw,
+  Eye,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
-const STATUS = ["Pending", "Under Review", "Approved", "Rejected", "Settled"];
-const CLAIM_TYPES = ["Auto Accident", "Property Damage", "Theft", "Other"];
-const POLICY_TYPES = ["Auto", "Home", "Property", "Liability"];
+/* ---------------- Utils ---------------- */
 
-export default function ClaimsManagement({ role = "user" }) {
+const formatDate = (date) =>
+  date ? format(new Date(date), "MMM dd, yyyy") : "—";
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount || 0);
+
+const statusBadge = (status) => {
+  const map = {
+    pending: "outline",
+    processing: "secondary",
+    approved: "default",
+    rejected: "destructive",
+  };
+  return (
+    <Badge variant={map[status] || "outline"} className="capitalize">
+      {status}
+    </Badge>
+  );
+};
+
+/* ---------------- Page ---------------- */
+
+export default function AdminClaimsManagement() {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    policyId: "",
-    incidentDate: "",
-    incidentLocation: "",
-    claimType: CLAIM_TYPES[0],
-    estimatedLoss: "",
-    incidentDescription: "",
-    documents: [],
-  });
-  const [filePreviews, setFilePreviews] = useState([]);
-  const [selectedClaim, setSelectedClaim] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    status: "",
-    policyType: "",
-    startDate: "",
-    endDate: "",
-  });
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-  });
+  const [updatingId, setUpdatingId] = useState(null);
 
-  const api = axios.create({ baseURL: "/api/v1" });
-
-  // Fetch claims
   const fetchClaims = async () => {
-    setLoading(true);
     try {
-      const { data } = await api.get("/claims", {
-        params: { page: pagination.page, limit: pagination.limit },
-      });
-      setClaims(data.claims);
-      setPagination((prev) => ({ ...prev, total: data.total }));
+      setLoading(true);
+      const res = await claimService.listAllClaims();
+      console.log("Claims:", res);
+      setClaims(res.data || res.claims || []);
     } catch (err) {
-      toast.error("Failed to fetch claims.");
-      console.error(err);
+      console.error("Failed to load claims", err);
     } finally {
       setLoading(false);
     }
@@ -81,369 +76,160 @@ export default function ClaimsManagement({ role = "user" }) {
 
   useEffect(() => {
     fetchClaims();
-  }, [pagination.page]);
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === "file") {
-      const fileList = Array.from(files);
-      setFormData((prev) => ({ ...prev, documents: fileList }));
-      setFilePreviews(fileList.map((f) => URL.createObjectURL(f)));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmitClaim = async (e) => {
-    e.preventDefault();
-    if (
-      !formData.policyId ||
-      !formData.incidentDate ||
-      !formData.incidentLocation ||
-      !formData.estimatedLoss
-    ) {
-      toast.error("Please fill all required fields.");
+  const updateStatus = async (id, status) => {
+    if (!confirm(`Are you sure you want to mark this claim as ${status}?`))
       return;
-    }
-
-    const formPayload = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === "documents")
-        value.forEach((f) => formPayload.append("documents", f));
-      else formPayload.append(key, value);
-    });
 
     try {
-      await api.post("/claims", formPayload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      toast.success("Claim submitted successfully!");
-      setFormData({
-        policyId: "",
-        incidentDate: "",
-        incidentLocation: "",
-        claimType: CLAIM_TYPES[0],
-        estimatedLoss: "",
-        incidentDescription: "",
-        documents: [],
-      });
-      setFilePreviews([]);
+      setUpdatingId(id);
+      await claimService.updateClaimStatus(id, status);
       fetchClaims();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to submit claim");
+      alert("Failed to update claim status");
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const filteredClaims = claims.filter((c) => {
-    const statusMatch = filters.status ? c.status === filters.status : true;
-    const policyMatch = filters.policyType
-      ? c.policyId.type === filters.policyType
-      : true;
-    const dateMatch =
-      (!filters.startDate ||
-        new Date(c.incidentDate) >= new Date(filters.startDate)) &&
-      (!filters.endDate ||
-        new Date(c.incidentDate) <= new Date(filters.endDate));
-    return statusMatch && policyMatch && dateMatch;
-  });
+  const stats = {
+    total: claims.length,
+    pending: claims.filter((c) => c.status === "pending").length,
+    approved: claims.filter((c) => c.status === "approved").length,
+    rejected: claims.filter((c) => c.status === "rejected").length,
+  };
+
+  /* ---------------- Loading ---------------- */
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
-      <h1 className="text-3xl font-bold mb-6 text-gray-900">
-        Claims Management
-      </h1>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="p-6 space-y-6"
+    >
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Shield className="text-blue-600" />
+            Claims Management
+          </h1>
+          <p className="text-gray-600">
+            Review, approve, or reject insurance claims
+          </p>
+        </div>
 
-      {/* Claim Form */}
-      <motion.div layout className="bg-white rounded-xl shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Submit New Claim</h2>
-        <form className="space-y-4" onSubmit={handleSubmitClaim}>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Policy *
-              </label>
-              <Select
-                value={formData.policyId}
-                onValueChange={(v) =>
-                  setFormData((prev) => ({ ...prev, policyId: v }))
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Policy" />
-                </SelectTrigger>
-                <SelectContent>
-                  {POLICY_TYPES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Incident Date *
-              </label>
-              <Input
-                type="date"
-                name="incidentDate"
-                value={formData.incidentDate}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Location *
-              </label>
-              <Input
-                type="text"
-                name="incidentLocation"
-                value={formData.incidentLocation}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Claim Type
-              </label>
-              <Select
-                value={formData.claimType}
-                onValueChange={(v) =>
-                  setFormData((prev) => ({ ...prev, claimType: v }))
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLAIM_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Estimated Loss *
-              </label>
-              <Input
-                type="number"
-                name="estimatedLoss"
-                value={formData.estimatedLoss}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 font-medium text-gray-700">
-                Documents
-              </label>
-              <Input
-                type="file"
-                name="documents"
-                onChange={handleInputChange}
-                multiple
-              />
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {filePreviews.map((src, idx) => (
-                  <img
-                    key={idx}
-                    src={src}
-                    alt="preview"
-                    className="h-16 w-16 object-cover rounded"
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-          <Button type="submit" className="mt-2">
-            Submit Claim
-          </Button>
-        </form>
-      </motion.div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl shadow p-4 mb-4 flex flex-wrap gap-4 items-center">
-        <Select
-          value={filters.status}
-          onValueChange={(v) => setFilters((prev) => ({ ...prev, status: v }))}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={filters.policyType}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, policyType: v }))
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="All Policies" />
-          </SelectTrigger>
-          <SelectContent>
-            {POLICY_TYPES.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Input
-          type="date"
-          value={filters.startDate}
-          onChange={(e) =>
-            setFilters((prev) => ({ ...prev, startDate: e.target.value }))
-          }
-        />
-        <Input
-          type="date"
-          value={filters.endDate}
-          onChange={(e) =>
-            setFilters((prev) => ({ ...prev, endDate: e.target.value }))
-          }
-        />
+        <Button variant="outline" onClick={fetchClaims}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
-      {/* Claims Table */}
-      <div className="overflow-x-auto bg-white rounded-xl shadow p-4">
-        {loading ? (
-          <p>Loading claims...</p>
-        ) : (
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          ["Total", stats.total],
+          ["Pending", stats.pending],
+          ["Approved", stats.approved],
+          ["Rejected", stats.rejected],
+        ].map(([label, value]) => (
+          <Card key={label}>
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-500">{label}</p>
+              <p className="text-2xl font-bold">{value}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Claims</CardTitle>
+          <CardDescription>
+            Administrative overview of submitted claims
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Claim ID</TableHead>
-                <TableHead>Policy Type</TableHead>
-                <TableHead>Incident Date</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Policy</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Claim Amount</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
-              {filteredClaims.map((claim) => (
-                <TableRow key={claim._id} className="hover:bg-gray-50">
-                  <TableCell>{claim.claimNumber}</TableCell>
-                  <TableCell>{claim.policyId?.type}</TableCell>
-                  <TableCell>
-                    {new Date(claim.incidentDate).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        claim.status === "Pending"
-                          ? "secondary"
-                          : claim.status === "Approved"
-                          ? "success"
-                          : claim.status === "Rejected"
-                          ? "destructive"
-                          : "default"
-                      }
-                    >
-                      {claim.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>${claim.estimatedLoss}</TableCell>
-                  <TableCell>
-                    {new Date(claim.updatedAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="flex gap-2">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedClaim(claim);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      View
-                    </Button>
-                    {role !== "user" && (
-                      <Button variant="outline" size="sm">
-                        <Pencil className="w-4 h-4" />
+              <AnimatePresence>
+                {claims.map((claim) => (
+                  <motion.tr
+                    key={claim._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <TableCell>{claim._id.slice(0, 8)}...</TableCell>
+                    <TableCell>{claim.policyNumber}</TableCell>
+                    <TableCell>{claim.claimType}</TableCell>
+                    <TableCell>{formatCurrency(claim.amount)}</TableCell>
+                    <TableCell>{statusBadge(claim.status)}</TableCell>
+                    <TableCell>{formatDate(claim.createdAt)}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button size="sm" variant="outline">
+                        <Eye className="h-4 w-4" />
                       </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+
+                      {claim.status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-green-600 text-white"
+                            disabled={updatingId === claim._id}
+                            onClick={() => updateStatus(claim._id, "approved")}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            disabled={updatingId === claim._id}
+                            onClick={() => updateStatus(claim._id, "rejected")}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+
+                      {claim.status === "approved" && (
+                        <Button size="sm" variant="secondary" disabled>
+                          Approved
+                        </Button>
+                      )}
+                    </TableCell>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
             </TableBody>
           </Table>
-        )}
-      </div>
-
-      {/* Claim Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Claim Details - {selectedClaim?.claimNumber}
-            </DialogTitle>
-            <DialogClose>
-              <X className="w-5 h-5" />
-            </DialogClose>
-          </DialogHeader>
-          {selectedClaim && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-2"
-            >
-              <p>
-                <strong>Status:</strong> {selectedClaim.status}
-              </p>
-              <p>
-                <strong>Policy Type:</strong> {selectedClaim.policyId?.type}
-              </p>
-              <p>
-                <strong>Claim Amount:</strong> ${selectedClaim.estimatedLoss}
-              </p>
-              <h3 className="font-semibold">History</h3>
-              <ul className="border-l-2 border-blue-500 ml-4 space-y-1">
-                {selectedClaim.history?.map((h, idx) => (
-                  <li key={idx}>
-                    <span className="font-medium">
-                      {new Date(h.date).toLocaleDateString()}:
-                    </span>{" "}
-                    {h.status} - {h.note}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex gap-2 flex-wrap mt-2">
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4" /> Upload Documents
-                </Button>
-                <Button variant="outline" size="sm">
-                  Add Note
-                </Button>
-                <Button variant="default" size="sm">
-                  Request Update
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

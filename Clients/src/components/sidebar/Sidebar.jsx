@@ -1,148 +1,104 @@
-// components/admin/Sidebar.jsx
-import React from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
-  Users,
-  Settings,
-  FileText,
-  BarChart3,
-  ShoppingCart,
-  Package,
-  Bell,
-  HelpCircle,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+  FiGrid,
+  FiFileText,
+  FiUsers,
+  FiCheckCircle,
+  FiBarChart2,
+  FiSettings,
+  FiLogOut,
+  FiShield,
+} from "react-icons/fi";
+import { cn } from "@/lib/utils"; // Standard shadcn utility
 
-export default function Sidebar({ collapsed, setCollapsed, isOpen }) {
-  const navigate = useNavigate();
-  const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: "Dashboard",
-      to: "/admin/dashboard",
-      active: true,
-    },
-    { icon: Users, label: "Users", to: "/admin/users" },
-    { icon: ShoppingCart, label: "Orders", to: "/admin/orders" },
-    { icon: ShoppingCart, label: "Claim", to: "/admin/claims" },
-    { icon: Package, label: "Products", to: "/admin/products" },
-    { icon: FileText, label: "Invoices", to: "/admin/invoices" },
-    { icon: BarChart3, label: "Analytics", to: "/admin/analytics" },
-    { icon: Bell, label: "Notifications", to: "/admin/notifications" },
-    { icon: Settings, label: "Settings", to: "/admin/settings" },
-    { icon: HelpCircle, label: "Help & Support", to: "/admin/help" },
-  ];
+const navItems = [
+  { name: "Dashboard", path: "/admin/dashboard", icon: FiGrid },
+  { name: "Applications", path: "/admin/applications", icon: FiFileText },
+  { name: "Policies", path: "/admin/all-policies", icon: FiFileText },
+  { name: "Claims", path: "/admin/claims", icon: FiCheckCircle },
+  { name: "Customers", path: "/admin/users", icon: FiUsers },
+  { name: "Analytics", path: "/admin/reports", icon: FiBarChart2 },
+  { name: "Settings", path: "/admin/settings", icon: FiSettings },
+];
+
+export default function Sidebar() {
+  const location = useLocation();
 
   return (
-    <motion.aside
-      className={cn(
-        "flex flex-col h-full bg-white border-r border-gray-200",
-        collapsed ? "w-20" : "w-64"
-      )}
-      initial={false}
-      animate={{ width: collapsed ? 80 : 256 }}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <motion.div
-          className="flex items-center gap-2"
-          animate={{ opacity: collapsed ? 0 : 1 }}
-          transition={{ duration: 0.2 }}
-        >
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600" />
-          <span className="text-xl font-bold text-gray-800">AdminPro</span>
-        </motion.div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex hover:bg-gray-100"
-        >
-          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </Button>
+    <aside className="flex flex-col w-72 border border-gray-300 bg-slate-50 border-r h-screen sticky top-0">
+      {/* Brand Logo Section */}
+      <div className="h-20 flex items-center px-6 gap-3">
+        <div className="bg-primary p-2 rounded-lg">
+          <FiShield className="text-white text-xl" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">
+            NexusInsure
+          </h1>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+            Admin Portal
+          </p>
+        </div>
       </div>
 
-      {/* User Profile */}
-      <motion.div
-        className="p-4 border-b border-gray-200"
-        animate={{ opacity: collapsed ? 0 : 1 }}
-        transition={{ duration: 0.2 }}
-      >
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" />
-            <AvatarFallback className="bg-blue-500 text-white">
-              AD
-            </AvatarFallback>
-          </Avatar>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-800 truncate">John Doe</p>
-              <p className="text-sm text-gray-500 truncate">
-                admin@example.com
-              </p>
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-2 overflow-y-auto">
-        <ul className="space-y-1">
-          {menuItems.map((item, index) => (
-            <motion.li
-              key={item.label}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
+      {/* Navigation Links */}
+      <nav className="flex-1 px-4 py-4 space-y-1">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              className={({ isActive }) =>
+                cn(
+                  "group relative flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200",
+                  isActive
+                    ? "bg-white text-primary shadow-sm border-slate-200 border"
+                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                )
+              }
             >
-              <Link
-                to={item.to}
+              <item.icon
                 className={cn(
-                  "flex items-center w-full gap-3 px-4 py-2 rounded hover:bg-gray-100",
-                  collapsed && "justify-center px-0",
-                  item.active && "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  "text-lg transition-colors",
+                  isActive ? "text-primary" : "group-hover:text-slate-900"
                 )}
-              >
-                <item.icon size={20} />
-                {!collapsed && (
-                  <span className="flex-1 text-left font-medium">
-                    {item.label}
-                  </span>
-                )}
-              </Link>
-            </motion.li>
-          ))}
-        </ul>
+              />
+              <span className="font-medium text-sm">{item.name}</span>
+
+              {/* Active Indicator Bar */}
+              {isActive && (
+                <motion.div
+                  layoutId="activeNav"
+                  className="absolute left-0 w-1 h-5 bg-primary rounded-r-full"
+                />
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
 
-      <Separator className="my-2" />
-
-      {/* Logout */}
-      <div className="p-4">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/auth")} // using useNavigate()
-          className={cn(
-            "w-full justify-start gap-3 text-red-500 hover:text-red-700 hover:bg-red-50",
-            collapsed && "justify-center px-0"
-          )}
-        >
-          <LogOut size={20} />
-          {!collapsed && <span className="font-medium">Logout</span>}
-        </Button>
+      {/* Bottom User Section */}
+      <div className="p-4 border-t bg-slate-50/50">
+        <div className="flex items-center gap-3 p-2 bg-white rounded-xl border shadow-sm">
+          <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
+            <img
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+              alt="User Avatar"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-900 truncate">
+              Alex Underwriter
+            </p>
+            <p className="text-xs text-slate-500 truncate">Senior Adjuster</p>
+          </div>
+          <button className="text-slate-400 hover:text-destructive transition-colors">
+            <FiLogOut />
+          </button>
+        </div>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

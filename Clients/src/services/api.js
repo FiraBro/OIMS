@@ -1,59 +1,22 @@
-// import axios from "axios";
-
-// const api = axios.create({
-//   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1",
-//   withCredentials: true,
-// });
-
-// api.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem("token");
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => Promise.reject(error)
-// );
-// //
-// api.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     const status = error.response?.status;
-//     const message = error.response?.data?.message || "";
-
-//     if (status === 401) {
-//       if (message.toLowerCase().includes("expired")) {
-//         window.location.href = "/auth";
-//       } else {
-//         console.warn("Unauthorized request:", message);
-//       }
-//     }
-
-//     return Promise.reject(error);
-//   }
-// );
-
-// export default api;
 import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1",
-  withCredentials: true, // keep ONLY if backend uses cookies
+  withCredentials: true, // 👈 Required to send/receive HTTP-only cookies
 });
 
 /* =====================================
    🔹 REQUEST INTERCEPTOR
-   Attach JWT token automatically
 ===================================== */
 api.interceptors.request.use(
   (config) => {
+    // If you use HTTP-only cookies, you DO NOT need to attach
+    // the Bearer token manually. The browser does it automatically.
+    // We only keep this if your backend still requires BOTH.
     const token = localStorage.getItem("token");
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
@@ -61,18 +24,22 @@ api.interceptors.request.use(
 
 /* =====================================
    🔹 RESPONSE INTERCEPTOR
-   Handle auth errors globally
 ===================================== */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message?.toLowerCase() || "";
 
-    // 🔐 Token expired → force logout
-    if (status === 401 && message.includes("expired")) {
-      localStorage.removeItem("token");
+    // 🔐 401 Unauthorized usually means the cookie or token expired
+    if (status === 401) {
+      // Clear local storage data (user profile info)
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
+
+      // Optional: Force redirect to login if not already there
+      if (!window.location.pathname.includes("/auth")) {
+        window.location.href = "/auth";
+      }
     }
 
     return Promise.reject(error);

@@ -1,5 +1,6 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   FiGrid,
   FiFileText,
@@ -9,93 +10,143 @@ import {
   FiSettings,
   FiLogOut,
   FiShield,
+  FiChevronRight,
 } from "react-icons/fi";
-import { cn } from "@/lib/utils"; // Standard shadcn utility
+import { cn } from "@/lib/utils";
 
 const navItems = [
-  { name: "Dashboard", path: "/admin/dashboard", icon: FiGrid },
-  { name: "Applications", path: "/admin/applications", icon: FiFileText },
-  { name: "Policies", path: "/admin/all-policies", icon: FiFileText },
-  { name: "Claims", path: "/admin/all-claims", icon: FiCheckCircle },
-  { name: "Customers", path: "/admin/users", icon: FiUsers },
-  { name: "Analytics", path: "/admin/reports", icon: FiBarChart2 },
-  { name: "Settings", path: "/admin/settings", icon: FiSettings },
+  {
+    group: "Overview",
+    items: [
+      { name: "Dashboard", path: "/admin/dashboard", icon: FiGrid },
+      { name: "Analytics", path: "/admin/reports", icon: FiBarChart2 },
+    ],
+  },
+  {
+    group: "Management",
+    items: [
+      { name: "Applications", path: "/admin/applications", icon: FiFileText },
+      { name: "Policies", path: "/admin/all-policies", icon: FiFileText },
+      { name: "Claims", path: "/admin/all-claims", icon: FiCheckCircle },
+      { name: "Customers", path: "/admin/users", icon: FiUsers },
+    ],
+  },
+  {
+    group: "System",
+    items: [{ name: "Settings", path: "/admin/settings", icon: FiSettings }],
+  },
 ];
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+
+  const handleLogout = async () => {
+    if (confirm("Are you sure you want to log out?")) {
+      await logout();
+      navigate("/login");
+    }
+  };
 
   return (
-    <aside className="flex flex-col w-72 border border-gray-300 bg-slate-50 border-r h-screen sticky top-0">
-      {/* Brand Logo Section */}
-      <div className="h-20 flex items-center px-6 gap-3">
-        <div className="bg-primary p-2 rounded-lg">
-          <FiShield className="text-white text-xl" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">
-            NexusInsure
-          </h1>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-            Admin Portal
-          </p>
+    <aside className="flex flex-col w-72 bg-white border-r border-zinc-200 h-screen sticky top-0 z-50">
+      {/* Brand Section */}
+      <div className="h-20 flex items-center px-6 mb-2">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-zinc-200">
+            <FiShield className="text-white text-xl" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-black tracking-tight text-zinc-900 uppercase">
+              Nexus<span className="text-zinc-500 font-medium">Insure</span>
+            </span>
+            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">
+              Admin Suite
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-4 py-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  "group relative flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200",
-                  isActive
-                    ? "bg-white text-primary shadow-sm border-slate-200 border"
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                )
-              }
-            >
-              <item.icon
-                className={cn(
-                  "text-lg transition-colors",
-                  isActive ? "text-primary" : "group-hover:text-slate-900"
-                )}
+      {/* Navigation */}
+      <div className="flex-1 px-4 overflow-y-auto custom-scrollbar">
+        {navItems.map((group, idx) => (
+          <div key={idx} className="mb-6">
+            <h3 className="px-4 mb-2 text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
+              {group.group}
+            </h3>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <NavLink
+                    key={item.name}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      cn(
+                        "group flex items-center justify-between px-4 py-2.5 rounded-lg transition-all duration-200",
+                        isActive
+                          ? "bg-blue-500 text-white shadow-md shadow-zinc-200"
+                          : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50"
+                      )
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon
+                        className={cn(
+                          "text-lg",
+                          isActive ? "text-white" : "group-hover:text-blue-500"
+                        )}
+                      />
+                      <span className="text-sm font-semibold tracking-tight">
+                        {item.name}
+                      </span>
+                    </div>
+                    {isActive && (
+                      <motion.div
+                        layoutId="arrow"
+                        initial={{ x: -5 }}
+                        animate={{ x: 0 }}
+                      >
+                        <FiChevronRight className="text-white" />
+                      </motion.div>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Profile Section */}
+      <div className="p-4 mt-auto">
+        <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-full border-2 border-white shadow-sm overflow-hidden bg-zinc-200">
+              <img
+                src={`https://api.dicebear.com/7.x/shapes/svg?seed=${
+                  user?.fullName || "Admin"
+                }`}
+                alt="Avatar"
               />
-              <span className="font-medium text-sm">{item.name}</span>
-
-              {/* Active Indicator Bar */}
-              {isActive && (
-                <motion.div
-                  layoutId="activeNav"
-                  className="absolute left-0 w-1 h-5 bg-primary rounded-r-full"
-                />
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      {/* Bottom User Section */}
-      <div className="p-4 border-t bg-slate-50/50">
-        <div className="flex items-center gap-3 p-2 bg-white rounded-xl border shadow-sm">
-          <div className="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden">
-            <img
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-              alt="User Avatar"
-            />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-zinc-900 truncate">
+                {user?.fullName || "Administrator"}
+              </p>
+              <p className="text-[10px] font-medium text-zinc-500 truncate uppercase tracking-wider">
+                {user?.role || "Super Admin"}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
-              Alex Underwriter
-            </p>
-            <p className="text-xs text-slate-500 truncate">Senior Adjuster</p>
-          </div>
-          <button className="text-slate-400 hover:text-destructive transition-colors">
-            <FiLogOut />
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-zinc-600 bg-white border border-zinc-200 rounded-xl hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-200 active:scale-[0.98]"
+          >
+            <FiLogOut className="text-sm" />
+            Sign Out
           </button>
         </div>
       </div>

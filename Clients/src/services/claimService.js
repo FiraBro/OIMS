@@ -39,7 +39,7 @@ const listAllClaims = async (query = {}) => {
 
 // 5️⃣ Update claim status (Approved / Rejected / Processing)
 const updateClaimStatus = async (id, status) => {
-  const res = await api.patch(`/claims/${id}/status`, { status });
+  const res = await api.put(`/claims/${id}/status`, { status });
   return res.data;
 };
 

@@ -26,7 +26,7 @@ import { resolveDocumentUrl } from "@/utils/resolveURL";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function UserApplications() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, authReady } = useAuth();
 
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,10 +39,11 @@ export default function UserApplications() {
   /* =======================
      FETCH (AUTH GUARDED)
   ======================= */
+
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!authReady || !isAuthenticated) return;
     fetchApplications();
-  }, [isAuthenticated]);
+  }, [authReady, isAuthenticated]);
 
   const fetchApplications = async () => {
     try {
@@ -56,25 +57,6 @@ export default function UserApplications() {
       setLoading(false);
     }
   };
-
-  /* =======================
-     AUTH UI GUARD
-  ======================= */
-  if (!isAuthenticated) {
-    return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardContent className="p-10 text-center">
-            <FiAlertTriangle className="w-10 h-10 mx-auto text-yellow-600 mb-4" />
-            <h2 className="text-xl font-semibold">Login Required</h2>
-            <p className="text-gray-600 mt-2">
-              Please log in to view your applications.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   /* =======================
      HELPERS
@@ -234,7 +216,6 @@ export default function UserApplications() {
                             }}
                             className="border-gray-300 cursor-pointer"
                           >
-                            >
                             <FiFileText className="mr-2" />
                             View File
                           </Button>

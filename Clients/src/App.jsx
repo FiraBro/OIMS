@@ -6,14 +6,19 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import Layout from "./utils/Layout";
+import Layout from "./layout/UserLayout";
 import ProtectedRoute from "./components/Auth/ProtectRoutes";
 import { PageTransition } from "./components/navigation/Navbar";
-import MyPolicies from "./pages/policies/MyPolicies";
-import AdminLayout from "./utils/AdminLayout";
-import DashboardPage from "./pages/admin/Dashboard";
-import Claim from "./pages/admin/Claim";
+import MyPolicies from "./pages/policies/MyPolicy";
+import AdminLayout from "./layout/AdminLayout";
 
+import AdminDashboard from "./pages/metrics/AdminDashboard";
+import AdminPlansList from "./pages/plan/AdminPlanList";
+import AdminPolicyApplications from "./pages/policies/AdminPolicyApplications";
+import ViewPolicyApplication from "./pages/policies/ViewPolicyAplications";
+import AdminUsersPage from "./pages/auth/AdminUserPages";
+import PolicyList from "./pages/policies/PolicyList";
+import AdminClaimsManagement from "./pages/claims/ClaimsManagement";
 /* ---------------- Lazy Loaded Pages ---------------- */
 const HomePage = lazy(() => import("./pages/home/HomePage"));
 const PlanDetail = lazy(() => import("./pages/plan/PlanDetail"));
@@ -141,15 +146,58 @@ const router = createBrowserRouter([
         path: "dashboard",
         element: (
           <ProtectedRoute requireAdmin={true}>
-            <DashboardPage />
+            <AdminDashboard />
+          </ProtectedRoute>
+        ),
+      },
+
+      {
+        path: "applications",
+        element: (
+          <ProtectedRoute requireAdmin={true}>
+            <AdminPolicyApplications />
           </ProtectedRoute>
         ),
       },
       {
-        path: "claim",
+        path: "policies/details",
         element: (
           <ProtectedRoute requireAdmin={true}>
-            <Claim />
+            <ViewPolicyApplication />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "plans",
+        element: (
+          <ProtectedRoute requireAdmin={true}>
+            <AdminPlansList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "all-policies",
+        element: (
+          <ProtectedRoute>
+            <PageTransition>
+              <PolicyList />
+            </PageTransition>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "users",
+        element: (
+          <ProtectedRoute requireAdmin={true}>
+            <AdminUsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "all-claims",
+        element: (
+          <ProtectedRoute requireAdmin={true}>
+            <AdminClaimsManagement />
           </ProtectedRoute>
         ),
       },

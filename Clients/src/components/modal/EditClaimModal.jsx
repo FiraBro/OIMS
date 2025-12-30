@@ -12,16 +12,30 @@ import {
   User,
   ShieldCheck,
   Info,
+  ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function EditClaimModal({ claim, open, onClose }) {
   if (!claim) return null;
 
+  // BASE URL for your backend - change this to match your server
+  const BACKEND_URL = "http://localhost:3001";
+
+  // Helper to construct the full document path
+  const getDocumentUrl = (path) => {
+    if (!path) return null;
+    // If it's already a full URL (like Cloudinary/S3), return it
+    if (path.startsWith("http")) return path;
+    // If it's a local path, prepend the backend URL
+    // Ensure there is a slash between the URL and path
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    return `${BACKEND_URL}${cleanPath}`;
+  };
+
   const formatDate = (date) =>
     date ? format(new Date(date), "MMMM dd, yyyy") : "—";
 
-  // Dynamic color matching for the top banner
   const getBannerColor = (status) => {
     switch (status?.toLowerCase()) {
       case "approved":
@@ -33,10 +47,11 @@ export default function EditClaimModal({ claim, open, onClose }) {
     }
   };
 
+  const fullDocUrl = getDocumentUrl(claim.documentUrl);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl border border-gray-200 bg-white p-0 overflow-hidden shadow-2xl">
-        {/* Header Banner - Dynamic based on status */}
         <div className={`p-6 border-b ${getBannerColor(claim.status)}`}>
           <div className="flex justify-between items-start">
             <div className="space-y-1">
@@ -58,7 +73,6 @@ export default function EditClaimModal({ claim, open, onClose }) {
         </div>
 
         <div className="p-8 space-y-8">
-          {/* Main Info Grid */}
           <div className="grid grid-cols-2 gap-y-8 gap-x-12">
             <div className="space-y-2">
               <p className="text-[10px] text-gray-400 flex items-center gap-1.5 uppercase font-bold tracking-tight">
@@ -90,7 +104,7 @@ export default function EditClaimModal({ claim, open, onClose }) {
                 <Calendar className="w-3 h-3 text-gray-400" /> Submission Date
               </p>
               <p className="font-semibold text-gray-800 pl-3">
-                {formatDate(claim.createdAt)}
+                {formatDate(claim.submittedAt)}
               </p>
             </div>
 
@@ -104,7 +118,6 @@ export default function EditClaimModal({ claim, open, onClose }) {
             </div>
           </div>
 
-          {/* Description Block */}
           <div className="space-y-3 pt-4 border-t border-gray-50">
             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight flex items-center gap-2">
               <Info className="w-3 h-3" /> Incident Description
@@ -115,27 +128,26 @@ export default function EditClaimModal({ claim, open, onClose }) {
             </div>
           </div>
 
-          {/* Dynamic Evidence/Documents Section */}
           <div className="space-y-3">
             <p className="text-[10px] text-gray-400 uppercase font-bold tracking-tight">
               Supporting Evidence
             </p>
-            {claim.documentUrl ? (
+            {fullDocUrl ? (
               <a
-                href={claim.documentUrl}
+                href={fullDocUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50/30 transition-all group"
+                className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:border-blue-600 hover:bg-blue-50 transition-all group shadow-sm hover:shadow-md"
               >
-                <div className="bg-blue-600 p-2.5 rounded-lg">
+                <div className="bg-blue-600 p-2.5 rounded-lg group-hover:scale-110 transition-transform">
                   <FileText className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                    View Attached Document
+                  <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
+                    View Attached Document <ExternalLink className="w-3 h-3" />
                   </p>
                   <p className="text-xs text-gray-400">
-                    Click to open in new tab
+                    ID: {claim.documentUrl.split("/").pop()}
                   </p>
                 </div>
               </a>
@@ -149,7 +161,6 @@ export default function EditClaimModal({ claim, open, onClose }) {
           </div>
         </div>
 
-        {/* Action Footer */}
         <div className="bg-gray-50 p-6 border-t border-gray-100 flex justify-end">
           <button
             onClick={onClose}

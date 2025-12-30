@@ -17,17 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  Shield,
-  RefreshCw,
-  Eye,
-} from "lucide-react";
+import { CheckCircle, XCircle, Eye, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import EditClaimModal from "@/components/modal/EditClaimModal";
 
 /* ---------------- Utils ---------------- */
 
@@ -41,6 +35,8 @@ const formatCurrency = (amount) =>
   }).format(amount || 0);
 
 const statusBadge = (status) => {
+  // Normalize to lowercase for mapping, but display original for UI
+  const s = status?.toLowerCase();
   const map = {
     pending: "outline",
     processing: "secondary",
@@ -48,8 +44,8 @@ const statusBadge = (status) => {
     rejected: "destructive",
   };
   return (
-    <Badge variant={map[status] || "outline"} className="capitalize">
-      {status}
+    <Badge variant={map[s] || "outline"} className="capitalize">
+      {status || "Unknown"}
     </Badge>
   );
 };
@@ -60,13 +56,15 @@ export default function AdminClaimsManagement() {
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [selectedClaim, setSelectedClaim] = useState(null);
 
   const fetchClaims = async () => {
     try {
       setLoading(true);
       const res = await claimService.listAllClaims();
-      console.log("Claims:", res);
-      setClaims(res.data || res.claims || []);
+      // Adjusting based on your console log structure
+      const data = res.claims || res.data || [];
+      setClaims(data);
     } catch (err) {
       console.error("Failed to load claims", err);
     } finally {
@@ -79,34 +77,43 @@ export default function AdminClaimsManagement() {
   }, []);
 
   const updateStatus = async (id, status) => {
-    if (!confirm(`Are you sure you want to mark this claim as ${status}?`))
-      return;
+    // lowercase status matches what your backend/Postman expects
+    const action = status === "approved" ? "approve" : "reject";
+    if (!confirm(`Are you sure you want to ${action} this claim?`)) return;
 
     try {
       setUpdatingId(id);
+
+      // Call service with the lowercase status string
       await claimService.updateClaimStatus(id, status);
-      fetchClaims();
+
+      // Wait for fetch to finish so UI is accurate
+      await fetchClaims();
     } catch (err) {
-      alert("Failed to update claim status");
+      console.error("Update Error:", err.response?.data || err.message);
+      alert(
+        `Error: ${err.response?.data?.message || "Failed to update status"}`
+      );
     } finally {
       setUpdatingId(null);
     }
   };
 
+  // Stats calculation (normalized for case sensitivity)
   const stats = {
     total: claims.length,
-    pending: claims.filter((c) => c.status === "pending").length,
-    approved: claims.filter((c) => c.status === "approved").length,
-    rejected: claims.filter((c) => c.status === "rejected").length,
+    pending: claims.filter((c) => c.status?.toLowerCase() === "pending").length,
+    approved: claims.filter((c) => c.status?.toLowerCase() === "approved")
+      .length,
+    rejected: claims.filter((c) => c.status?.toLowerCase() === "rejected")
+      .length,
   };
-
-  /* ---------------- Loading ---------------- */
 
   if (loading) {
     return (
       <div className="p-6 space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-10 w-64 border border-gray-200" />
+        <Skeleton className="h-64 w-full border border-gray-200" />
       </div>
     );
   }
@@ -121,21 +128,23 @@ export default function AdminClaimsManagement() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="text-blue-600" />
+            <span className="text-blue-600">🛡️</span>
             Claims Management
           </h1>
-          <p className="text-gray-600">
-            Review, approve, or reject insurance claims
-          </p>
+          <p className="text-gray-600">Review and manage insurance claims</p>
         </div>
 
-        <Button variant="outline" onClick={fetchClaims}>
+        <Button
+          variant="outline"
+          className="border border-gray-200 bg-white"
+          onClick={fetchClaims}
+        >
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           ["Total", stats.total],
@@ -143,7 +152,7 @@ export default function AdminClaimsManagement() {
           ["Approved", stats.approved],
           ["Rejected", stats.rejected],
         ].map(([label, value]) => (
-          <Card key={label}>
+          <Card key={label} className="border border-gray-200">
             <CardContent className="p-4">
               <p className="text-sm text-gray-500">{label}</p>
               <p className="text-2xl font-bold">{value}</p>
@@ -153,12 +162,10 @@ export default function AdminClaimsManagement() {
       </div>
 
       {/* Table */}
-      <Card>
-        <CardHeader>
+      <Card className="border border-gray-200">
+        <CardHeader className="border-b border-gray-200">
           <CardTitle>All Claims</CardTitle>
-          <CardDescription>
-            Administrative overview of submitted claims
-          </CardDescription>
+          <CardDescription>Administrative overview</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -180,26 +187,33 @@ export default function AdminClaimsManagement() {
                 {claims.map((claim) => (
                   <motion.tr
                     key={claim._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="border-b border-gray-100 last:border-0"
                   >
-                    <TableCell>{claim._id.slice(0, 8)}...</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {claim._id.slice(-6).toUpperCase()}
+                    </TableCell>
                     <TableCell>{claim.policyNumber}</TableCell>
                     <TableCell>{claim.claimType}</TableCell>
                     <TableCell>{formatCurrency(claim.amount)}</TableCell>
                     <TableCell>{statusBadge(claim.status)}</TableCell>
                     <TableCell>{formatDate(claim.createdAt)}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Button size="sm" variant="outline">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setSelectedClaim(claim)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
 
-                      {claim.status === "pending" && (
+                      {/* Lowercase check and lowercase update calls */}
+                      {claim.status?.toLowerCase() === "pending" && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-green-600 text-white"
+                            className="bg-green-600 hover:bg-green-700 text-white"
                             disabled={updatingId === claim._id}
                             onClick={() => updateStatus(claim._id, "approved")}
                           >
@@ -216,12 +230,6 @@ export default function AdminClaimsManagement() {
                           </Button>
                         </>
                       )}
-
-                      {claim.status === "approved" && (
-                        <Button size="sm" variant="secondary" disabled>
-                          Approved
-                        </Button>
-                      )}
                     </TableCell>
                   </motion.tr>
                 ))}
@@ -230,6 +238,16 @@ export default function AdminClaimsManagement() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Modal */}
+      {selectedClaim && (
+        <EditClaimModal
+          claim={selectedClaim}
+          open={!!selectedClaim}
+          onClose={() => setSelectedClaim(null)}
+          onUpdated={fetchClaims}
+        />
+      )}
     </motion.div>
   );
 }

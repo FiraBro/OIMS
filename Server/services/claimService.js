@@ -11,9 +11,8 @@ class ClaimService {
   // Existing methods
   // ---------------------------
 
-  async createClaim(data, userId) {
+  async createClaim(data, userId, documentUrl) {
     // 1. Find the policy by ID OR by Policy Number
-    // We check if data.policyId is a valid MongoDB ID format before searching by _id
     const isId = mongoose.isValidObjectId(data.policyId);
 
     const policy = await Policy.findOne({
@@ -39,19 +38,21 @@ class ClaimService {
     // 2. Generate unique claim number
     const claimNumber = `CLM-${crypto.randomBytes(6).toString("hex")}`;
 
-    // 3. Create the claim using data from both the request and the found policy
+    // 3. Create the claim
     const claim = await Claim.create({
       // Fields from the Frontend request
       claimType: data.claimType,
-      description: data.description,
       amount: data.amount,
-      reason: data.description, // Mapping description to reason per your Model
-      documentUrl: data.documentUrl,
+      reason: data.description || data.reason,
+      description: data.description,
 
-      // Fields from the Policy we just found (The "Source of Truth")
+      // FIX: Map the documentUrl passed from the controller
+      documentUrl: documentUrl || data.documentUrl,
+
+      // Fields from the Policy (Source of Truth)
       policyId: policy._id,
       policyNumber: policy.policyNumber,
-      user: userId, // Mapping userId to user per your Model
+      user: userId,
 
       // System generated fields
       claimNumber,
@@ -60,7 +61,6 @@ class ClaimService {
 
     return claim;
   }
-
   async getMyClaims(userId) {
     return await Claim.find({
       user: userId, // Match schema field "user"

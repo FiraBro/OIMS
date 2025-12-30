@@ -2,7 +2,7 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/sidebar/Sidebar";
 import Topbar from "@/components/sidebar/Topbar";
-import { PageTransition } from "@/components/navigation/Navbar";
+import { PageTransition } from "@/components/common/PageTransition";
 import { motion } from "framer-motion";
 
 export default function AdminLayout() {

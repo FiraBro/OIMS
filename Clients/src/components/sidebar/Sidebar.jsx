@@ -16,7 +16,7 @@ const navItems = [
   { name: "Dashboard", path: "/admin/dashboard", icon: FiGrid },
   { name: "Applications", path: "/admin/applications", icon: FiFileText },
   { name: "Policies", path: "/admin/all-policies", icon: FiFileText },
-  { name: "Claims", path: "/admin/claims", icon: FiCheckCircle },
+  { name: "Claims", path: "/admin/all-claims", icon: FiCheckCircle },
   { name: "Customers", path: "/admin/users", icon: FiUsers },
   { name: "Analytics", path: "/admin/reports", icon: FiBarChart2 },
   { name: "Settings", path: "/admin/settings", icon: FiSettings },

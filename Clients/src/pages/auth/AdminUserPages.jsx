@@ -213,7 +213,7 @@ export default function AdminUsersPage() {
 
       {/* View Detail Modal */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="border-zinc-200 max-w-md">
+        <DialogContent className="border-zinc-200 max-w-md bg-white">
           <DialogHeader className="border-b border-zinc-100 pb-4">
             <DialogTitle className="text-xl font-black uppercase tracking-tight">
               Profile Overview

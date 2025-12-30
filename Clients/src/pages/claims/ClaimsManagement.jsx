@@ -63,6 +63,7 @@ export default function AdminClaimsManagement() {
       setLoading(true);
       const res = await claimService.listAllClaims();
       // Adjusting based on your console log structure
+      console.log("Fetched claims:", res);
       const data = res.claims || res.data || [];
       setClaims(data);
     } catch (err) {
@@ -163,15 +164,15 @@ export default function AdminClaimsManagement() {
 
       {/* Table */}
       <Card className="border border-gray-200">
-        <CardHeader className="border-b border-gray-200">
+        <CardHeader>
           <CardTitle>All Claims</CardTitle>
           <CardDescription>Administrative overview</CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="border border-gray-200">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-b border-gray-200">
                 <TableHead>ID</TableHead>
                 <TableHead>Policy</TableHead>
                 <TableHead>Type</TableHead>
@@ -198,7 +199,7 @@ export default function AdminClaimsManagement() {
                     <TableCell>{claim.claimType}</TableCell>
                     <TableCell>{formatCurrency(claim.amount)}</TableCell>
                     <TableCell>{statusBadge(claim.status)}</TableCell>
-                    <TableCell>{formatDate(claim.createdAt)}</TableCell>
+                    <TableCell>{formatDate(claim.submittedAt)}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
                         size="sm"

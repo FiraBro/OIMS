@@ -47,7 +47,7 @@ app.use(`/api/${versions}/auth`, authRouter);
 app.use(`/api/${versions}/plans`, insurancePlanRouter);
 app.use(`/api/${versions}/policies`, policyRoute);
 app.use(`/api/${versions}/claims`, claimRouter);
-app.use(`/api/${versions}/user`, userRouter);
+app.use(`/api/${versions}/users`, userRouter);
 app.use(`/api/${versions}/notifications`, notificationRouter);
 app.use("/api/admin", adminRoutes);
 

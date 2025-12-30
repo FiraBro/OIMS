@@ -2,6 +2,7 @@
 import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/sidebar/Sidebar";
 import Topbar from "@/components/sidebar/Topbar";
+import { PageTransition } from "@/components/navigation/Navbar";
 import { motion } from "framer-motion";
 
 export default function AdminLayout() {
@@ -15,7 +16,9 @@ export default function AdminLayout() {
           animate={{ opacity: 1, y: 0 }}
           className="p-6 overflow-y-auto"
         >
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </motion.main>
       </div>
     </div>

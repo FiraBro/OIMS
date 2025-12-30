@@ -1,15 +1,22 @@
 import express from "express";
-import {
-  getAllUser,
-  getUser,
-  deleteUser,
-  countUser,
-} from "../controllers/userController.js";
+import * as userController from "../controllers/userController.js";
 import { protect, restrictTo } from "../middlewares/protect.js";
-import { ROLES } from "../constants/roles.js";
-const userRouter = express.Router();
+const router = express.Router();
 
-userRouter.get("/all", protect, restrictTo(ROLES.ADMIN), getAllUser);
-userRouter.delete("/delete/:id", protect, restrictTo(ROLES.ADMIN), deleteUser);
-userRouter.get("/count", protect, restrictTo(ROLES.ADMIN), countUser);
-export default userRouter;
+// Apply protection to all routes below
+router.use(protect);
+
+// Admin-only routes
+router.use(restrictTo("admin"));
+
+router.route("/").get(userController.getAllUsers);
+// Get list of all users and identify plan applicants
+router.get("/analysis", restrictTo("admin"), userController.getUserAnalysis);
+
+router
+  .route("/:id")
+  .get(userController.getUser)
+  .patch(userController.updateUser)
+  .delete(userController.deleteUser);
+
+export default router;

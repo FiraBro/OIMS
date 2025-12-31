@@ -1,7 +1,7 @@
 // dashboard/DashboardLayout.js
 import { Outlet } from "react-router-dom";
-import Sidebar from "@/components/sidebar/Sidebar";
-import Topbar from "@/components/sidebar/Topbar";
+import Sidebar from "@/components/layout/Sidebar";
+import Topbar from "@/components/layout/Topbar";
 import { PageTransition } from "@/components/common/PageTransition";
 import { motion } from "framer-motion";
 

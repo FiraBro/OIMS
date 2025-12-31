@@ -1,2 +1,90 @@
+/* Import Inter + Manrope fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
 
+/* Tailwind v4 core */
 @import "tailwindcss";
+
+/* shadcn component styles */
+@import "./components.css";
+
+/* Light theme CSS variables */
+:root {
+  --radius: 0.5rem;
+
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 150 60% 40%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 210 36% 96%;
+  --ring: 221.2 83% 53%;
+}
+
+/* Dark theme */
+.dark {
+  --background: 224 71% 4%;
+  --foreground: 210 40% 98%;
+
+  --primary: 217 91% 60%;
+  --primary-foreground: 222 47% 11%;
+
+  --secondary: 160 60% 40%;
+  --secondary-foreground: 210 40% 98%;
+}
+
+/* Global base style - Inter for ALL body text */
+body {
+  @apply bg-white text-gray-900 antialiased;
+  font-family: "Inter", sans-serif !important;
+  overflow-y: scroll !important;
+}
+
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+/* Manrope for headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Manrope", sans-serif !important;
+}
+
+/* Optional custom grid pattern */
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ============================== */
+/* FIX: Radix Select layout shift */
+/* ============================== */
+
+/* Prevent Radix from adding padding-right on body */
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Prevent Radix from calculating scrollbar size */
+:root {
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* Keep scrollbar always visible (optional but recommended) */
+html,
+body {
+  overflow-y: scroll !important;
+}

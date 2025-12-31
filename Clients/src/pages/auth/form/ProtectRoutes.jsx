@@ -1,15 +1,11 @@
+import { useAuthStore } from "@/stores/authStore"; // correct named import
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, authReady } = useAuth();
+  const { isAuthenticated, authReady } = useAuthStore();
 
-  // 🔹 WAIT until auth is fully initialized
-  if (!authReady) {
-    return null; // or loading spinner
-  }
+  if (!authReady) return null;
 
-  // 🔹 If not logged in → redirect
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }

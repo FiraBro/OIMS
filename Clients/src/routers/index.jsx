@@ -6,37 +6,42 @@ import UserLayout from "@/layout/UserLayout";
 import AdminLayout from "@/layout/AdminLayout";
 
 /* Guards */
-import ProtectedRoute from "@/components/Auth/ProtectRoutes";
+import ProtectedRoute from "@/pages/auth/form/ProtectRoutes";
+import CreatePlanPage from "@/pages/admin/plan/CreatePlan";
 
 /* Public Pages */
-const HomePage = lazy(() => import("@/pages/home/HomePage"));
-const PlansPage = lazy(() => import("@/pages/plan/PlanPages"));
-const PlanDetail = lazy(() => import("@/pages/plan/PlanDetail"));
-const SupportPage = lazy(() => import("@/pages/support/SupportPage"));
+const HomePage = lazy(() => import("@/pages/users/home/HomePage"));
+const PlansPage = lazy(() => import("@/pages/users/plans/PlanPages"));
+const PlanDetail = lazy(() => import("@/pages/users/plans/PlanDetail"));
+const SupportPage = lazy(() => import("@/pages/users/support/SupportPage"));
 const AuthPage = lazy(() => import("@/pages/auth/AuthPage"));
 
 /* User Protected Pages */
-const ProfilePage = lazy(() => import("@/pages/profile/ProfilePage"));
-const ApplyPlan = lazy(() => import("@/pages/plan/ApplyPlan"));
-const UserApplications = lazy(() => import("@/pages/apply/UserApplications"));
-const ClaimSubmissionForm = lazy(() =>
-  import("@/pages/apply/ClaimsManagement")
+const ProfilePage = lazy(() => import("@/pages/users/profile/ProfilePage"));
+const ApplyPlan = lazy(() => import("@/pages/users/plans/ApplyPlan"));
+const UserApplications = lazy(() =>
+  import("@/pages/users/applications/UserApplications")
 );
-const MyClaims = lazy(() => import("@/components/claim/MyClaims"));
-const MyPolicies = lazy(() => import("@/pages/policies/MyPolicy"));
+const ClaimSubmissionForm = lazy(() =>
+  import("@/pages/users/claim/ClaimsManagement")
+);
+const MyClaims = lazy(() => import("@/pages/users/claim/MyClaims"));
+const MyPolicies = lazy(() => import("@/pages/users/policy/MyPolicy"));
 
 /* Admin Pages */
-const AdminDashboard = lazy(() => import("@/pages/metrics/AdminDashboard"));
-const AdminPlansList = lazy(() => import("@/pages/plan/AdminPlanList"));
+const AdminDashboard = lazy(() =>
+  import("@/pages/admin/dashboard/AdminDashboard")
+);
+const AdminPlansList = lazy(() => import("@/pages/admin/plan/AdminPlanList"));
 const AdminPolicyApplications = lazy(() =>
-  import("@/pages/policies/AdminPolicyApplications")
+  import("@/pages/admin/policy/AdminPolicyApplications")
 );
 const ViewPolicyApplication = lazy(() =>
-  import("@/pages/policies/ViewPolicyApplication")
+  import("@/pages/admin/policy/ViewPolicyApplication")
 );
-const AdminUsersPage = lazy(() => import("@/pages/auth/AdminUserPages"));
+const AdminUsersPage = lazy(() => import("@/pages/admin/users/AdminUserPages"));
 const AdminClaimsManagement = lazy(() =>
-  import("@/pages/claims/ClaimsManagement")
+  import("@/pages/admin/claim/ClaimsManagement")
 );
 
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
@@ -119,6 +124,7 @@ export const router = createBrowserRouter([
       { path: "policies/details", element: <ViewPolicyApplication /> },
       { path: "users", element: <AdminUsersPage /> },
       { path: "all-claims", element: <AdminClaimsManagement /> },
+      { path: "create/plan", element: <CreatePlanPage /> },
     ],
   },
 

@@ -9,44 +9,48 @@ export const AuthProvider = ({ children }) => {
   const [authReady, setAuthReady] = useState(false);
 
   /* =====================================
-   🔹 HYDRATE AUTH (ONCE)
+   🔹 INITIALIZATION & VALIDATION
+   Runs once when the app loads
   ===================================== */
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      const storedToken = localStorage.getItem("token");
+    const initializeAuth = async () => {
+      try {
+        // 1. Quick Hydration: Read from LocalStorage so UI feels fast
+        const storedUser = localStorage.getItem("user");
+        const storedToken = localStorage.getItem("token");
 
-      if (storedUser && storedToken) {
-        setUser(JSON.parse(storedUser));
-        setAccessToken(storedToken);
+        if (storedUser) setUser(JSON.parse(storedUser));
+        if (storedToken) setAccessToken(storedToken);
+
+        // 2. Server Verification: Verify the session is actually valid
+        // This handles cases where JWT_ACCESS_EXPIRES has passed
+        const res = await authService.getMe();
+
+        if (res.status === "success" && res.data.user) {
+          setUser(res.data.user);
+          // Token is handled by the HTTP-only cookie or current accessToken state
+        }
+      } catch (err) {
+        console.error("Session invalid or expired", err);
+        // Clear state if the server says the token is dead
+        handleClearAuth();
+      } finally {
+        setAuthReady(true);
       }
-    } catch (err) {
-      console.error("Auth hydration failed", err);
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-    } finally {
-      setAuthReady(true);
-    }
+    };
+
+    initializeAuth();
   }, []);
 
   /* =====================================
-   🔹 SYNC STATE → localStorage
+   🔹 HELPER: CLEAR AUTH
   ===================================== */
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (accessToken) {
-      localStorage.setItem("token", accessToken);
-    } else {
-      localStorage.removeItem("token");
-    }
-  }, [accessToken]);
+  const handleClearAuth = () => {
+    setUser(null);
+    setAccessToken(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  };
 
   /* =====================================
    🔹 LOGIN
@@ -55,36 +59,44 @@ export const AuthProvider = ({ children }) => {
     const res = await authService.login(credentials);
 
     if (res.status === "success" && res.data) {
-      setUser(res.data.user);
-      setAccessToken(res.data.accessToken);
-    } else {
-      // Optional: handle error response
-      throw new Error(res?.message || "Login failed");
-    }
+      const { user: userData, accessToken: token } = res.data;
 
+      setUser(userData);
+      setAccessToken(token);
+
+      // Persist for hydration on next refresh
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("token", token);
+    }
     return res;
   };
 
   /* =====================================
-   🔹 LOGOUT (FAIL-SAFE)
+   🔹 LOGOUT
   ===================================== */
   const logout = async () => {
     try {
       await authService.logout();
-    } catch {
-      // backend failure should NOT block UI logout
+    } catch (err) {
+      console.error("Logout request failed", err);
     } finally {
-      setUser(null);
-      setAccessToken(null);
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
+      handleClearAuth();
     }
   };
 
   /* =====================================
-   🔹 GUARD
+   🔹 LOADING STATE
   ===================================== */
-  if (!authReady) return null;
+  if (!authReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-500 font-medium">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider
@@ -92,7 +104,7 @@ export const AuthProvider = ({ children }) => {
         user,
         accessToken,
         authReady,
-        isAuthenticated: Boolean(user && accessToken),
+        isAuthenticated: !!user,
 
         login,
         logout,

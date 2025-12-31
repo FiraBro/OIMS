@@ -1,90 +1,92 @@
-// pages/policies/MyPolicies.jsx
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FiFileText, FiRefreshCw } from "react-icons/fi";
+import { FiRefreshCw } from "react-icons/fi";
 import { policyService } from "@/services/policyService";
 import PolicyActions from "@/components/modal/PolicyActions";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function MyPolicies() {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("");
-  const { isAuthenticated, authReady } = useAuth();
 
-  useEffect(() => {
-    if (!authReady || !isAuthenticated) return;
-    fetchPolicies();
-  }, [authReady, isAuthenticated]);
+  // FIX 1: Stable Selectors. Do NOT return a new object {} here.
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authReady = useAuthStore((state) => state.authReady);
 
-  const fetchPolicies = async () => {
+  // FIX 2: Stable Fetch Function.
+  // Functional update for activeTab removes the need for activeTab dependency.
+  const fetchPolicies = useCallback(async () => {
     setLoading(true);
     try {
       const res = await policyService.getMyPolicies();
-      console.log("res", res);
       const policiesData = res.data || [];
       setPolicies(policiesData);
 
-      // Set the first category as activeTab initially
-      if (policiesData.length > 0) {
-        // Get category from planId object
-        const firstCategory = policiesData[0]?.planId?.category || "All";
-        setActiveTab(firstCategory);
-      }
+      setActiveTab((prevTab) => {
+        if (policiesData.length > 0 && !prevTab) {
+          return policiesData[0]?.planId?.category || "General";
+        }
+        return prevTab;
+      });
     } catch (err) {
       console.error("Failed to fetch policies", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
-  // Get unique categories dynamically from planId
+  // FIX 3: Effect now relies on primitive values that don't change reference.
+  useEffect(() => {
+    if (authReady && isAuthenticated) {
+      fetchPolicies();
+    }
+  }, [authReady, isAuthenticated, fetchPolicies]);
+
+  // Derived Categories
   const policyCategories = useMemo(() => {
-    const categories = policies.map((p) => p.planId?.category).filter(Boolean); // Remove undefined/null
-
-    // Add "All" tab if you want to show all policies
-    const uniqueCategories = [...new Set(categories)];
-
-    // Return "All" first, then other categories
-    return uniqueCategories.length > 0 ? uniqueCategories : [];
+    const categories = policies.map((p) => p.planId?.category).filter(Boolean);
+    return [...new Set(categories)];
   }, [policies]);
 
-  // Filter policies based on active tab
+  // FIX 4: Safety guard - If categories change and activeTab is now invalid, reset it.
+  useEffect(() => {
+    if (policyCategories.length > 0 && !policyCategories.includes(activeTab)) {
+      setActiveTab(policyCategories[0]);
+    }
+  }, [policyCategories, activeTab]);
+
   const filteredPolicies = useMemo(() => {
-    if (!activeTab || activeTab === "All") return policies;
+    if (!activeTab) return policies;
     return policies.filter((p) => p.planId?.category === activeTab);
   }, [policies, activeTab]);
 
-  const formatDate = (date) =>
-    date ? new Date(date).toLocaleDateString("en-US") : "-";
-
-  // Helper to get policy details
   const getPolicyDetails = (policy) => {
     const plan = policy.planId || {};
     return {
       name: plan.name || policy.name || "Unnamed Policy",
-      description: plan.description || "No description available",
-      coverage: plan.coverage || policy.coverage || "-",
-      category: plan.category || "Uncategorized",
-      status: policy.status || "Active",
-      startDate: policy.startDate,
-      endDate: policy.endDate,
       policyNumber: policy.policyNumber || "N/A",
+      status: policy.status || "Active",
       premium: policy.premium || plan.premium || 0,
-      documents: policy.documents || [],
-      features: plan.features || [],
-      networkSize: plan.networkSize || "N/A",
-      deductible: plan.deductible || "N/A",
-      coverageAmount: plan.coverageAmount || "N/A",
     };
   };
 
+  if (!authReady || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <p className="text-gray-500 text-lg">
+          Login required to view your policies
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Policies</h1>
@@ -96,19 +98,16 @@ export default function MyPolicies() {
           variant="outline"
           onClick={fetchPolicies}
           disabled={loading}
-          className="flex items-center gap-2 mt-4 md:mt-0 border-gray-300"
+          className="flex items-center gap-2 mt-4 md:mt-0"
         >
-          <FiRefreshCw
-            className={`w-4 h-4 ${loading ? "animate-spin" : ""} `}
-          />
+          <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
-      {/* Tabs */}
       {policyCategories.length > 0 ? (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="flex flex-wrap gap-2 max-w-xl mb-6">
+          <TabsList className="flex flex-wrap gap-2 mb-6">
             {policyCategories.map((category) => (
               <TabsTrigger key={category} value={category}>
                 {category}
@@ -125,25 +124,9 @@ export default function MyPolicies() {
           {policyCategories.map((category) => (
             <TabsContent key={category} value={category} className="mt-4">
               {loading ? (
-                <div className="space-y-4">
-                  {[1, 2].map((i) => (
-                    <Card
-                      key={i}
-                      className="rounded-xl border border-gray-100 animate-pulse"
-                    >
-                      <CardHeader>
-                        <div className="h-6 bg-gray-200 rounded w-48" />
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-32" />
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="animate-pulse space-y-4">
+                  <div className="h-32 bg-gray-100 rounded-xl" />
                 </div>
-              ) : filteredPolicies.length === 0 ? (
-                <p className="text-gray-500 text-center mt-8">
-                  No {category} policies found
-                </p>
               ) : (
                 <div className="grid gap-6">
                   {filteredPolicies.map((policy, idx) => {
@@ -151,52 +134,29 @@ export default function MyPolicies() {
                     return (
                       <motion.div
                         key={policy._id || idx}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: idx * 0.05 }}
                       >
-                        <Card className="rounded-xl border border-gray-200 hover:shadow-lg transition">
-                          <CardHeader className="flex justify-between items-start">
-                            <div className="flex-1">
+                        <Card className="rounded-xl border border-gray-200 hover:shadow-md transition">
+                          <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex-1 w-full text-left">
                               <CardTitle className="text-lg font-semibold mb-2">
                                 {details.name}
                               </CardTitle>
-                              <div className="flex items-center gap-2">
-                                <Badge className="bg-green-100 text-green-700 border-green-200">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge className="bg-green-100 text-green-700 border-none">
                                   {details.status}
                                 </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className="border-gray-300"
-                                >
-                                  Policy: {details.policyNumber}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className="border-gray-300"
-                                >
-                                  Premium: ${details.premium}{" "}
-                                  {policy.planId?.premiumFrequency ||
-                                    "per month"}
-                                </Badge>
+                                <span className="text-sm text-gray-500">
+                                  #{details.policyNumber}
+                                </span>
+                                <span className="text-sm font-medium text-blue-600">
+                                  ${details.premium} /{" "}
+                                  {policy.planId?.premiumFrequency || "mo"}
+                                </span>
                               </div>
                             </div>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                              <div>
-                                <p className="font-semibold">{details.name}</p>
-                                <p className="text-sm text-gray-500">
-                                  Policy: {details.policyNumber} | Premium: $
-                                  {details.premium}{" "}
-                                  {policy.planId?.premiumFrequency ||
-                                    "per month"}
-                                </p>
-                              </div>
-
-                              {/* Only include the actions modal trigger */}
-                              <PolicyActions policy={policy} />
-                            </div>
+                            <PolicyActions policy={policy} />
                           </CardContent>
                         </Card>
                       </motion.div>
@@ -209,16 +169,11 @@ export default function MyPolicies() {
         </Tabs>
       ) : (
         <div className="text-center py-12">
-          {loading ? (
-            <div className="animate-pulse space-y-4">
-              <div className="h-6 bg-gray-200 rounded w-48 mx-auto" />
-              <div className="h-4 bg-gray-200 rounded w-64 mx-auto" />
-            </div>
-          ) : (
-            <>
-              <p className="text-gray-500 text-lg mb-4">No policies found</p>
-              <Button onClick={fetchPolicies}>Refresh Policies</Button>
-            </>
+          <p className="text-gray-500 text-lg mb-4">
+            {loading ? "Loading policies..." : "No policies found"}
+          </p>
+          {!loading && (
+            <Button onClick={fetchPolicies}>Refresh Policies</Button>
           )}
         </div>
       )}

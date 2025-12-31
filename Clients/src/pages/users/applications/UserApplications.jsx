@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   FiFileText,
   FiRefreshCw,
-  FiAlertTriangle,
   FiClock,
   FiCheckCircle,
   FiXCircle,
@@ -14,19 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { applicationService } from "@/services/applicationService";
 import { resolveDocumentUrl } from "@/utils/resolveURL";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function UserApplications() {
-  const { isAuthenticated, authReady } = useAuth();
+  const { authReady, isAuthenticated } = useAuthStore();
 
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,7 +32,6 @@ export default function UserApplications() {
   /* =======================
      FETCH (AUTH GUARDED)
   ======================= */
-
   useEffect(() => {
     if (!authReady || !isAuthenticated) return;
     fetchApplications();
@@ -103,6 +95,17 @@ export default function UserApplications() {
   /* =======================
      RENDER
   ======================= */
+  if (!authReady) return <Skeleton className="h-40 w-full" />; // show loading until authReady
+
+  if (!isAuthenticated)
+    return (
+      <Card className="p-6 text-center">
+        <p className="text-gray-600">
+          You need to log in to view your applications.
+        </p>
+      </Card>
+    );
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}

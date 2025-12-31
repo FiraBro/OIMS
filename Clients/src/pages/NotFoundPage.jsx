@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { PageTransition } from "@/components/navigation/Navbar";
+import { PageTransition } from "@/components/layout/Navbar";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();

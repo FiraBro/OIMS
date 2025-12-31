@@ -1,7 +1,7 @@
 import React from "react";
-import Navbar from "../components/navigation/Navbar";
+import Navbar from "../components/layout/Navbar";
 import { Outlet } from "react-router-dom";
-import Footer from "../components/footer/Footer";
+import Footer from "../components/layout/Footer";
 import { PageTransition } from "@/components/common/PageTransition";
 
 export default function Layout() {

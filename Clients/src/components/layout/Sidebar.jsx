@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
 import {
   FiGrid,
   FiFileText,
@@ -40,7 +40,7 @@ const navItems = [
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user } = useAuthStore();
 
   const handleLogout = async () => {
     if (confirm("Are you sure you want to log out?")) {

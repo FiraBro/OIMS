@@ -85,6 +85,31 @@ body[data-scroll-locked] {
 
 /* Keep scrollbar always visible (optional but recommended) */
 html,
+/* index.css or App.css */
+
 body {
-  overflow-y: scroll !important;
+  @apply bg-white text-gray-900 antialiased;
+  font-family: "Inter", sans-serif !important;
+  /* FIX: Prevent the whole page from scrolling */
+  overflow: hidden !important;
+  height: 100vh;
+}
+
+/* FIX: Remove the forced scroll at the bottom of your file */
+html,
+body {
+  overflow: hidden !important;
+  height: 100vh;
+}
+
+/* Optional: Make scrollbars look modern and thin for the Admin area */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
 }

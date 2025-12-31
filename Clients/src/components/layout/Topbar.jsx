@@ -6,7 +6,7 @@ import {
   FiLogOut,
   FiChevronDown,
 } from "react-icons/fi";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 
 export default function Topbar() {
-  const { logout, user } = useAuth();
+  const { logout, user } = useAuthStore();
 
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md border border-gray-300 sticky top-0 z-30 flex items-center justify-between px-8">

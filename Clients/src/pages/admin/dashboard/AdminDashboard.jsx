@@ -1,151 +1,163 @@
+import React from "react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
 import {
-  FaUsers,
-  FaClipboardList,
-  FaShieldAlt,
-  FaMoneyBillWave,
-} from "react-icons/fa";
+  Activity,
+  Users,
+  FileText,
+  AlertCircle,
+  TrendingUp,
+  ArrowUpRight,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
-export default function AdminDashboard() {
+const data = [
+  { name: "Jan", value: 400 },
+  { name: "Feb", value: 300 },
+  { name: "Mar", value: 600 },
+  { name: "Apr", value: 800 },
+  { name: "May", value: 500 },
+  { name: "Jun", value: 900 },
+];
+
+const Dashboard = () => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="p-6 space-y-6"
+      className="p-8 space-y-8"
     >
-      {/* ----------- TITLE ----------- */}
-      <h2 className="text-2xl font-bold">Admin Dashboard</h2>
-
-      {/* ----------- METRIC CARDS ----------- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Users */}
-        <motion.div whileHover={{ scale: 1.03 }}>
-          <Card className="shadow-sm border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Total Users</CardTitle>
-              <FaUsers className="text-blue-600 text-3xl" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">456</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Policies */}
-        <motion.div whileHover={{ scale: 1.03 }}>
-          <Card className="shadow-sm border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Total Policies</CardTitle>
-              <FaShieldAlt className="text-green-600 text-3xl" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">1,247</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Active Claims */}
-        <motion.div whileHover={{ scale: 1.03 }}>
-          <Card className="shadow-sm border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Active Claims</CardTitle>
-              <FaMoneyBillWave className="text-yellow-600 text-3xl" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">89</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* New Applications */}
-        <motion.div whileHover={{ scale: 1.03 }}>
-          <Card className="shadow-sm border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>New Applications</CardTitle>
-              <FaClipboardList className="text-purple-600 text-3xl" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">23</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Insurance Overview
+          </h1>
+          <p className="text-muted-foreground">
+            Real-time performance of policies and claims.
+          </p>
+        </div>
+        <button className="bg-primary text-white px-4 py-2 rounded-md flex items-center gap-2">
+          <FileText size={18} /> Generate Report
+        </button>
       </div>
 
-      {/* ----------- MAIN CONTENT: TWO COLUMNS ----------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Latest Policy Applications */}
-        <Card className="shadow-sm border">
+      {/* KPI Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[
+          {
+            label: "Active Policies",
+            value: "12,482",
+            icon: FileText,
+            color: "text-blue-500",
+          },
+          {
+            label: "Total Revenue",
+            value: "$4.2M",
+            icon: TrendingUp,
+            color: "text-green-500",
+          },
+          {
+            label: "Pending Claims",
+            value: "148",
+            icon: AlertCircle,
+            color: "text-orange-500",
+          },
+          {
+            label: "New Customers",
+            value: "+573",
+            icon: Users,
+            color: "text-purple-500",
+          },
+        ].map((item, i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                {item.label}
+              </CardTitle>
+              <item.icon className={`h-4 w-4 ${item.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{item.value}</div>
+              <p className="text-xs text-muted-foreground">
+                +12% from last month
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Chart Section */}
+      <div className="grid gap-4 md:grid-cols-7">
+        <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Latest Policy Applications</CardTitle>
+            <CardTitle>Premium Growth</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center border-b pb-3">
-                <div>
-                  <p className="font-semibold">John Doe</p>
-                  <p className="text-sm text-gray-500">Health Basic</p>
-                </div>
-                <Button size="sm">View</Button>
-              </div>
-
-              <div className="flex justify-between items-center border-b pb-3">
-                <div>
-                  <p className="font-semibold">Sarah Williams</p>
-                  <p className="text-sm text-gray-500">Life Premium</p>
-                </div>
-                <Button size="sm">View</Button>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">Mike Johnson</p>
-                  <p className="text-sm text-gray-500">Car Protection</p>
-                </div>
-                <Button size="sm">View</Button>
-              </div>
-            </div>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data}>
+                <defs>
+                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="name"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#3b82f6"
+                  fillOpacity={1}
+                  fill="url(#colorValue)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Latest Claims */}
-        <Card className="shadow-sm border">
+        {/* Recent Claims List */}
+        <Card className="col-span-3">
           <CardHeader>
             <CardTitle>Recent Claims</CardTitle>
           </CardHeader>
-
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center border-b pb-3">
-                <div>
-                  <p className="font-semibold">CLM-0012</p>
-                  <p className="text-sm text-gray-500">Michael Adams – $1200</p>
+          <CardContent className="space-y-4">
+            {[1, 2, 3, 4].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 p-2 hover:bg-muted rounded-lg transition-colors cursor-pointer"
+              >
+                <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                  JD
                 </div>
-                <Button size="sm">View</Button>
-              </div>
-
-              <div className="flex justify-between items-center border-b pb-3">
-                <div>
-                  <p className="font-semibold">CLM-0029</p>
-                  <p className="text-sm text-gray-500">Sarah Kim – $300</p>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">John Doe - Auto Claim</p>
+                  <p className="text-xs text-muted-foreground">
+                    Submitted 2h ago
+                  </p>
                 </div>
-                <Button size="sm">View</Button>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">CLM-0034</p>
-                  <p className="text-sm text-gray-500">James Lee – $6000</p>
+                <div className="text-sm font-semibold text-orange-500">
+                  Pending
                 </div>
-                <Button size="sm">View</Button>
               </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
       </div>
     </motion.div>
   );
-}
+};
+
+export default Dashboard;

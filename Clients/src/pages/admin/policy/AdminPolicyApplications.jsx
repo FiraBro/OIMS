@@ -9,7 +9,6 @@ import {
   FaCalendarAlt,
   FaPhone,
   FaEnvelope,
-  FaFileMedical,
   FaClock,
   FaCreditCard,
   FaIdCard,

@@ -12,7 +12,7 @@ import {
   getPremiumStatsController,
   getPlanByIdController,
   getPopularPlansController,
-  previewRiskScoreController,
+  previewRiskController,
 } from "../controllers/planController.js";
 
 import {
@@ -75,7 +75,7 @@ router.patch(
   handleValidation,
   updatePlanController
 );
-router.post("/risk-score", restrictTo(ROLES.ADMIN), previewRiskScoreController);
+router.post("/risk-score", restrictTo(ROLES.ADMIN), previewRiskController);
 // 4️⃣ Soft delete a plan
 router.delete("/:id", restrictTo(ROLES.ADMIN), deletePlanController);
 

@@ -11,6 +11,10 @@ import {
   FiLogOut,
   FiShield,
   FiChevronRight,
+  FiBriefcase, // For Policies
+  FiPlusCircle, // For Create Plan
+  FiList, // For All Plans
+  FiLayers, // For Applications
 } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 
@@ -23,13 +27,19 @@ const navItems = [
     ],
   },
   {
-    group: "Management",
+    group: "Operations",
     items: [
-      { name: "Applications", path: "/admin/applications", icon: FiFileText },
-      { name: "Policies", path: "/admin/all-policies", icon: FiFileText },
+      { name: "Applications", path: "/admin/applications", icon: FiLayers },
+      { name: "Policies", path: "/admin/all-policies", icon: FiBriefcase },
       { name: "Claims", path: "/admin/all-claims", icon: FiCheckCircle },
       { name: "Customers", path: "/admin/users", icon: FiUsers },
-      { name: "Plans", path: "/admin/create/plan", icon: FiUsers },
+    ],
+  },
+  {
+    group: "Product Engine",
+    items: [
+      { name: "New Plan", path: "/admin/create/plan", icon: FiPlusCircle },
+      { name: "All Plans", path: "/admin/all-plans", icon: FiList },
     ],
   },
   {

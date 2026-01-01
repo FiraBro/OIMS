@@ -1,7 +1,5 @@
-// ============================
 // PlansPage.jsx
-// ============================
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -24,58 +22,52 @@ import {
   GraduationCap,
   Heart,
 } from "lucide-react";
-import { planService } from "@/services/planService";
+import { usePlans } from "@/hooks/usePlan";
 
 export default function PlansPage() {
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [planType, setPlanType] = useState("");
   const [search, setSearch] = useState("");
-  const navigate = useNavigate();
   const searchTimeout = useRef(null);
+  const navigate = useNavigate();
 
+  // --------------------------
+  // Use Plans Hook
+  // --------------------------
+  const { listPublic } = usePlans();
+  const plansQuery = listPublic({
+    search: search || undefined,
+    planType: planType || undefined,
+  });
+
+  // Normalize data to always be an array
+  const plans = Array.isArray(plansQuery.data)
+    ? plansQuery.data
+    : plansQuery.data?.data || [];
+
+  const loading = plansQuery.isLoading;
+  const error = plansQuery.isError ? plansQuery.error : null;
+
+  // Debounced search
+  // --------------------------
   useEffect(() => {
-    const handler = setTimeout(() => {
-      fetchPlans();
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+    searchTimeout.current = setTimeout(() => {
+      plansQuery.refetch();
     }, 500);
 
-    return () => clearTimeout(handler);
-  }, [planType, search]);
+    return () => clearTimeout(searchTimeout.current);
+  }, [search, planType]);
 
-  const fetchPlans = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const filters = {};
-      if (search) filters.search = search;
-      if (planType) filters.planType = planType;
-      if (!search && !planType) filters.all = true;
-
-      const res = await planService.listPlansPublic(filters);
-
-      // Check if res is an array or has data
-      const data = Array.isArray(res) ? res : res?.data || [];
-
-      setPlans(data);
-    } catch (err) {
-      console.error("Failed to fetch plans:", err);
-      setError("Failed to load plans. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ============================
+  // --------------------------
   // Navigation
-  // ============================
+  // --------------------------
   const handleApply = (plan) => navigate(`/apply/${plan._id}`);
   const handleDetails = (planId) => navigate(`/plans/${planId}`);
 
-  // ============================
+  // --------------------------
   // Helpers
-  // ============================
+  // --------------------------
   const getPlanIcon = (planType) => {
     switch ((planType || "").toLowerCase()) {
       case "corporate":
@@ -106,6 +98,9 @@ export default function PlansPage() {
     return colors[colorScheme] || colors.default;
   };
 
+  // --------------------------
+  // Render
+  // --------------------------
   return (
     <section className="py-16 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -168,9 +163,11 @@ export default function PlansPage() {
           <p className="text-gray-500 text-center">Loading plans...</p>
         ) : error ? (
           <div className="text-center py-12">
-            <p className="text-red-600">{error}</p>
+            <p className="text-red-600">
+              {error?.message || "Failed to load plans"}
+            </p>
             <Button
-              onClick={fetchPlans}
+              onClick={() => plansQuery.refetch()}
               className="mt-4 bg-red-600 hover:bg-red-700"
             >
               Retry

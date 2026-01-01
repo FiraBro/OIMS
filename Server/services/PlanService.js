@@ -7,7 +7,7 @@ import { PLAN_TYPES } from "../constants/planTypes.js"; // ✅ import plan types
 
 class InsurancePlanService {
   // ---------------------------
-  // PRIVATE: AI RISK SCORE CALCULATION
+  // PRIVATE: Risk Score Calculator
   // ---------------------------
   #calculateRiskScore(plan) {
     let score = 0;
@@ -31,9 +31,61 @@ class InsurancePlanService {
 
     return Math.min(100, Math.round(score));
   }
+
+  // ---------------------------
+  // Public: Only risk score
+  // ---------------------------
   calculateRiskScoreForPreview(plan) {
     return this.#calculateRiskScore(plan);
   }
+
+  // ---------------------------
+  // Public: Extended risk score with recommendations
+  // ---------------------------
+  calculateRiskScoreWithRecommendations(plan) {
+    const recommendations = [];
+    let score = 0;
+
+    // Coverage contribution
+    score += Math.min(50, plan.coverageAmount / 1000);
+    if (plan.coverageAmount > 5000000)
+      recommendations.push("Consider reducing coverage amount to lower risk");
+
+    // Deductible contribution
+    if (plan.deductible < 500) {
+      score += 10;
+      recommendations.push("Increase deductible to 500+ to reduce risk");
+    }
+
+    // Age eligibility
+    if (plan.minAge < 25) {
+      score += 10;
+      recommendations.push("Avoid including very young members to reduce risk");
+    }
+    if (plan.maxAge > 60) {
+      score += 5;
+      recommendations.push(
+        "Avoid including very senior members to reduce risk"
+      );
+    }
+
+    // Max members
+    score += Math.min(20, plan.maxMembers * 2);
+    if (plan.maxMembers > 5)
+      recommendations.push("Limit number of members per plan");
+
+    // Features / Exclusions
+    if (plan.features?.length <= 5)
+      recommendations.push("Add more key features to reduce risk");
+    if (plan.exclusions?.length < 2)
+      recommendations.push("Add more exclusions to clearly define limits");
+
+    return {
+      riskScore: Math.min(100, Math.round(score)),
+      recommendations,
+    };
+  }
+
   // ---------------------------
   // CREATE PLAN
   // ---------------------------

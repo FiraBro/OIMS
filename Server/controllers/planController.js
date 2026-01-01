@@ -72,8 +72,14 @@ export const getPopularPlansController = catchAsync(async (req, res) => {
 // ---------------------------
 // AI RISK SCORE PREVIEW
 // ---------------------------
-export const previewRiskScoreController = catchAsync(async (req, res) => {
-  // req.body should contain plan data (without saving)
-  const riskScore = InsurancePlanService.calculateRiskScoreForPreview(req.body);
-  res.status(200).json({ status: "success", data: { riskScore } });
+export const previewRiskController = catchAsync(async (req, res) => {
+  const planData = req.body;
+
+  const result =
+    InsurancePlanService.calculateRiskScoreWithRecommendations(planData);
+
+  res.status(200).json({
+    status: "success",
+    data: result,
+  });
 });

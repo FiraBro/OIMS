@@ -153,6 +153,7 @@ const insurancePlanSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    riskScore: { type: Number, min: 0, max: 100 }, // <-- Added
 
     // VALIDITY
     validityPeriod: {

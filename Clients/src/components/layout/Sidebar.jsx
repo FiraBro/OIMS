@@ -29,6 +29,7 @@ const navItems = [
       { name: "Policies", path: "/admin/all-policies", icon: FiFileText },
       { name: "Claims", path: "/admin/all-claims", icon: FiCheckCircle },
       { name: "Customers", path: "/admin/users", icon: FiUsers },
+      { name: "Plans", path: "/admin/create/plan", icon: FiUsers },
     ],
   },
   {

@@ -4,76 +4,87 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus } from "lucide-react";
 
-const StepFeatures = ({ features = [], setFeatures }) => {
-  // Common light gray style
+const StepFeatures = ({ form, update }) => {
+  // Pull features from the form object, default to empty array if undefined
+  const features = form.features || [];
+
   const lightBorderStyle =
     "border-gray-200 focus:border-gray-300 focus:ring-1 focus:ring-gray-300";
 
   const addFeature = (e) => {
     e.preventDefault();
-    setFeatures([...features, ""]);
+    // Updates the 'features' key in the parent form state
+    update("features", [...features, ""]);
   };
 
   const updateFeature = (index, value) => {
     const updated = [...features];
     updated[index] = value;
-    setFeatures(updated);
+    update("features", updated);
   };
 
   const removeFeature = (e, index) => {
     e.preventDefault();
-    // Keep at least one input visible if you prefer
-    if (features.length > 1) {
-      setFeatures(features.filter((_, i) => i !== index));
-    } else {
-      setFeatures([""]); // Reset the single input instead of removing it
-    }
+    const updated = features.filter((_, i) => i !== index);
+    // If you delete everything, we reset to one empty input so the screen isn't blank
+    update("features", updated.length > 0 ? updated : [""]);
   };
 
   return (
-    <Card className="border-gray-200 shadow-none">
-      <CardHeader>
-        <CardTitle className="text-lg font-medium">Plan Features</CardTitle>
-      </CardHeader>
-
-      <CardContent className="space-y-3">
-        {/* If features is empty, this map won't show anything */}
-        {features.map((feature, index) => (
-          <div key={index} className="flex gap-2">
-            <Input
-              className={lightBorderStyle}
-              placeholder={`Feature #${index + 1}`}
-              value={feature}
-              onChange={(e) => updateFeature(index, e.target.value)}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              type="button"
-              className="border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 shrink-0"
-              onClick={(e) => removeFeature(e, index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full border-dashed border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400"
-          onClick={addFeature}
-        >
-          <Plus className="mr-2 h-4 w-4" /> Add Feature
-        </Button>
-
-        {features.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-2">
-            No features added. Click the button above to start.
+    <div className="space-y-6">
+      <Card className="border-gray-200 shadow-none">
+        <CardHeader>
+          <CardTitle className="text-lg font-medium">Plan Features</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            List the key benefits and features included in this plan.
           </p>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          {features.length > 0 ? (
+            features.map((feature, index) => (
+              <div key={index} className="flex gap-2">
+                <Input
+                  className={lightBorderStyle}
+                  placeholder={`Feature #${
+                    index + 1
+                  } (e.g. Free Dental Coverage)`}
+                  value={feature}
+                  onChange={(e) => updateFeature(index, e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  type="button"
+                  className="border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 shrink-0"
+                  onClick={(e) => removeFeature(e, index)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-6 border-2 border-dashed border-gray-100 rounded-lg">
+              <p className="text-sm text-gray-400">No features added yet.</p>
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-dashed border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400 mt-2"
+            onClick={addFeature}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Feature
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Example of how to add the Exclusions logic if needed */}
+      <p className="text-xs text-muted-foreground px-1">
+        Tip: Be specific with features to help users compare plans easily.
+      </p>
+    </div>
   );
 };
 

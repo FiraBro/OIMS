@@ -75,7 +75,7 @@ export default function CreatePlan() {
           </p>
         </div>
 
-        <nav className="flex flex-col space-y-1">
+        <nav className="flex flex-col space-y-2 relative">
           {steps.map((label, i) => {
             const isCompleted = step > i;
             const isActive = step === i;
@@ -83,24 +83,63 @@ export default function CreatePlan() {
             return (
               <div
                 key={label}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                  isActive
-                    ? "bg-primary/10 text-primary border-l-4 border-primary"
-                    : "text-muted-foreground"
-                }`}
+                className="relative flex items-center gap-3 p-3 rounded-xl transition-all duration-300"
               >
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border ${
-                    isCompleted
-                      ? "bg-primary border-primary text-white"
-                      : "border-current"
-                  }`}
+                {/* Animated Background for Active Step */}
+                {isActive && (
+                  <motion.div
+                    layoutId="activeStepBg"
+                    className="absolute inset-0 bg-blue-50 border-l-4 border-blue-600 rounded-lg -z-10"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+
+                {/* Step Circle */}
+                <motion.div
+                  animate={{
+                    scale: isActive ? 1.1 : 1,
+                    backgroundColor: isCompleted
+                      ? "#2563eb"
+                      : isActive
+                      ? "#ffffff"
+                      : "#f3f4f6",
+                    borderColor:
+                      isCompleted || isActive ? "#2563eb" : "#e5e7eb",
+                  }}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 transition-colors duration-300`}
                 >
-                  {isCompleted ? <Check className="w-4 h-4" /> : i + 1}
-                </div>
+                  <AnimatePresence mode="wait">
+                    {isCompleted ? (
+                      <motion.div
+                        key="check"
+                        initial={{ scale: 0, rotate: -45 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0 }}
+                      >
+                        <Check className="w-5 h-5 text-white" strokeWidth={3} />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="number"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className={isActive ? "text-blue-600" : "text-gray-400"}
+                      >
+                        {i + 1}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+
+                {/* Step Label */}
                 <span
-                  className={`text-sm font-medium ${
-                    isActive ? "opacity-100" : "opacity-70"
+                  className={`text-sm font-semibold transition-colors duration-300 ${
+                    isActive
+                      ? "text-blue-700"
+                      : isCompleted
+                      ? "text-gray-600"
+                      : "text-gray-400"
                   }`}
                 >
                   {label}

@@ -1,4 +1,3 @@
-// services/insurancePlanService.js
 import mongoose from "mongoose";
 import slugify from "slugify";
 import InsurancePlan from "../models/plan.js";
@@ -7,6 +6,34 @@ import AppError from "../utils/AppError.js";
 import { PLAN_TYPES } from "../constants/planTypes.js"; // ✅ import plan types
 
 class InsurancePlanService {
+  // ---------------------------
+  // PRIVATE: AI RISK SCORE CALCULATION
+  // ---------------------------
+  #calculateRiskScore(plan) {
+    let score = 0;
+
+    // Coverage contribution
+    score += Math.min(50, plan.coverageAmount / 1000);
+
+    // Deductible contribution
+    score += plan.deductible < 500 ? 10 : 0;
+
+    // Age eligibility
+    if (plan.minAge < 25) score += 10;
+    if (plan.maxAge > 60) score += 5;
+
+    // Max members
+    score += Math.min(20, plan.maxMembers * 2);
+
+    // Features / Exclusions
+    if (plan.features?.length > 5) score += 5;
+    if (plan.exclusions?.length < 2) score += 5;
+
+    return Math.min(100, Math.round(score));
+  }
+  calculateRiskScoreForPreview(plan) {
+    return this.#calculateRiskScore(plan);
+  }
   // ---------------------------
   // CREATE PLAN
   // ---------------------------
@@ -17,17 +44,19 @@ class InsurancePlanService {
       slug,
       isDeleted: false,
     }).lean();
-
     if (exists) throw new AppError("Plan name already exists", 400);
 
-    // ✅ Validate plan type
     if (data.planType && !Object.values(PLAN_TYPES).includes(data.planType)) {
       throw new AppError("Invalid plan type", 400);
     }
 
+    // ✅ Calculate AI Risk Score
+    const riskScore = this.#calculateRiskScore(data);
+
     return await InsurancePlan.create({
       ...data,
       slug,
+      riskScore,
       createdBy: userId,
     });
   }
@@ -38,14 +67,15 @@ class InsurancePlanService {
   async updatePlan(id, data, userId) {
     if (data.name) data.slug = slugify(data.name, { lower: true });
 
-    // ✅ Validate plan type if updating
     if (data.planType && !Object.values(PLAN_TYPES).includes(data.planType)) {
       throw new AppError("Invalid plan type", 400);
     }
 
+    const riskScore = this.#calculateRiskScore(data);
+
     const plan = await InsurancePlan.findOneAndUpdate(
       { _id: id, isDeleted: false },
-      { ...data, updatedBy: userId },
+      { ...data, riskScore, updatedBy: userId },
       { new: true }
     ).lean();
 
@@ -57,19 +87,14 @@ class InsurancePlanService {
   // GET PLAN BY ID
   // ---------------------------
   async getPlanById(id) {
-    // Validate MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id))
       throw new AppError("Invalid plan ID", 400);
-    }
 
     const plan = await InsurancePlan.findOne({
       _id: id,
       isDeleted: false,
     }).lean();
-
-    if (!plan) {
-      throw new AppError("Plan not found", 404);
-    }
+    if (!plan) throw new AppError("Plan not found", 404);
 
     return plan;
   }
@@ -78,25 +103,21 @@ class InsurancePlanService {
   // SOFT DELETE PLAN
   // ---------------------------
   async softDeletePlan(id) {
-    // Check for active approved policies under this plan
     const activePolicies = await Policy.countDocuments({
       planId: id,
       status: "approved",
     });
-
-    if (activePolicies > 0) {
+    if (activePolicies > 0)
       throw new AppError(
         "Cannot delete plan with active approved policies",
         400
       );
-    }
 
     const plan = await InsurancePlan.findByIdAndUpdate(
       id,
       { isDeleted: true },
       { new: true }
     ).lean();
-
     if (!plan) throw new AppError("Plan not found", 404);
 
     return plan;
@@ -138,13 +159,7 @@ class InsurancePlanService {
 
     const total = await InsurancePlan.countDocuments(query);
 
-    return {
-      plans,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return { plans, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   // ---------------------------
@@ -152,7 +167,6 @@ class InsurancePlanService {
   // ---------------------------
   async listPlansPublic(filters = {}) {
     const { planType, minPremium, maxPremium, search } = filters;
-
     const query = { isDeleted: false, status: "published" };
 
     if (planType) query.planType = planType;
@@ -197,7 +211,7 @@ class InsurancePlanService {
 
   async getPopularPlans(limit = 4) {
     return await InsurancePlan.find({ status: "published", isDeleted: false })
-      .sort({ createdAt: -1 }) // latest first
+      .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
   }

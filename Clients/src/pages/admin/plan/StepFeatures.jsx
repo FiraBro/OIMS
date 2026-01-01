@@ -2,9 +2,15 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Trash2, Plus } from "lucide-react";
 
 const StepFeatures = ({ features = [], setFeatures }) => {
-  const addFeature = () => {
+  // Common light gray style
+  const lightBorderStyle =
+    "border-gray-200 focus:border-gray-300 focus:ring-1 focus:ring-gray-300";
+
+  const addFeature = (e) => {
+    e.preventDefault();
     setFeatures([...features, ""]);
   };
 
@@ -14,37 +20,58 @@ const StepFeatures = ({ features = [], setFeatures }) => {
     setFeatures(updated);
   };
 
-  const removeFeature = (index) => {
-    setFeatures(features.filter((_, i) => i !== index));
+  const removeFeature = (e, index) => {
+    e.preventDefault();
+    // Keep at least one input visible if you prefer
+    if (features.length > 1) {
+      setFeatures(features.filter((_, i) => i !== index));
+    } else {
+      setFeatures([""]); // Reset the single input instead of removing it
+    }
   };
 
   return (
-    <Card className="border border-gray-200">
+    <Card className="border-gray-200 shadow-none">
       <CardHeader>
-        <CardTitle>Plan Features</CardTitle>
+        <CardTitle className="text-lg font-medium">Plan Features</CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
+        {/* If features is empty, this map won't show anything */}
         {features.map((feature, index) => (
           <div key={index} className="flex gap-2">
             <Input
-              placeholder={`Feature ${index + 1}`}
+              className={lightBorderStyle}
+              placeholder={`Feature #${index + 1}`}
               value={feature}
               onChange={(e) => updateFeature(index, e.target.value)}
             />
             <Button
-              variant="destructive"
+              variant="outline"
+              size="icon"
               type="button"
-              onClick={() => removeFeature(index)}
+              className="border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 shrink-0"
+              onClick={(e) => removeFeature(e, index)}
             >
-              Remove
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         ))}
 
-        <Button type="button" onClick={addFeature}>
-          + Add Feature
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full border-dashed border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400"
+          onClick={addFeature}
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add Feature
         </Button>
+
+        {features.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-2">
+            No features added. Click the button above to start.
+          </p>
+        )}
       </CardContent>
     </Card>
   );

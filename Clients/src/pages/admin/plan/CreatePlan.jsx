@@ -151,7 +151,7 @@ export default function CreatePlan() {
           </div>
 
           {/* Persistent Footer Actions */}
-          <div className="border-t p-4 md:p-6 flex justify-between bg-muted/20">
+          <div className="mx-4 border-t border-gray-300 px-4 p-4 md:p-6 flex justify-between bg-muted/20">
             <Button
               variant="ghost"
               disabled={step === 0}

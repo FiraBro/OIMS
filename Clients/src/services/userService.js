@@ -1,4 +1,4 @@
-import api from "./api"; // Assuming your axios instance is in this file
+import api from "../lib/axios"; // Assuming your axios instance is in this file
 
 export const userService = {
   /**

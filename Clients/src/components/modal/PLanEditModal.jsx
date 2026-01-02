@@ -74,7 +74,8 @@ export function PlanEditModal({ plan, isOpen, onClose, onSuccess }) {
       onSuccess?.();
       onClose();
     } catch (err) {
-      toast.error("Failed to update plan");
+      console.error(err.response?.data || err);
+      toast.error(err.response?.data?.message || "Failed to update plan");
     } finally {
       setLoading(false);
     }

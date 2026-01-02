@@ -1,7 +1,9 @@
-// Insurance plan types
 export const PLAN_TYPES = {
   INDIVIDUAL: "individual",
   FAMILY: "family",
+  SENIOR: "senior",
+  STUDENT: "student",
   CORPORATE: "corporate",
-  STUDENT: "student", // optional
+  GROUP: "group",
+  CUSTOM: "custom",
 };

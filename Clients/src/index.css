@@ -10,19 +10,14 @@
 /* Light theme CSS variables */
 :root {
   --radius: 0.5rem;
-
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
-
   --primary: 221.2 83.2% 53.3%;
   --primary-foreground: 210 40% 98%;
-
   --secondary: 150 60% 40%;
   --secondary-foreground: 210 40% 98%;
-
   --muted: 210 40% 96%;
   --muted-foreground: 215 16% 47%;
-
   --border: 214.3 31.8% 91.4%;
   --input: 210 36% 96%;
   --ring: 221.2 83% 53%;
@@ -32,19 +27,25 @@
 .dark {
   --background: 224 71% 4%;
   --foreground: 210 40% 98%;
-
   --primary: 217 91% 60%;
   --primary-foreground: 222 47% 11%;
-
   --secondary: 160 60% 40%;
   --secondary-foreground: 210 40% 98%;
 }
 
-/* Global base style - Inter for ALL body text */
+/* Global base style */
+html {
+  /* Use scroll-smooth for nicer navigation anchor jumps */
+  scroll-behavior: smooth;
+}
+
 body {
   @apply bg-white text-gray-900 antialiased;
   font-family: "Inter", sans-serif !important;
-  overflow-y: scroll !important;
+
+  /* FIXED: Allow scrolling and ensure the body expands with content */
+  min-height: 100vh;
+  overflow-y: auto;
 }
 
 .dark body {
@@ -72,10 +73,11 @@ h6 {
 /* FIX: Radix Select layout shift */
 /* ============================== */
 
-/* Prevent Radix from adding padding-right on body */
+/* Prevent Radix from adding padding-right on body when modals open */
 body[data-scroll-locked] {
   padding-right: 0 !important;
   margin-right: 0 !important;
+  /* Radix needs to handle the overflow during locks, not the global CSS */
 }
 
 /* Prevent Radix from calculating scrollbar size */
@@ -83,26 +85,7 @@ body[data-scroll-locked] {
   --removed-body-scroll-bar-size: 0px !important;
 }
 
-/* Keep scrollbar always visible (optional but recommended) */
-html,
-/* index.css or App.css */
-
-body {
-  @apply bg-white text-gray-900 antialiased;
-  font-family: "Inter", sans-serif !important;
-  /* FIX: Prevent the whole page from scrolling */
-  overflow: hidden !important;
-  height: 100vh;
-}
-
-/* FIX: Remove the forced scroll at the bottom of your file */
-html,
-body {
-  overflow: hidden !important;
-  height: 100vh;
-}
-
-/* Optional: Make scrollbars look modern and thin for the Admin area */
+/* Modern thin scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
 }

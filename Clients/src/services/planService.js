@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "../lib/axios";
 
 // ======================================================
 // PUBLIC SERVICES
@@ -55,6 +55,11 @@ const deletePlan = async (id) => {
   const res = await api.delete(`/plans/${id}`);
   return res.data;
 };
+const riskScore = async (data) => {
+  const res = await api.post(`/plans/risk-score`, data);
+  console.log("Risk Score Response:", res);
+  return res.data;
+};
 
 export const planService = {
   // Public
@@ -68,4 +73,5 @@ export const planService = {
   createPlan,
   updatePlan,
   deletePlan,
+  riskScore,
 };

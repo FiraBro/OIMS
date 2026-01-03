@@ -8,7 +8,8 @@ import {
 } from "react-icons/fi";
 import { Card } from "@/components/ui/card";
 
-export default function StepRiskScore({ form, riskScore, isLoading }) {
+export default function StepRiskScore({ riskScore, isLoading }) {
+  console.log("Risk Score Data:", riskScore);
   const score = riskScore?.riskScore ?? 0;
 
   // Professional color mapping

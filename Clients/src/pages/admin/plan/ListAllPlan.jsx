@@ -216,21 +216,21 @@ export default function AdminPlanListPage() {
   const paginatedPlans = useMemo(() => {
     return filteredPlans.slice(startIndex, endIndex);
   }, [filteredPlans, startIndex, endIndex]);
-
-  // Memoized action handlers
   const handleDelete = useCallback(
     async (id) => {
-      if (window.confirm("Confirm deletion of this insurance plan?")) {
-        try {
-          await deletePlan.mutateAsync(id);
-          toast.success("Plan deleted successfully", {
-            description: "The plan has been permanently deleted.",
-          });
-        } catch (error) {
-          toast.error("Failed to delete plan", {
-            description: error.message || "Please try again.",
-          });
-        }
+      if (!id) {
+        toast.error("Plan ID is missing.");
+        return;
+      }
+      try {
+        await deletePlan.mutateAsync(id);
+        toast.success("Plan deleted successfully", {
+          description: "The plan has been permanently deleted.",
+        });
+      } catch (error) {
+        toast.error("Failed to delete plan", {
+          description: error.message || "Please try again.",
+        });
       }
     },
     [deletePlan]
@@ -411,7 +411,7 @@ export default function AdminPlanListPage() {
                       key={plan.id || `${startIndex}-${idx}`}
                       plan={plan}
                       index={idx}
-                      handleDelete={handleDelete}
+                      handleDelete={() => handleDelete(plan._id)}
                       toggleStatus={toggleStatus}
                       onEditClick={handleEditClick}
                     />

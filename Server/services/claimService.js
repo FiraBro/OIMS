@@ -83,18 +83,38 @@ class ClaimService {
     return claim;
   }
 
-  async listAllClaims({ page = 1, limit = 10 }) {
+  // service.js
+  async listAllClaims({ page = 1, limit = 10, search = "" }) {
     const skip = (page - 1) * limit;
 
-    const claims = await Claim.find({})
+    // 1. Define the filter
+    let query = {};
+
+    if (search) {
+      query = {
+        $or: [
+          { policyNumber: { $regex: search, $options: "i" } },
+          { claimType: { $regex: search, $options: "i" } },
+          { status: { $regex: search, $options: "i" } },
+        ],
+      };
+    }
+
+    // 2. Execute query with filter
+    const claims = await Claim.find(query)
       .populate("user")
       .skip(skip)
       .limit(limit)
       .sort({ submittedAt: -1 });
 
-    const total = await Claim.countDocuments();
+    // 3. Count only the documents that match the search
+    const total = await Claim.countDocuments(query);
 
-    return { claims, total };
+    return {
+      claims,
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async updateStatus(id, status, adminId) {

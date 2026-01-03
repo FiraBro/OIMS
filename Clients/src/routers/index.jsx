@@ -10,6 +10,7 @@ import ProtectedRoute from "@/pages/auth/form/ProtectRoutes";
 import CreatePlanPage from "@/pages/admin/plan/CreatePlan";
 import Settings from "@/pages/admin/support/Setting";
 import AdminPlanListPage from "@/pages/admin/plan/ListAllPlan";
+import PolicyList from "@/pages/admin/policy/PolicyList";
 
 /* Public Pages */
 const HomePage = lazy(() => import("@/pages/users/home/HomePage"));
@@ -35,7 +36,7 @@ const AdminDashboard = lazy(() =>
   import("@/pages/admin/dashboard/AdminDashboard")
 );
 const AdminPolicyApplications = lazy(() =>
-  import("@/pages/admin/policy/AdminPolicyApplications")
+  import("@/pages/admin/applications/AdminPolicyApplications")
 );
 const ViewPolicyApplication = lazy(() =>
   import("@/pages/admin/policy/ViewPolicyApplication")
@@ -114,14 +115,14 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     element: (
-      <ProtectedRoute requireAdmin>
+      <ProtectedRoute isAdminRequired={true}>
         <AdminLayout />
       </ProtectedRoute>
     ),
     children: [
       { path: "dashboard", element: <AdminDashboard /> },
       { path: "applications", element: <AdminPolicyApplications /> },
-      { path: "all-policies", element: <AdminPolicyApplications /> },
+      { path: "all-policies", element: <PolicyList /> },
       { path: "policies/details", element: <ViewPolicyApplication /> },
       { path: "users", element: <AdminUsersPage /> },
       { path: "all-claims", element: <AdminClaimsManagement /> },

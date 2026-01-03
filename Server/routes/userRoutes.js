@@ -1,17 +1,17 @@
 import express from "express";
-import * as userController from "../controllers/userController.js";
+// ✅ Import the default instance (no asterisk, no curly braces)
+import userController from "../controllers/userController.js";
 import { protect, restrictTo } from "../middlewares/protect.js";
+
 const router = express.Router();
 
-// Apply protection to all routes below
 router.use(protect);
-
-// Admin-only routes
 router.use(restrictTo("admin"));
 
-router.route("/").get(userController.getAllUsers);
-// Get list of all users and identify plan applicants
-router.get("/analysis", restrictTo("admin"), userController.getUserAnalysis);
+// Now userController.getUsers is a valid function reference
+router.route("/admin/list").get(userController.getUsers);
+
+router.route("/stats").get(userController.getUserStatsSummary);
 
 router
   .route("/:id")

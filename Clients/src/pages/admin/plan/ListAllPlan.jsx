@@ -123,33 +123,46 @@ const VirtualTableRow = React.memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-xl border border-transparent hover:border-slate-200"
+                className="h-9 w-9 rounded-xl border border-transparent hover:border-slate-200 transition-all active:scale-90"
               >
                 <FiMoreVertical className="text-slate-500" />
               </Button>
             </DropdownMenuTrigger>
+
             <DropdownMenuContent
               align="end"
-              className="w-56 p-2 rounded-2xl shadow-2xl border-slate-200"
+              sideOffset={8}
+              className="w-56 p-2 rounded-2xl shadow-2xl bg-white border border-slate-100
+                 data-[state=open]:animate-in 
+                 data-[state=closed]:animate-out 
+                 data-[state=open]:fade-in-0 
+                 data-[state=closed]:fade-out-0 
+                 data-[state=open]:zoom-in-95 
+                 data-[state=closed]:zoom-out-95 
+                 data-[state=open]:slide-in-from-top-2
+                 duration-200 ease-out"
             >
-              <DropdownMenuItem className="gap-3 py-3 cursor-pointer rounded-xl">
-                <FiEye className="text-lg opacity-70" />{" "}
-                <span className="font-medium">Quick View</span>
+              <DropdownMenuItem className="gap-3 py-3 cursor-pointer rounded-xl focus:bg-slate-50 transition-colors">
+                <FiEye className="text-lg opacity-70 text-blue-600" />
+                <span className="font-medium text-slate-700">Quick View</span>
               </DropdownMenuItem>
+
               <DropdownMenuItem
                 onClick={() => onEditClick(plan)}
-                className="gap-3 py-3 cursor-pointer rounded-xl"
+                className="gap-3 py-3 cursor-pointer rounded-xl focus:bg-slate-50 transition-colors"
               >
-                <FiEdit2 className="text-lg opacity-70" />{" "}
-                <span className="font-medium">Edit Config</span>
+                <FiEdit2 className="text-lg opacity-70 text-amber-600" />
+                <span className="font-medium text-slate-700">Edit Config</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="my-1 opacity-50" />
+
+              <DropdownMenuSeparator className="my-1 bg-slate-100" />
+
               <DropdownMenuItem
                 onClick={() => handleDelete(plan._id)}
-                className="gap-3 py-3 cursor-pointer rounded-xl text-red-600"
+                className="gap-3 py-3 cursor-pointer rounded-xl text-red-600 focus:bg-red-50 focus:text-red-700 transition-colors"
               >
-                <FiTrash2 className="text-lg opacity-70" />{" "}
-                <span className="font-medium">Delete</span>
+                <FiTrash2 className="text-lg opacity-70" />
+                <span className="font-medium">Delete Permanently</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -288,27 +301,64 @@ export default function AdminPlanListPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-11 bg-slate-50 border-none rounded-xl">
+              <SelectTrigger className="w-[140px] h-11 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all active:scale-95 shadow-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
+              <SelectContent
+                className="bg-white border border-slate-200 rounded-xl shadow-xl 
+                 data-[state=open]:animate-in data-[state=closed]:animate-out 
+                 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 
+                 data-[state=open]:slide-in-from-top-2 duration-200"
+              >
+                <SelectItem
+                  value="ALL"
+                  className="rounded-lg cursor-pointer focus:bg-slate-50"
+                >
+                  All Status
+                </SelectItem>
+                <SelectItem
+                  value="published"
+                  className="rounded-lg cursor-pointer focus:bg-slate-50"
+                >
+                  Published
+                </SelectItem>
+                <SelectItem
+                  value="draft"
+                  className="rounded-lg cursor-pointer focus:bg-slate-50"
+                >
+                  Draft
+                </SelectItem>
               </SelectContent>
             </Select>
 
+            {/* Items Per Page */}
             <Select
               value={itemsPerPage.toString()}
               onValueChange={(v) => setItemsPerPage(Number(v))}
             >
-              <SelectTrigger className="w-[100px] h-11 bg-slate-50 border-none rounded-xl">
+              <SelectTrigger className="w-[100px] h-11 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all active:scale-95 shadow-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25/page</SelectItem>
-                <SelectItem value="50">50/page</SelectItem>
+              <SelectContent
+                className="bg-white border border-slate-200 rounded-xl shadow-xl 
+                 data-[state=open]:animate-in data-[state=closed]:animate-out 
+                 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 
+                 data-[state=open]:slide-in-from-top-2 duration-200"
+              >
+                <SelectItem
+                  value="25"
+                  className="rounded-lg cursor-pointer focus:bg-slate-50"
+                >
+                  25/page
+                </SelectItem>
+                <SelectItem
+                  value="50"
+                  className="rounded-lg cursor-pointer focus:bg-slate-50"
+                >
+                  50/page
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -19,10 +19,12 @@ import {
   FiUser,
   FiChevronLeft,
   FiChevronRight,
+  FiDownload,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { useUsers } from "@/hooks/useUser";
 
-// Table Row Variants
+// Animation Variants
 const rowVariants = {
   hidden: { opacity: 0, y: 5 },
   visible: { opacity: 1, y: 0 },
@@ -41,6 +43,7 @@ const modalVariants = {
 };
 
 export default function AdminUsersPage() {
+  // --- State ---
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,7 +52,16 @@ export default function AdminUsersPage() {
 
   const deferredSearch = useDeferredValue(search);
 
-  const { data, isLoading, isFetching, deleteUser, isProcessing } = useUsers({
+  // --- Hook Integration ---
+  const {
+    data,
+    isLoading,
+    isFetching,
+    deleteUser,
+    isProcessing,
+    exportToCSV,
+    isExporting,
+  } = useUsers({
     page: currentPage,
     limit: 10,
     search: deferredSearch,
@@ -62,6 +74,7 @@ export default function AdminUsersPage() {
     totalPages: data?.totalPages || 1,
   };
 
+  // Reset pagination on filter change
   useEffect(() => {
     setCurrentPage(1);
   }, [deferredSearch, filter]);
@@ -75,17 +88,33 @@ export default function AdminUsersPage() {
   return (
     <div className="p-8 bg-zinc-50/30 min-h-screen max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase">
             User Registry
           </h1>
           <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
             Database Scale:{" "}
-            <span className="text-blue-600">{meta.total.toLocaleString()}</span>{" "}
+            <span className="text-blue-600 font-black">
+              {meta.total.toLocaleString()}
+            </span>{" "}
             Verified Records
           </p>
         </div>
+
+        {/* Shine Export Button */}
+        <Button
+          onClick={exportToCSV}
+          disabled={isExporting || isLoading}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold uppercase text-[10px] tracking-widest px-6 h-11 rounded-xl shadow-lg shadow-blue-200 border-none transition-all active:scale-95"
+        >
+          {isExporting ? (
+            <FiRefreshCw className="mr-2 h-3 w-3 animate-spin" />
+          ) : (
+            <FiDownload className="mr-2 h-3 w-3" />
+          )}
+          {isExporting ? "Generating..." : "Download CSV"}
+        </Button>
       </div>
 
       {/* Toolbar */}
@@ -130,13 +159,13 @@ export default function AdminUsersPage() {
 
       {/* Table Section */}
       <div className="border border-zinc-200 rounded-3xl overflow-hidden shadow-md bg-white relative">
-        {/* Shine Loading Bar */}
-        {isFetching && (
+        {/* Shine Progress Bar */}
+        {(isFetching || isExporting) && (
           <div className="absolute top-0 left-0 w-full h-1 bg-blue-50 overflow-hidden z-10">
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: "100%" }}
-              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
               className="h-full w-1/2 bg-gradient-to-r from-transparent via-blue-500 to-transparent"
             />
           </div>
@@ -154,104 +183,114 @@ export default function AdminUsersPage() {
 
           <motion.tbody layout className="divide-y divide-zinc-100">
             <AnimatePresence mode="popLayout">
-              {isLoading
-                ? [...Array(5)].map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td colSpan={4} className="px-6 py-8 bg-zinc-50/30" />
-                    </tr>
-                  ))
-                : users.map((user) => (
-                    <motion.tr
-                      key={user._id}
-                      variants={rowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      layout
-                      className="hover:bg-blue-50/30 transition-colors group"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          {/* SHINE AVATAR */}
-                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-blue-200 ring-2 ring-white">
-                            {user.fullName?.[0]}
-                          </div>
-                          <span className="font-bold text-zinc-800">
-                            {user.fullName}
-                          </span>
+              {isLoading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td colSpan={4} className="px-6 py-8 bg-zinc-50/30" />
+                  </tr>
+                ))
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-20 text-center">
+                    <FiUser className="mx-auto text-4xl text-zinc-200 mb-2" />
+                    <p className="text-[10px] font-black text-zinc-400 uppercase">
+                      No records found
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <motion.tr
+                    key={user._id}
+                    variants={rowVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    layout
+                    className="hover:bg-blue-50/30 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-blue-200 ring-2 ring-white">
+                          {user.fullName?.[0]}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 text-zinc-500 font-medium">
-                        {user.email}
-                      </td>
-                      <td className="px-6 py-4">
-                        {user.isApplicant ? (
-                          <Badge className="bg-blue-500 text-white border-none font-black text-[9px] uppercase tracking-tighter shadow-sm">
-                            <FiFileText className="mr-1" /> Applicant
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="border-zinc-200 text-zinc-400 font-black text-[9px] uppercase tracking-tighter"
-                          >
-                            Registered
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-9 w-9 rounded-full hover:bg-blue-100 hover:text-blue-600"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setViewOpen(true);
-                            }}
-                          >
-                            <FiEye />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-9 w-9 rounded-full hover:bg-red-50 hover:text-red-600"
-                            onClick={() => handleDelete(user._id)}
-                            disabled={isProcessing}
-                          >
-                            <FiTrash2 />
-                          </Button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
+                        <span className="font-bold text-zinc-800">
+                          {user.fullName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-zinc-500 font-medium">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4">
+                      {user.isApplicant ? (
+                        <Badge className="bg-blue-500 text-white border-none font-black text-[9px] uppercase tracking-tighter shadow-sm">
+                          <FiFileText className="mr-1 h-3 w-3" /> Applicant
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="border-zinc-200 text-zinc-400 font-black text-[9px] uppercase tracking-tighter"
+                        >
+                          Registered
+                        </Badge>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 rounded-full hover:bg-blue-100 hover:text-blue-600"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setViewOpen(true);
+                          }}
+                        >
+                          <FiEye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-9 w-9 rounded-full hover:bg-red-50 hover:text-red-600"
+                          onClick={() => handleDelete(user._id)}
+                          disabled={isProcessing}
+                        >
+                          <FiTrash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </AnimatePresence>
           </motion.tbody>
         </table>
 
-        {/* Pagination */}
+        {/* Pagination Footer */}
         <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-between">
           <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-            Page <span className="text-zinc-900">{currentPage}</span> /{" "}
+            Page <span className="text-zinc-900">{currentPage}</span> of{" "}
             {meta.totalPages}
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase"
+              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase transition-all active:scale-95"
               disabled={currentPage === 1 || isFetching}
               onClick={() => setCurrentPage((prev) => prev - 1)}
             >
-              Prev
+              <FiChevronLeft className="mr-1" /> Prev
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase bg-zinc-900 text-white hover:bg-zinc-800"
+              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
               disabled={currentPage === meta.totalPages || isFetching}
               onClick={() => setCurrentPage((prev) => prev + 1)}
             >
-              Next
+              Next <FiChevronRight className="ml-1" />
             </Button>
           </div>
         </div>
@@ -268,10 +307,11 @@ export default function AdminUsersPage() {
                 animate="visible"
                 exit="exit"
               >
+                {/* Header Gradient */}
                 <div className="relative h-32 bg-gradient-to-r from-blue-600 to-indigo-700">
                   <div className="absolute -bottom-10 left-6">
                     <div className="h-20 w-20 rounded-2xl bg-white p-1 shadow-xl">
-                      <div className="h-full w-full rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-black">
+                      <div className="h-full w-full rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-black shadow-inner">
                         {selectedUser?.fullName?.[0]}
                       </div>
                     </div>
@@ -280,39 +320,50 @@ export default function AdminUsersPage() {
 
                 <div className="pt-14 p-8">
                   <DialogHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <DialogTitle className="text-2xl font-black text-zinc-900 uppercase tracking-tight">
-                          {selectedUser?.fullName}
-                        </DialogTitle>
-                        <Badge className="mt-1 bg-blue-50 text-blue-600 border-blue-100 font-bold uppercase text-[9px]">
-                          {selectedUser?.role || "Member"}
-                        </Badge>
-                      </div>
+                    <div>
+                      <DialogTitle className="text-2xl font-black text-zinc-900 uppercase tracking-tight">
+                        {selectedUser?.fullName}
+                      </DialogTitle>
+                      <Badge className="mt-1 bg-blue-50 text-blue-600 border-blue-100 font-bold uppercase text-[9px] tracking-widest">
+                        {selectedUser?.role || "Verified Member"}
+                      </Badge>
                     </div>
                   </DialogHeader>
 
                   {selectedUser && (
-                    <div className="mt-8 grid grid-cols-2 gap-6 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                    <div className="mt-8 grid grid-cols-2 gap-6 bg-zinc-50 p-5 rounded-2xl border border-zinc-100 shadow-inner">
                       <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase">
-                          Status
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">
+                          Current Status
                         </p>
-                        <p className="text-sm font-bold text-zinc-700 mt-1">
-                          {selectedUser.isApplicant
-                            ? "Active Applicant"
-                            : "Verified User"}
+                        <p className="text-sm font-bold text-zinc-700 mt-1 flex items-center gap-1">
+                          {selectedUser.isApplicant ? (
+                            <>
+                              <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />{" "}
+                              Active Applicant
+                            </>
+                          ) : (
+                            "Registered User"
+                          )}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-zinc-400 uppercase">
-                          Joined
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">
+                          Registration Date
                         </p>
                         <p className="text-sm font-bold text-zinc-700 mt-1">
                           {new Date(selectedUser.createdAt).toLocaleDateString(
                             "en-US",
-                            { month: "short", year: "numeric" }
+                            { month: "short", day: "numeric", year: "numeric" }
                           )}
+                        </p>
+                      </div>
+                      <div className="col-span-2 pt-2">
+                        <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">
+                          Email Address
+                        </p>
+                        <p className="text-sm font-bold text-zinc-700 mt-1 truncate">
+                          {selectedUser.email}
                         </p>
                       </div>
                     </div>
@@ -322,10 +373,10 @@ export default function AdminUsersPage() {
                 <DialogFooter className="p-6 pt-0">
                   <Button
                     variant="ghost"
-                    className="w-full font-bold uppercase text-xs text-zinc-500 hover:bg-zinc-50"
+                    className="w-full font-black uppercase text-[10px] tracking-widest text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 rounded-xl h-11"
                     onClick={() => setViewOpen(false)}
                   >
-                    Close Profile
+                    Close Record
                   </Button>
                 </DialogFooter>
               </motion.div>

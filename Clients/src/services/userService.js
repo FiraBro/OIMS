@@ -1,76 +1,78 @@
-import api from "../lib/axios"; // Assuming your axios instance is in this file
+import api from "../lib/axios";
 
-export const userService = {
+class UserService {
   /**
-   * Get all registered users and identify plan applicants
-   * Returns: { registeredUsers: [], planApplicants: [], summary: {} }
+   * Optimized: Handles Server-Side Pagination, Search, and Status Filtering
+   * This replaces the old 'getUserAnalysis' to prevent browser lag.
+   * @param {Object} params - { page, limit, search, status }
    */
-  getUserAnalysis: async () => {
+  async listUsersAdmin(params) {
     try {
-      const response = await api.get("/users/analysis");
+      const response = await api.get("/users/admin/list", { params });
+      // Returns: { users, total, totalPages, currentPage }
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      this._handleError(error);
     }
-  },
+  }
 
-  /**
-   * Fetch all users (standard list)
-   */
-  getAllUsers: async () => {
-    try {
-      const response = await api.get("/users");
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error.message;
-    }
-  },
-
-  /**
-   * Get specific user details
-   */
-  getUserById: async (id) => {
+  async getUserById(id) {
     try {
       const response = await api.get(`/users/${id}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      this._handleError(error);
     }
-  },
+  }
 
-  /**
-   * Update user details (Role, Name, etc.)
-   */
-  updateUser: async (id, userData) => {
+  async updateUser(id, userData) {
     try {
       const response = await api.patch(`/users/${id}`, userData);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      this._handleError(error);
     }
-  },
+  }
 
-  /**
-   * Delete/Remove a user from the system
-   */
-  deleteUser: async (id) => {
+  async deleteUser(id) {
     try {
       const response = await api.delete(`/users/${id}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      this._handleError(error);
     }
-  },
+  }
 
-  /**
-   * Toggle user suspension or verification status
-   */
-  toggleUserStatus: async (id, statusData) => {
+  async toggleUserStatus(id, statusData) {
     try {
       const response = await api.patch(`/users/${id}/status`, statusData);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error.message;
+      this._handleError(error);
     }
-  },
-};
+  }
+  // services/userService.js
+  async exportUsersCSV(filters) {
+    try {
+      // ❌ Change this:
+      // const response = await this.api.get("/users", {
+
+      // ✅ To this (matches your other methods):
+      const response = await api.get("/users/admin/list", {
+        params: { ...filters, limit: 10000, page: 1 },
+      });
+      return response.data.data.users;
+    } catch (error) {
+      this._handleError(error);
+    }
+  }
+
+  /**
+   * Helper to standardize error reporting
+   */
+  _handleError(error) {
+    throw error.response?.data || error.message || "Server Error";
+  }
+}
+
+export const userService = new UserService();

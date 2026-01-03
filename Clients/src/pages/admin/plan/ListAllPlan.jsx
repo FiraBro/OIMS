@@ -238,16 +238,17 @@ export default function AdminPlanListPage() {
 
   const toggleStatus = useCallback(
     async (plan) => {
-      const newStatus = plan.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+      const newStatus = plan.status === "published" ? "draft" : "published";
       try {
         await updatePlan.mutateAsync({
-          id: plan.id,
+          id: plan._id,
           data: { ...plan, status: newStatus },
         });
         toast.success(`Plan ${newStatus.toLowerCase()} successfully`, {
           description: `${plan.name} is now ${newStatus.toLowerCase()}.`,
         });
       } catch (error) {
+        console.log("error", error);
         toast.error("Failed to update status", {
           description: error.message || "Please try again.",
         });
@@ -382,7 +383,7 @@ export default function AdminPlanListPage() {
         </div>
 
         {/* Main Table Interface */}
-        <Card className="overflow-hidden border-slate-200 shadow-2xl rounded-2xl bg-white">
+        <Card className="overflow-hidden border-gray-200 shadow-2xl rounded-2xl bg-white ">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50 sticky top-0 z-10">

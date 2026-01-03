@@ -387,7 +387,7 @@ export default function AdminPlanListPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/50 sticky top-0 z-10">
-                <TableRow className="hover:bg-transparent">
+                <TableRow className="hover:bg-transparent border-b border-slate-200">
                   <TableHead className="w-[300px] font-bold text-slate-800 uppercase text-[10px] tracking-widest py-5">
                     Product Details
                   </TableHead>

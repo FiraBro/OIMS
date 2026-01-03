@@ -26,9 +26,14 @@ export default function AuthForm() {
   });
 
   useEffect(() => {
-    if (user) navigate("/");
+    if (user) {
+      if (user.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
+    }
   }, [user, navigate]);
-
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
 
@@ -61,6 +66,7 @@ export default function AuthForm() {
   };
 
   // ================= LOGIN =================
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -69,17 +75,25 @@ export default function AuthForm() {
       email: formData.email,
       password: formData.password,
     });
-    console.log("LOGIN RESULT:", result);
+
     setIsLoading(false);
 
     if (result.status === "success") {
       toast.success("Login successful!");
-      navigate("/");
+
+      // Check role immediately from the result or updated store
+      // Use result.data.user.role if your login function returns the user object
+      const userRole = result.data?.user?.role || user?.role;
+
+      if (userRole === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } else {
       toast.error(result?.message || "Invalid credentials");
     }
   };
-
   // ================= REGISTER =================
   const handleRegister = async () => {
     setIsLoading(true);

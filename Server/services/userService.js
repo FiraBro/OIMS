@@ -1,48 +1,87 @@
-import AppError from "../utils/AppError.js";
+// services/userService.js
 import User from "../models/user.js";
-import Application from "../models/application.js";
+import AppError from "../utils/AppError.js";
 
-export const getAllUsers = async () => {
-  return await User.find().select("-__v");
-};
+class UserService {
+  async listUsersAdmin(filters) {
+    const page = parseInt(filters.page) || 1;
+    const limit = parseInt(filters.limit) || 10;
+    const search = filters.search || "";
+    const status = filters.status || "all";
 
-export const getUserById = async (id) => {
-  const user = await User.findById(id);
-  if (!user) throw new AppError("No user found with that ID", 404);
-  return user;
-};
+    const skip = (page - 1) * limit;
+    const query = { isDeleted: { $ne: true } };
 
-export const updateUser = async (id, data) => {
-  const user = await User.findByIdAndUpdate(id, data, {
-    new: true,
-    runValidators: true,
-  });
-  if (!user) throw new AppError("No user found with that ID", 404);
-  return user;
-};
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
+    }
 
-export const deleteUser = async (id) => {
-  const user = await User.findByIdAndDelete(id);
-  if (!user) throw new AppError("No user found with that ID", 404);
-  return user;
-};
+    const pipeline = [
+      { $match: query },
+      {
+        $lookup: {
+          from: "applications",
+          localField: "_id",
+          foreignField: "userId",
+          as: "userApplications",
+        },
+      },
+      {
+        $addFields: {
+          isApplicant: { $gt: [{ $size: "$userApplications" }, 0] },
+        },
+      },
+      ...(status === "applicant" ? [{ $match: { isApplicant: true } }] : []),
+      ...(status === "registered" ? [{ $match: { isApplicant: false } }] : []),
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+          ],
+        },
+      },
+    ];
 
-export const getUserStats = async () => {
-  // 1. Get all registered users
-  const allUsers = await User.find().select("fullName email role createdAt");
+    const result = await User.aggregate(pipeline);
 
-  // 2. Get users who have at least one application (Plan Applicants)
-  // We use .distinct() to ensure we don't list the same user twice if they applied for 2 plans
-  const applicantIds = await Application.distinct("userId");
+    // Safely extract data
+    const users = result[0]?.data || [];
+    const total = result[0]?.metadata[0]?.total || 0;
 
-  const planApplicants = await User.find({
-    _id: { $in: applicantIds },
-  }).select("fullName email");
+    return {
+      users,
+      total,
+      totalPages: Math.ceil(total / limit), // Correctly calculates 2 pages for 12 users
+      currentPage: page,
+    };
+  }
 
-  return {
-    totalRegistered: allUsers.length,
-    totalApplicants: planApplicants.length,
-    users: allUsers,
-    applicants: planApplicants,
-  };
-};
+  async getUserById(id) {
+    const user = await User.findById(id);
+    if (!user) throw new AppError("No user found with that ID", 404);
+    return user;
+  }
+
+  async updateUser(id, data) {
+    const user = await User.findByIdAndUpdate(id, data, {
+      new: true,
+      runValidators: true,
+    });
+    if (!user) throw new AppError("No user found with that ID", 404);
+    return user;
+  }
+
+  async deleteUser(id) {
+    const user = await User.findByIdAndDelete(id);
+    if (!user) throw new AppError("No user found with that ID", 404);
+    return user;
+  }
+}
+
+export default new UserService();

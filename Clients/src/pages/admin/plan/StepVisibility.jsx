@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 
 const StepVisibility = ({ form, update }) => {
   // Logic to determine if switches should look "on"
-  const isPublished = form.status === "PUBLISHED";
+  const isPublished = form.status === "published";
   const isPopular = !!form.isPopular; // Ensures it's a boolean
 
   return (

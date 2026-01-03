@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
         <Button
           onClick={exportToCSV}
           disabled={isExporting || isLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold uppercase text-[10px] tracking-widest px-6 h-11 rounded-xl shadow-lg shadow-blue-100 border-none transition-all active:scale-95 flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase text-[12px] tracking-widest px-6 h-11 rounded-xl shadow-lg shadow-blue-100 border-none transition-all active:scale-95 flex items-center gap-2"
         >
           {isExporting ? (
             <FiRefreshCw className="h-3 w-3 animate-spin" />

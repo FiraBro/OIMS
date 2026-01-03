@@ -31,12 +31,17 @@ export const getClaimById = catchAsync(async (req, res) => {
   res.json({ status: "success", data: claim });
 });
 
+// controller.js
 export const listAllClaims = catchAsync(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
+  // Extract search from the query parameters
+  const { page = 1, limit = 10, search = "" } = req.query;
+
   const result = await claimService.listAllClaims({
     page: Number(page),
     limit: Number(limit),
+    search: search, // Pass it to the service
   });
+
   res.json({ status: "success", ...result });
 });
 

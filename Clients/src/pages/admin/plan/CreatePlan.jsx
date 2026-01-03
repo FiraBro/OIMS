@@ -2,15 +2,15 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress"; // Assuming shadcn/ui
-import { Check } from "lucide-react"; // Icons for completed steps
+import { Progress } from "@/components/ui/progress";
+import { toast } from "react-toastify";
 
 import StepBasicInfo from "./StepBasicInfo";
 import StepPricing from "./StepPricing";
 import StepFeatures from "./StepFeatures";
 import StepVisibility from "./StepVisibility";
-import StepReview from "./StepReview";
 import StepRiskScore from "./StepRiskScore";
+import StepReview from "./StepReview";
 
 import { usePlans } from "@/hooks/usePlan";
 
@@ -27,8 +27,6 @@ export default function CreatePlan() {
   const [step, setStep] = useState(0);
   const { createPlan, riskScore } = usePlans();
 
-  const progressValue = ((step + 1) / steps.length) * 100;
-
   const [form, setForm] = useState({
     name: "",
     shortDescription: "",
@@ -44,14 +42,14 @@ export default function CreatePlan() {
     maxMembers: 1,
     isPopular: false,
     isFeatured: false,
-    status: "PUBLISHED",
+    status: "published",
     validityPeriod: 365,
+    planType: "individual",
   });
 
   const update = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
   const next = () => setStep((s) => s + 1);
   const back = () => setStep((s) => s - 1);
-  const submit = () => createPlan.mutate(form);
 
   const {
     data: riskData,
@@ -64,9 +62,67 @@ export default function CreatePlan() {
     return () => clearTimeout(timer);
   }, [form, refetchRisk]);
 
+  const submit = () => {
+    const payload = {
+      ...form,
+      slug: form.name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-"),
+      currency: "USD",
+      coverage:
+        form.shortDescription || "Comprehensive health insurance coverage",
+      premium: Number(form.premium),
+      coverageAmount: Number(form.coverageAmount),
+      planType: form.planType?.toLowerCase(),
+      status: form.status?.toLowerCase(),
+      riskScore: {
+        score: riskData?.score ?? 0,
+        recommendations: riskData?.recommendations ?? [],
+      },
+    };
+
+    console.log("🚀 Sending payload:", payload);
+
+    createPlan.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Plan created successfully!");
+        setForm({
+          name: "",
+          shortDescription: "",
+          description: "",
+          premium: "",
+          coverageAmount: "",
+          deductible: 500,
+          premiumFrequency: "monthly",
+          features: [],
+          exclusions: [],
+          minAge: 18,
+          maxAge: 65,
+          maxMembers: 1,
+          isPopular: false,
+          isFeatured: false,
+          status: "published",
+          validityPeriod: 365,
+          planType: "individual",
+        });
+        setStep(0);
+      },
+      onError: (err) => {
+        const message =
+          err.response?.data?.message ||
+          err.message ||
+          "Failed to create plan.";
+        toast.error(message);
+      },
+    });
+  };
+
+  const progressValue = ((step + 1) / steps.length) * 100;
+
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-      {/* LEFT COLUMN: Sidebar Navigation */}
+      {/* LEFT COLUMN */}
       <aside className="lg:col-span-3 space-y-6">
         <div className="space-y-2">
           <h2 className="text-2xl font-bold tracking-tight">Create Plan</h2>
@@ -74,73 +130,34 @@ export default function CreatePlan() {
             Fill in the details to launch your new insurance product.
           </p>
         </div>
-
         <nav className="flex flex-col space-y-2 relative">
           {steps.map((label, i) => {
             const isCompleted = step > i;
             const isActive = step === i;
-
             return (
               <div
                 key={label}
                 className="relative flex items-center gap-3 p-3 rounded-xl transition-all duration-300"
               >
-                {/* Animated Background for Active Step */}
-                {isActive && (
-                  <motion.div
-                    layoutId="activeStepBg"
-                    className="absolute inset-0 bg-blue-50 border-l-4 border-blue-600 rounded-lg -z-10"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-
-                {/* Step Circle */}
-                <motion.div
-                  animate={{
-                    scale: isActive ? 1.1 : 1,
-                    backgroundColor: isCompleted
-                      ? "#2563eb"
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 ${
+                    isCompleted
+                      ? "bg-blue-600 border-blue-600 text-white"
                       : isActive
-                      ? "#ffffff"
-                      : "#f3f4f6",
-                    borderColor:
-                      isCompleted || isActive ? "#2563eb" : "#e5e7eb",
-                  }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 transition-colors duration-300`}
+                      ? "border-blue-600 text-blue-600"
+                      : "border-gray-300 text-gray-400"
+                  }`}
                 >
-                  <AnimatePresence mode="wait">
-                    {isCompleted ? (
-                      <motion.div
-                        key="check"
-                        initial={{ scale: 0, rotate: -45 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        exit={{ scale: 0 }}
-                      >
-                        <Check className="w-5 h-5 text-white" strokeWidth={3} />
-                      </motion.div>
-                    ) : (
-                      <motion.span
-                        key="number"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={isActive ? "text-blue-600" : "text-gray-400"}
-                      >
-                        {i + 1}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Step Label */}
+                  {isCompleted ? "✔" : i + 1}
+                </div>
                 <span
-                  className={`text-sm font-semibold transition-colors duration-300 ${
+                  className={`${
                     isActive
                       ? "text-blue-700"
                       : isCompleted
                       ? "text-gray-600"
                       : "text-gray-400"
-                  }`}
+                  } text-sm font-semibold`}
                 >
                   {label}
                 </span>
@@ -150,7 +167,7 @@ export default function CreatePlan() {
         </nav>
       </aside>
 
-      {/* RIGHT COLUMN: Content Area */}
+      {/* RIGHT COLUMN */}
       <main className="lg:col-span-9 space-y-6">
         <div className="space-y-2">
           <div className="flex justify-between text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -189,7 +206,6 @@ export default function CreatePlan() {
             </AnimatePresence>
           </div>
 
-          {/* Persistent Footer Actions */}
           <div className="mx-4 border-t border-gray-300 px-4 p-4 md:p-6 flex justify-between bg-muted/20">
             <Button
               variant="ghost"
@@ -199,7 +215,6 @@ export default function CreatePlan() {
             >
               Previous
             </Button>
-
             {step < steps.length - 1 ? (
               <Button onClick={next} className="px-8 shadow-md">
                 Continue

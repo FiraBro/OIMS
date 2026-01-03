@@ -54,9 +54,9 @@ class PolicyService {
   async updateStatus(id, status, adminId) {
     const allowed = [
       "active",
-      "pending",
       "expired",
       "pending_renewal",
+      "renewed",
       "cancelled",
     ];
 

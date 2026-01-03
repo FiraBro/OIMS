@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useDeferredValue, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,17 +15,18 @@ import {
   FiSearch,
   FiEye,
   FiTrash2,
-  FiRefreshCw,
   FiFileText,
   FiUser,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
-import { userService } from "@/services/userService";
+import { useUsers } from "@/hooks/useUser";
 
 // Table Row Variants
 const rowVariants = {
-  hidden: { opacity: 0, x: -10 },
-  visible: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: 10, transition: { duration: 0.15 } },
+  hidden: { opacity: 0, y: 5 },
+  visible: { opacity: 1, y: 0 },
+  exit: { opacity: 0, x: 10, transition: { duration: 0.1 } },
 };
 
 const modalVariants = {
@@ -40,209 +41,225 @@ const modalVariants = {
 };
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState([]);
-  const [applicants, setApplicants] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
   const [viewOpen, setViewOpen] = useState(false);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const res = await userService.getUserAnalysis();
-      setUsers(res.data.registeredUsers || []);
-      setApplicants(res.data.planApplicants || []);
-    } catch (err) {
-      console.error("Fetch error", err);
-    } finally {
-      setLoading(false);
-    }
+  const deferredSearch = useDeferredValue(search);
+
+  const { data, isLoading, isFetching, deleteUser, isProcessing } = useUsers({
+    page: currentPage,
+    limit: 10,
+    search: deferredSearch,
+    status: filter,
+  });
+
+  const users = data?.users || [];
+  const meta = {
+    total: data?.total || 0,
+    totalPages: data?.totalPages || 1,
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    setCurrentPage(1);
+  }, [deferredSearch, filter]);
 
-  const getFilteredData = () => {
-    let list = [...users];
-    if (filter === "applicants") {
-      list = users.filter((u) => applicants.some((a) => a._id === u._id));
-    } else if (filter === "registered") {
-      list = users.filter((u) => !applicants.some((a) => a._id === u._id));
+  const handleDelete = async (id) => {
+    if (window.confirm("Permanently delete this user?")) {
+      await deleteUser(id);
     }
-    return list.filter(
-      (u) =>
-        u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase())
-    );
   };
 
-  const currentList = getFilteredData();
-
   return (
-    <div className="p-8 bg-white min-h-screen">
+    <div className="p-8 bg-zinc-50/30 min-h-screen max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-end mb-8">
         <div>
-          <h1 className="text-2xl font-black text-zinc-900 tracking-tight uppercase">
-            User Identification
+          <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase">
+            User Registry
           </h1>
           <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest mt-1">
-            Verify registration & application status
+            Database Scale:{" "}
+            <span className="text-blue-600">{meta.total.toLocaleString()}</span>{" "}
+            Verified Records
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-zinc-200 text-zinc-600"
-          onClick={fetchData}
-        >
-          <FiRefreshCw
-            className={`mr-2 h-3 w-3 ${loading && "animate-spin"}`}
-          />{" "}
-          Refresh
-        </Button>
       </div>
 
-      {/* Toolbar & Animated Tabs */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-center">
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between items-center bg-white p-4 rounded-2xl border border-zinc-200 shadow-sm">
         <Tabs
-          defaultValue="all"
-          className="w-full md:w-auto"
+          value={filter}
           onValueChange={setFilter}
+          className="w-full md:w-auto"
         >
-          <TabsList className="bg-zinc-100 border border-zinc-200 p-1">
+          <TabsList className="bg-zinc-100/50 border border-zinc-200">
             <TabsTrigger
               value="all"
-              className="text-xs font-bold uppercase relative"
+              className="text-[10px] font-black uppercase"
             >
-              All ({users.length})
+              All Users
             </TabsTrigger>
             <TabsTrigger
-              value="applicants"
-              className="text-xs font-bold uppercase"
+              value="applicant"
+              className="text-[10px] font-black uppercase"
             >
-              Applicants ({applicants.length})
+              Applicants
             </TabsTrigger>
             <TabsTrigger
               value="registered"
-              className="text-xs font-bold uppercase"
+              className="text-[10px] font-black uppercase"
             >
               Registered Only
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-96">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <Input
-            placeholder="Search by name..."
-            className="pl-10 border-zinc-200 focus-visible:ring-zinc-900 shadow-sm"
+            placeholder="Search by name or email..."
+            className="pl-10 h-11 bg-zinc-50 border-zinc-200 focus-visible:ring-blue-500 rounded-xl transition-all"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Table Section with Transition */}
-      <div className="border border-zinc-200 rounded-2xl overflow-hidden shadow-sm bg-white">
+      {/* Table Section */}
+      <div className="border border-zinc-200 rounded-3xl overflow-hidden shadow-md bg-white relative">
+        {/* Shine Loading Bar */}
+        {isFetching && (
+          <div className="absolute top-0 left-0 w-full h-1 bg-blue-50 overflow-hidden z-10">
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: "100%" }}
+              transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              className="h-full w-1/2 bg-gradient-to-r from-transparent via-blue-500 to-transparent"
+            />
+          </div>
+        )}
+
         <table className="w-full text-sm">
-          <thead className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+          <thead className="bg-zinc-50/80 border-b border-zinc-200 text-[10px] font-black uppercase text-zinc-400 tracking-widest">
             <tr>
-              <th className="px-6 py-4 text-left">Identity</th>
-              <th className="px-6 py-4 text-left">Email</th>
-              <th className="px-6 py-4 text-left">Account Type</th>
-              <th className="px-6 py-4 text-right">Actions</th>
+              <th className="px-6 py-5 text-left">User Identity</th>
+              <th className="px-6 py-5 text-left">Contact Information</th>
+              <th className="px-6 py-5 text-left">Status</th>
+              <th className="px-6 py-5 text-right">Management</th>
             </tr>
           </thead>
 
-          {/* Animated Table Body */}
           <motion.tbody layout className="divide-y divide-zinc-100">
             <AnimatePresence mode="popLayout">
-              {currentList.map((user) => {
-                const isApplicant = applicants.some((a) => a._id === user._id);
-                return (
-                  <motion.tr
-                    key={user._id}
-                    layout
-                    variants={rowVariants}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    className="hover:bg-zinc-50/80 transition-colors group"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-400">
-                          <FiUser />
+              {isLoading
+                ? [...Array(5)].map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td colSpan={4} className="px-6 py-8 bg-zinc-50/30" />
+                    </tr>
+                  ))
+                : users.map((user) => (
+                    <motion.tr
+                      key={user._id}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      layout
+                      className="hover:bg-blue-50/30 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {/* SHINE AVATAR */}
+                          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-blue-200 ring-2 ring-white">
+                            {user.fullName?.[0]}
+                          </div>
+                          <span className="font-bold text-zinc-800">
+                            {user.fullName}
+                          </span>
                         </div>
-                        <span className="font-bold text-zinc-800">
-                          {user.fullName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-zinc-500 font-medium">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4">
-                      {isApplicant ? (
-                        <Badge className="bg-blue-50 text-blue-600 border-blue-100 shadow-none hover:bg-blue-100 flex w-fit gap-1 items-center font-bold text-[10px] uppercase transition-colors">
-                          <FiFileText className="w-3 h-3" /> Plan Applicant
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="border-zinc-200 text-zinc-400 font-bold text-[10px] uppercase shadow-none hover:bg-transparent"
-                        >
-                          Registered
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setViewOpen(true);
-                          }}
-                        >
-                          <FiEye className="text-zinc-400" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 hover:text-red-600"
-                        >
-                          <FiTrash2 className="text-zinc-400 hover:text-red-600 transition-colors" />
-                        </Button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                );
-              })}
+                      </td>
+                      <td className="px-6 py-4 text-zinc-500 font-medium">
+                        {user.email}
+                      </td>
+                      <td className="px-6 py-4">
+                        {user.isApplicant ? (
+                          <Badge className="bg-blue-500 text-white border-none font-black text-[9px] uppercase tracking-tighter shadow-sm">
+                            <FiFileText className="mr-1" /> Applicant
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="border-zinc-200 text-zinc-400 font-black text-[9px] uppercase tracking-tighter"
+                          >
+                            Registered
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 rounded-full hover:bg-blue-100 hover:text-blue-600"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setViewOpen(true);
+                            }}
+                          >
+                            <FiEye />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 rounded-full hover:bg-red-50 hover:text-red-600"
+                            onClick={() => handleDelete(user._id)}
+                            disabled={isProcessing}
+                          >
+                            <FiTrash2 />
+                          </Button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
             </AnimatePresence>
           </motion.tbody>
         </table>
 
-        {currentList.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="py-20 text-center text-zinc-400 text-xs font-bold uppercase tracking-widest"
-          >
-            No Records Found
-          </motion.div>
-        )}
+        {/* Pagination */}
+        <div className="bg-white border-t border-zinc-100 px-6 py-4 flex items-center justify-between">
+          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+            Page <span className="text-zinc-900">{currentPage}</span> /{" "}
+            {meta.totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase"
+              disabled={currentPage === 1 || isFetching}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+            >
+              Prev
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl h-9 px-4 text-[10px] font-bold uppercase bg-zinc-900 text-white hover:bg-zinc-800"
+              disabled={currentPage === meta.totalPages || isFetching}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </div>
 
-      {/* --- ANIMATED VIEW MODAL (Logic unchanged, content remains smooth) --- */}
+      {/* --- PREMIUM PROFILE MODAL --- */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="p-0 border-zinc-200 max-w-md bg-white overflow-hidden sm:rounded-2xl">
+        <DialogContent className="p-0 border-none max-w-md bg-white overflow-hidden sm:rounded-3xl shadow-2xl">
           <AnimatePresence>
             {viewOpen && (
               <motion.div
@@ -251,62 +268,64 @@ export default function AdminUsersPage() {
                 animate="visible"
                 exit="exit"
               >
-                <div className="p-6">
-                  <DialogHeader className="border-b border-zinc-100 pb-4">
-                    <DialogTitle className="text-xl font-black uppercase tracking-tight">
-                      Profile Overview
-                    </DialogTitle>
-                  </DialogHeader>
-                  {selectedUser && (
-                    <div className="py-6 space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 bg-zinc-900 rounded-2xl flex items-center justify-center text-white text-xl font-bold">
-                          {selectedUser.fullName[0]}
-                        </div>
-                        <div>
-                          <h2 className="text-lg font-bold text-zinc-900">
-                            {selectedUser.fullName}
-                          </h2>
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] uppercase font-black"
-                          >
-                            {selectedUser.role}
-                          </Badge>
-                        </div>
+                <div className="relative h-32 bg-gradient-to-r from-blue-600 to-indigo-700">
+                  <div className="absolute -bottom-10 left-6">
+                    <div className="h-20 w-20 rounded-2xl bg-white p-1 shadow-xl">
+                      <div className="h-full w-full rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-black">
+                        {selectedUser?.fullName?.[0]}
                       </div>
-                      <div className="grid grid-cols-2 gap-4 border-t border-zinc-100 pt-6">
-                        <div>
-                          <p className="text-[10px] font-black text-zinc-400 uppercase">
-                            Status
-                          </p>
-                          <p className="text-sm font-bold text-zinc-700 mt-1">
-                            {applicants.some((a) => a._id === selectedUser._id)
-                              ? "Active Applicant"
-                              : "Registered"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-zinc-400 uppercase">
-                            Joined
-                          </p>
-                          <p className="text-sm font-bold text-zinc-700 mt-1">
-                            {new Date(
-                              selectedUser.createdAt
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-14 p-8">
+                  <DialogHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <DialogTitle className="text-2xl font-black text-zinc-900 uppercase tracking-tight">
+                          {selectedUser?.fullName}
+                        </DialogTitle>
+                        <Badge className="mt-1 bg-blue-50 text-blue-600 border-blue-100 font-bold uppercase text-[9px]">
+                          {selectedUser?.role || "Member"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </DialogHeader>
+
+                  {selectedUser && (
+                    <div className="mt-8 grid grid-cols-2 gap-6 bg-zinc-50 p-4 rounded-2xl border border-zinc-100">
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase">
+                          Status
+                        </p>
+                        <p className="text-sm font-bold text-zinc-700 mt-1">
+                          {selectedUser.isApplicant
+                            ? "Active Applicant"
+                            : "Verified User"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-zinc-400 uppercase">
+                          Joined
+                        </p>
+                        <p className="text-sm font-bold text-zinc-700 mt-1">
+                          {new Date(selectedUser.createdAt).toLocaleDateString(
+                            "en-US",
+                            { month: "short", year: "numeric" }
+                          )}
+                        </p>
                       </div>
                     </div>
                   )}
                 </div>
-                <DialogFooter className="bg-zinc-50 p-4 border-t border-zinc-200">
+
+                <DialogFooter className="p-6 pt-0">
                   <Button
-                    variant="outline"
-                    className="w-full border-zinc-200 rounded-xl"
+                    variant="ghost"
+                    className="w-full font-bold uppercase text-xs text-zinc-500 hover:bg-zinc-50"
                     onClick={() => setViewOpen(false)}
                   >
-                    Close Record
+                    Close Profile
                   </Button>
                 </DialogFooter>
               </motion.div>

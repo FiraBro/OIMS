@@ -24,6 +24,7 @@ export const usePolicies = () => {
       placeholderData: (previousData) => previousData, // Keeps UI stable while fetching new pages
     });
   };
+  console.log("useAdminPolicies function called", useAdminPolicies);
 
   // Get single policy
   const usePolicy = (id) => {

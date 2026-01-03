@@ -347,17 +347,24 @@ export default function AdminPlanListPage() {
           <div className="flex items-center gap-3 flex-wrap">
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-11 bg-slate-50 border-none rounded-xl">
+              <SelectTrigger className="w-[140px] h-11 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all active:scale-95">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="PUBLISHED">Published</SelectItem>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="ARCHIVED">Archived</SelectItem>
+
+              <SelectContent className="bg-white border border-gray-300 p-1 shadow-xl rounded-xl overflow-hidden">
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
+                  <SelectItem value="ALL">All Status</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </motion.div>
               </SelectContent>
             </Select>
-
             {/* Items per page */}
             <Select
               value={itemsPerPage.toString()}
@@ -373,7 +380,6 @@ export default function AdminPlanListPage() {
                 <SelectItem value="200">200/page</SelectItem>
               </SelectContent>
             </Select>
-
             <div className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest px-4">
               Showing {startIndex + 1}-
               {Math.min(endIndex, filteredPlans.length)} of{" "}

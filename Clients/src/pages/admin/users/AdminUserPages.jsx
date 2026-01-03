@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
             User Registry
           </h1>
           <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em] mt-1">

@@ -88,7 +88,6 @@ class InsurancePlanService {
 
   // ---------------------------
   // CREATE PLAN
-  // ---------------------------
   async createPlan(data, userId) {
     const slug = slugify(data.name, { lower: true });
 
@@ -98,17 +97,25 @@ class InsurancePlanService {
     }).lean();
     if (exists) throw new AppError("Plan name already exists", 400);
 
+    // ✅ Validate planType
     if (data.planType && !Object.values(PLAN_TYPES).includes(data.planType)) {
       throw new AppError("Invalid plan type", 400);
     }
 
-    // ✅ Calculate AI Risk Score
-    const riskScore = this.#calculateRiskScore(data);
+    // ✅ Calculate AI Risk Score with recommendations
+    const riskScoreObj = this.calculateRiskScoreWithRecommendations(data);
+
+    // ✅ Ensure status is lowercase and valid
+    const status = data.status?.toLowerCase() || "published";
 
     return await InsurancePlan.create({
       ...data,
       slug,
-      riskScore,
+      status,
+      riskScore: {
+        score: riskScoreObj.riskScore,
+        recommendations: riskScoreObj.recommendations || [],
+      },
       createdBy: userId,
     });
   }

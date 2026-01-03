@@ -14,7 +14,6 @@ export const useUsers = (filters) => {
     placeholderData: (prev) => prev, // Keeps UI stable during fetches
     staleTime: 10000, // Consider data fresh for 10 seconds
   });
-
   // 2. CSV Export Logic (Integrated into hook)
   const exportToCSV = async () => {
     try {
@@ -83,7 +82,7 @@ export const useUsers = (filters) => {
 
   return {
     // Data
-    data: adminQuery.data?.data || {}, // Contains { users, total, totalPages }
+    data: adminQuery.data || {}, // Contains { users, total, totalPages }
     isLoading: adminQuery.isLoading,
     isFetching: adminQuery.isFetching,
     // Export action and state

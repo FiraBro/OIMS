@@ -1,10 +1,11 @@
 import React, {
   useState,
-  useMemo,
   useCallback,
   useDeferredValue,
   useEffect,
 } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiPlus,
@@ -17,6 +18,7 @@ import {
   FiInbox,
   FiChevronLeft,
   FiChevronRight,
+  FiRefreshCw,
 } from "react-icons/fi";
 import { usePlans } from "@/hooks/usePlan";
 import {
@@ -47,25 +49,19 @@ import {
 } from "@/components/ui/select";
 import { PlanEditModal } from "@/components/modal/PLanEditModal";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
-
-/* -------------------------------------------------------------------------- */
-/* OPTIMIZED ROW COMPONENT                           */
-/* -------------------------------------------------------------------------- */
 
 const VirtualTableRow = React.memo(
   ({ plan, index, onDelete, onToggle, onEdit }) => (
     <motion.tr
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.2, delay: index * 0.01 }}
       className="group hover:bg-blue-50/30 transition-all border-none"
     >
       <TableCell className="py-5 pl-8">
         <div className="flex flex-col gap-1">
+          {/* RESTORED POPULAR BADGE */}
           {plan.isPopular && (
-            <Badge className="bg-rose-50 text-rose-600 border-none text-[9px] font-black uppercase tracking-tighter w-fit px-2 py-0">
+            <Badge className="bg-rose-50 text-rose-600 border-none text-[9px] font-black uppercase tracking-tighter w-fit px-2 py-0 mb-1">
               Popular
             </Badge>
           )}
@@ -77,18 +73,12 @@ const VirtualTableRow = React.memo(
           </div>
         </div>
       </TableCell>
-
-      <TableCell className="px-6">
-        <div className="flex flex-col">
-          <span className="font-black text-zinc-900 font-manrope text-xs">
-            ${plan.premium}
-          </span>
-          <span className="text-[9px] text-blue-600 font-black uppercase tracking-widest">
-            {plan.premiumFrequency}
-          </span>
-        </div>
+      <TableCell className="px-6 font-black text-zinc-900 font-manrope text-xs">
+        ${plan.premium}
+        <span className="block text-[9px] text-blue-600 font-black uppercase tracking-widest uppercase">
+          {plan.premiumFrequency}
+        </span>
       </TableCell>
-
       <TableCell className="px-6">
         <div className="text-xs font-bold text-zinc-700 font-inter">
           ${plan.coverageAmount?.toLocaleString()}
@@ -97,7 +87,6 @@ const VirtualTableRow = React.memo(
           Coverage
         </div>
       </TableCell>
-
       <TableCell className="text-center px-6">
         <button
           onClick={() => onToggle(plan)}
@@ -114,7 +103,6 @@ const VirtualTableRow = React.memo(
           </Badge>
         </button>
       </TableCell>
-
       <TableCell className="text-right pr-8">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -130,19 +118,19 @@ const VirtualTableRow = React.memo(
             align="end"
             className="w-52 p-2 rounded-2xl shadow-2xl bg-white border border-zinc-100"
           >
-            <DropdownMenuItem className="gap-3 py-2.5 cursor-pointer rounded-xl focus:bg-zinc-50 text-[11px] font-bold uppercase tracking-tight">
+            <DropdownMenuItem className="gap-3 py-2.5 cursor-pointer rounded-xl text-[11px] font-bold uppercase tracking-tight">
               <FiEye className="text-blue-600" /> Quick View
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onEdit(plan)}
-              className="gap-3 py-2.5 cursor-pointer rounded-xl focus:bg-zinc-50 text-[11px] font-bold uppercase tracking-tight"
+              className="gap-3 py-2.5 cursor-pointer rounded-xl text-[11px] font-bold uppercase tracking-tight"
             >
               <FiEdit2 className="text-amber-600" /> Edit Plan
             </DropdownMenuItem>
             <DropdownMenuSeparator className="my-1 bg-zinc-100" />
             <DropdownMenuItem
               onClick={() => onDelete(plan._id)}
-              className="gap-3 py-2.5 cursor-pointer rounded-xl text-rose-600 focus:bg-rose-50 text-[11px] font-bold uppercase tracking-tight"
+              className="gap-3 py-2.5 cursor-pointer rounded-xl text-rose-600 text-[11px] font-bold uppercase tracking-tight"
             >
               <FiTrash2 /> Delete
             </DropdownMenuItem>
@@ -150,18 +138,14 @@ const VirtualTableRow = React.memo(
         </DropdownMenu>
       </TableCell>
     </motion.tr>
-  ),
-  (prev, next) =>
-    prev.plan._id === next.plan._id && prev.plan.status === next.plan.status
+  )
 );
-
-/* -------------------------------------------------------------------------- */
-/* MAIN COMPONENT                              */
-/* -------------------------------------------------------------------------- */
 
 export default function AdminPlanListPage() {
   const navigate = useNavigate();
-  const { listAdmin, deletePlan, updatePlan } = usePlans();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+  const { listAdmin, deletePlan, updatePlan, exportPlans } = usePlans();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -171,6 +155,11 @@ export default function AdminPlanListPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const deferredSearch = useDeferredValue(searchTerm);
+
+  // NAVIGATION REFRESH FIX
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["plans", "admin"] });
+  }, [location.pathname, queryClient]);
 
   const { data, isLoading, isFetching } = listAdmin({
     page: currentPage,
@@ -182,17 +171,17 @@ export default function AdminPlanListPage() {
   const plans = data?.plans || [];
   const totalCount = data?.total || 0;
   const totalPages = data?.totalPages || 1;
-  console.log("Rendering AdminPlanListPage with plans:", plans);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [deferredSearch, statusFilter]);
 
   const handleDelete = useCallback(
     async (id) => {
-      if (!confirm("Are you sure? This action is permanent.")) return;
+      if (!confirm("Are you sure?")) return;
       try {
         await deletePlan.mutateAsync(id);
-        toast.success("Plan removed from inventory");
+        toast.success("Plan removed");
       } catch (e) {
         toast.error(e.message);
       }
@@ -217,14 +206,8 @@ export default function AdminPlanListPage() {
     [updatePlan]
   );
 
-  const handleEditClick = useCallback((plan) => {
-    setEditingPlan(plan);
-    setIsEditModalOpen(true);
-  }, []);
-
   return (
     <div className="p-8 bg-zinc-50/30 min-h-screen max-w-screen-2xl mx-auto font-inter">
-      {/* HEADER */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase font-manrope">
@@ -243,12 +226,6 @@ export default function AdminPlanListPage() {
         </div>
         <div className="flex gap-3">
           <Button
-            variant="outline"
-            className="rounded-2xl border-zinc-200 h-12 px-6 text-[10px] font-black uppercase tracking-widest bg-white shadow-sm"
-          >
-            <FiDownload className="mr-2" /> Export
-          </Button>
-          <Button
             className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg gap-2 px-6 h-12 text-[10px] font-black uppercase tracking-widest"
             onClick={() => navigate("/admin/create/plan")}
           >
@@ -257,26 +234,27 @@ export default function AdminPlanListPage() {
         </div>
       </header>
 
-      {/* CONTROL BAR */}
-      <div className="flex flex-col lg:flex-row gap-4 bg-white p-2 rounded-[2rem] border border-zinc-200 shadow-sm mb-8">
-        <div className="relative flex-1">
-          <FiSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400" />
+      {/* CONTROL BAR - CLEANED & SPACED */}
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-6 bg-white p-3 rounded-[2.5rem] border border-zinc-200 shadow-sm mb-8">
+        {/* Left Side: Search */}
+        <div className="relative flex-1 w-full max-w-2xl">
+          <FiSearch className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-400 text-lg" />
           <Input
             placeholder="Search thousands of plans..."
-            className="pl-14 h-14 bg-zinc-50/50 rounded-[1.5rem] text-sm font-medium 
-               border-1 border-gray-100 
-               focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-blue-600 
-               placeholder:text-zinc-400"
+            className="pl-14 h-14 bg-zinc-50/50 rounded-[1.5rem] text-sm font-medium border-2 border-gray-200 focus-visible:ring-0 focus-visible:border-blue-300 placeholder:text-zinc-400 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2 p-1">
+
+        {/* Right Side: Selects with extra gap */}
+        <div className="flex items-center gap-4 p-1 w-full lg:w-auto justify-end">
+          {/* Status Filter */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger
-              className="w-[140px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
-                 border-1 border-gray-100 
-                 focus:ring-0 focus:ring-offset-0 focus:border-blue-600 shadow-sm"
+              className="w-[150px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
+           border-2 border-gray-200 
+           focus:ring-0 focus:ring-offset-0 focus:border-blue-300 transition-all"
             >
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -284,18 +262,18 @@ export default function AdminPlanListPage() {
               <SelectItem value="ALL">All Status</SelectItem>
               <SelectItem value="published">Published</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
 
+          {/* Pagination Select */}
           <Select
             value={itemsPerPage.toString()}
             onValueChange={(v) => setItemsPerPage(Number(v))}
           >
             <SelectTrigger
-              className="w-[110px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
-                 border-1 border-gray-100 
-                 focus:ring-0 focus:ring-offset-0 focus:border-blue-600 shadow-sm"
+              className="w-[120px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
+           border-2 border-gray-200 
+           focus:ring-0 focus:ring-offset-0 focus:border-blue-300 transition-all"
             >
               <SelectValue />
             </SelectTrigger>
@@ -308,7 +286,6 @@ export default function AdminPlanListPage() {
         </div>
       </div>
 
-      {/* REGISTRY TABLE */}
       <Card className="border border-zinc-200 rounded-[2.5rem] overflow-hidden shadow-sm bg-white relative">
         <AnimatePresence>
           {(isFetching || isLoading) && (
@@ -329,7 +306,7 @@ export default function AdminPlanListPage() {
 
         <Table>
           <TableHeader className="bg-zinc-50/50">
-            <TableRow className="border-b border-zinc-100 hover:bg-transparent">
+            <TableRow className="border-b border-zinc-100">
               <TableHead className="py-6 pl-8 text-[10px] font-black uppercase text-zinc-400 tracking-widest">
                 Product Details
               </TableHead>
@@ -356,7 +333,10 @@ export default function AdminPlanListPage() {
                   index={idx}
                   onDelete={handleDelete}
                   onToggle={toggleStatus}
-                  onEdit={handleEditClick}
+                  onEdit={(p) => {
+                    setEditingPlan(p);
+                    setIsEditModalOpen(true);
+                  }}
                 />
               ))
             ) : (
@@ -372,7 +352,7 @@ export default function AdminPlanListPage() {
           </TableBody>
         </Table>
 
-        {/* BLUE PAGINATION FOOTER */}
+        {/* RESTORED BLUE PAGINATION FOOTER */}
         <div className="bg-white border-t border-zinc-100 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
@@ -427,7 +407,6 @@ export default function AdminPlanListPage() {
           </div>
         </div>
       </Card>
-
       <PlanEditModal
         plan={editingPlan}
         isOpen={isEditModalOpen}

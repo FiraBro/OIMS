@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useDeferredValue } from "react";
+import React, {
+  useState,
+  useMemo,
+  useDeferredValue,
+  useEffect,
+  memo,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePolicies } from "@/hooks/usePolicy";
 import {
@@ -8,37 +14,127 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiCheckSquare,
-  FiTrash2,
   FiX,
   FiLoader,
+  FiUser,
+  FiShield,
 } from "react-icons/fi";
 
 // UI Components
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import AdminPolicyActions from "@/components/modal/PolicyActions";
 import { toast } from "react-toastify";
 
-export default function PolicyList() {
-  const { useAdminPolicies, updateStatus, deletePolicy } = usePolicies();
+/* ---------------- UI HELPERS ---------------- */
 
-  // --- State Management ---
+const getStatusStyles = (status) => {
+  const s = status?.toLowerCase();
+  switch (s) {
+    case "active":
+      return "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-50";
+    case "pending":
+      return "bg-zinc-100 text-zinc-500 border-zinc-200";
+    case "expired":
+      return "bg-rose-50 text-rose-600 border-rose-100";
+    default:
+      return "bg-gray-50 text-gray-400";
+  }
+};
+
+/* ---------------- MEMOIZED ROW ---------------- */
+const PolicyRow = memo(({ policy, isSelected, onToggle, isProcessing }) => (
+  <TableRow
+    className={`hover:bg-blue-50/30 transition-all group border-none ${
+      isSelected ? "bg-blue-50/20" : ""
+    }`}
+  >
+    <TableCell className="pl-8 py-5 w-10">
+      <Checkbox
+        checked={isSelected}
+        onCheckedChange={() => onToggle(policy._id)}
+        className="w-4 h-4 rounded border-zinc-300 data-[state=checked]:bg-blue-600"
+      />
+    </TableCell>
+
+    <TableCell className="px-6 py-5">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-lg font-manrope">
+          {policy.userId?.fullName?.charAt(0) || <FiUser />}
+        </div>
+        <div className="flex flex-col">
+          <span className="font-bold text-zinc-900 font-manrope text-xs leading-none mb-1.5 uppercase tracking-wide">
+            {policy.userId?.fullName || "N/A"}
+          </span>
+          <span className="text-[10px] text-zinc-400 font-medium font-inter">
+            {policy.userId?.email}
+          </span>
+        </div>
+      </div>
+    </TableCell>
+
+    <TableCell className="px-6 py-5">
+      <div className="flex flex-col">
+        <span className="font-black text-zinc-700 font-manrope text-[10px] mb-1 uppercase tracking-tighter">
+          {policy.planId?.name || "Standard Plan"}
+        </span>
+        <span className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">
+          #{policy.policyNumber}
+        </span>
+      </div>
+    </TableCell>
+
+    <TableCell className="px-6 py-5">
+      <div className="flex flex-col">
+        <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mb-1">
+          Premium
+        </span>
+        <span className="font-black text-zinc-900 font-manrope text-xs">
+          ${policy.premium}
+        </span>
+      </div>
+    </TableCell>
+
+    <TableCell className="px-6 py-5">
+      <Badge
+        className={`px-3 py-1 font-black text-[9px] uppercase tracking-wider border-none ${getStatusStyles(
+          policy.status
+        )}`}
+      >
+        {policy.status}
+      </Badge>
+    </TableCell>
+
+    <TableCell className="pr-8 py-5 text-right">
+      <AdminPolicyActions policy={policy} />
+    </TableCell>
+  </TableRow>
+));
+
+export default function PolicyList() {
+  const { useAdminPolicies, updateStatus } = usePolicies();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [activeTab, setActiveTab] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const deferredSearch = useDeferredValue(searchTerm);
 
-  // Bulk Selection & Processing State
   const [selectedIds, setSelectedIds] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // --- Data Fetching ---
   const { data, isLoading, isPlaceholderData, refetch } = useAdminPolicies({
     page: currentPage,
     limit: itemsPerPage,
@@ -48,29 +144,29 @@ export default function PolicyList() {
 
   const policies = data?.policies || [];
   const totalCount = data?.total || 0;
-  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
+  const totalPages = data?.totalPages || 1;
   const categories = ["All", "Health", "Life", "Vehicle", "Property"];
 
-  // --- Bulk Action Handlers (Frontend Logic) ---
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }, [deferredSearch, activeTab]);
+
   const toggleSelect = (id) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
   };
 
   const toggleSelectPage = () => {
-    if (selectedIds.length === policies.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(policies.map((p) => p._id));
-    }
+    if (selectedIds.length === policies.length) setSelectedIds([]);
+    else setSelectedIds(policies.map((p) => p._id));
   };
 
   const handleBulkUpdate = async (newStatus) => {
     if (selectedIds.length === 0) return;
     setIsProcessing(true);
     let successCount = 0;
-
     for (let i = 0; i < selectedIds.length; i++) {
       try {
         await updateStatus.mutateAsync({
@@ -80,29 +176,18 @@ export default function PolicyList() {
         successCount++;
         setProgress(Math.round(((i + 1) / selectedIds.length) * 100));
       } catch (err) {
-        console.error(`Failed to update ${selectedIds[i]}`, err);
+        console.error(err);
       }
     }
-
-    toast.success(`Updated ${successCount} policies to ${newStatus}`);
-    resetBulkState();
-  };
-
-  const resetBulkState = () => {
+    toast.success(`Bulk updated ${successCount} policies`);
     setSelectedIds([]);
     setIsProcessing(false);
     setProgress(0);
     refetch();
   };
 
-  const handleTabChange = (val) => {
-    setActiveTab(val);
-    setCurrentPage(1);
-    setSelectedIds([]); // Clear selection when switching filters
-  };
-
   return (
-    <div className="p-6 max-w-screen-2xl mx-auto space-y-6 relative pb-24">
+    <div className="p-8 bg-zinc-50/30 min-h-screen max-w-screen-2xl mx-auto font-inter relative pb-32">
       {/* Floating Bulk Action Bar */}
       <AnimatePresence>
         {selectedIds.length > 0 && (
@@ -110,18 +195,18 @@ export default function PolicyList() {
             initial={{ y: 100, x: "-50%", opacity: 0 }}
             animate={{ y: 0, x: "-50%", opacity: 1 }}
             exit={{ y: 100, x: "-50%", opacity: 0 }}
-            className="fixed bottom-8 left-1/2 z-50 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-8 border border-slate-700 min-w-[400px] md:min-w-[600px]"
+            className="fixed bottom-10 left-1/2 z-50 bg-zinc-900 text-white px-8 py-5 rounded-[2rem] shadow-2xl flex items-center gap-8 border border-zinc-800 min-w-[500px]"
           >
             {isProcessing ? (
               <div className="flex flex-col w-full gap-3">
-                <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest text-slate-400">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
                   <span className="flex items-center gap-2">
-                    <FiLoader className="animate-spin" /> Processing Bulk
-                    Actions...
+                    <FiLoader className="animate-spin" /> Node Update in
+                    Progress
                   </span>
                   <span>{progress}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-blue-500"
                     animate={{ width: `${progress}%` }}
@@ -130,28 +215,29 @@ export default function PolicyList() {
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-3 pr-6 border-r border-slate-700">
-                  <div className="bg-blue-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-black">
+                <div className="flex items-center gap-4 pr-8 border-r border-zinc-800">
+                  <div className="bg-blue-600 w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black">
                     {selectedIds.length}
                   </div>
-                  <span className="text-sm font-semibold">Selected</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                    Selected Nodes
+                  </span>
                 </div>
-
-                <div className="flex flex-1 items-center gap-3">
+                <div className="flex flex-1 items-center gap-4">
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase px-6"
                     onClick={() => handleBulkUpdate("Active")}
                   >
-                    <FiCheckSquare /> Approve
+                    Approve Selection
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-slate-400 hover:text-white gap-2"
+                    className="text-zinc-500 hover:text-white text-[10px] font-black uppercase"
                     onClick={() => setSelectedIds([])}
                   >
-                    <FiX /> Cancel
+                    Cancel
                   </Button>
                 </div>
               </>
@@ -161,214 +247,194 @@ export default function PolicyList() {
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight italic">
+          <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase font-manrope">
             Policy Registry
           </h1>
-          <p className="text-slate-500 mt-1 font-medium">
-            System found{" "}
-            <span className="text-blue-600 font-bold">
-              {totalCount.toLocaleString()}
-            </span>{" "}
-            policies
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
+              Network:{" "}
+              <span className="text-zinc-900">
+                {totalCount.toLocaleString()}
+              </span>{" "}
+              Active Nodes
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             onClick={toggleSelectPage}
-            className="rounded-xl border-slate-200"
+            className="rounded-2xl border-zinc-200 text-[10px] font-black uppercase px-6 h-12 shadow-sm bg-white"
           >
             {selectedIds.length === policies.length && policies.length > 0
-              ? "Deselect All"
-              : "Select All Page"}
+              ? "Clear Selection"
+              : "Select Current Page"}
           </Button>
           <Button
             variant="outline"
             onClick={() => refetch()}
-            className="rounded-xl border-slate-200 hover:bg-white shadow-sm"
+            className="rounded-2xl border-zinc-200 h-12 w-12 bg-white shadow-sm"
           >
             <FiRefreshCw
-              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+              className={`w-4 h-4 text-zinc-500 ${
+                isLoading ? "animate-spin" : ""
+              }`}
             />
           </Button>
         </div>
       </div>
 
-      {/* Control Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
-            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              placeholder="Search thousands of records..."
-              className="pl-11 h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <Tabs
-            value={activeTab}
-            onValueChange={handleTabChange}
-            className="w-fit"
-          >
-            <TabsList className="bg-slate-100 p-1 rounded-xl h-12">
-              {categories.map((cat) => (
-                <TabsTrigger
-                  key={cat}
-                  value={cat}
-                  className="rounded-lg px-6 font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                >
-                  {cat}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+      {/* Filter Bar */}
+      <div className="bg-white p-2 rounded-[2rem] border border-zinc-200 shadow-sm flex flex-col lg:flex-row gap-4 mb-8">
+        <div className="relative flex-1">
+          <FiSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Input
+            placeholder="Search across secure index..."
+            className="pl-14 h-14 bg-zinc-50/50 border-none rounded-[1.5rem] text-sm font-medium"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="p-1">
+          <TabsList className="bg-zinc-100/50 rounded-[1.2rem] h-12 p-1">
+            {categories.map((cat) => (
+              <TabsTrigger
+                key={cat}
+                value={cat}
+                className="rounded-xl px-6 text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+              >
+                {cat}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Data List */}
-      <div className="space-y-3">
-        {isLoading ? (
-          [1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-24 w-full bg-slate-100 animate-pulse rounded-2xl border border-slate-200"
-            />
-          ))
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {policies.length > 0 ? (
-              policies.map((policy, idx) => (
-                <motion.div
-                  key={policy._id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.02 }}
-                  className="flex items-center gap-4 group"
+      {/* Table Content */}
+      <div className="border border-zinc-200 rounded-[2.5rem] overflow-hidden shadow-sm bg-white relative">
+        <AnimatePresence>
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute top-0 left-0 w-full h-[3px] bg-zinc-100 overflow-hidden z-20"
+            >
+              <motion.div
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
+                className="h-full w-1/4 bg-blue-600"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Table>
+          <TableHeader className="bg-zinc-50/50">
+            <TableRow className="border-b border-zinc-100 hover:bg-transparent">
+              <TableHead className="pl-8 py-6 w-10"></TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest font-manrope">
+                Policy Holder
+              </TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest font-manrope">
+                Ref ID
+              </TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest font-manrope">
+                Coverage
+              </TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest font-manrope">
+                Status
+              </TableHead>
+              <TableHead className="pr-8 py-6 text-right text-[10px] font-black uppercase text-zinc-400 tracking-widest font-manrope">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody className="divide-y divide-zinc-50">
+            {policies.length === 0 && !isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-32 text-center text-zinc-300 font-black uppercase text-[10px]"
                 >
-                  <Checkbox
-                    checked={selectedIds.includes(policy._id)}
-                    onCheckedChange={() => toggleSelect(policy._id)}
-                    className="w-5 h-5 rounded-md border-slate-300 data-[state=checked]:bg-blue-600 transition-all"
-                  />
-
-                  <Card
-                    className={`flex-1 border-slate-200 transition-all duration-300 rounded-2xl overflow-hidden ${
-                      selectedIds.includes(policy._id)
-                        ? "bg-blue-50/40 border-blue-200 shadow-md"
-                        : "bg-white hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex">
-                      <div
-                        className={`w-1.5 ${
-                          policy.status === "Active"
-                            ? "bg-emerald-500"
-                            : "bg-amber-500"
-                        }`}
-                      />
-                      <div className="flex-1 p-4 md:p-5">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="hidden sm:flex h-10 w-10 bg-slate-50 border border-slate-100 rounded-xl items-center justify-center font-bold text-slate-400">
-                              {policy.userId?.fullName?.charAt(0) || "P"}
-                            </div>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-900">
-                                  {policy.planId?.name}
-                                </span>
-                                <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 border-none text-[10px] px-2 py-0">
-                                  {policy.status}
-                                </Badge>
-                              </div>
-                              <p className="text-xs font-mono text-slate-400 tracking-tighter">
-                                #{policy.policyNumber}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between md:justify-end gap-8">
-                            <div className="text-right">
-                              <p className="text-[10px] text-slate-400 uppercase font-black">
-                                Premium
-                              </p>
-                              <p className="font-bold text-slate-900">
-                                ${policy.premium}
-                              </p>
-                            </div>
-                            <AdminPolicyActions policy={policy} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))
+                  <FiInbox className="mx-auto text-4xl mb-4" />
+                  No Policies Found
+                </TableCell>
+              </TableRow>
             ) : (
-              <div className="py-20 text-center bg-white rounded-3xl border border-slate-100">
-                <FiInbox className="mx-auto text-5xl text-slate-200 mb-4" />
-                <h3 className="text-xl font-bold text-slate-900">
-                  No matching policies
-                </h3>
-                <p className="text-slate-500">
-                  Refine your search or filter categories.
-                </p>
-              </div>
+              policies.map((policy) => (
+                <PolicyRow
+                  key={policy._id}
+                  policy={policy}
+                  isSelected={selectedIds.includes(policy._id)}
+                  onToggle={toggleSelect}
+                />
+              ))
             )}
-          </AnimatePresence>
-        )}
-      </div>
+          </TableBody>
+        </Table>
 
-      {/* Pagination Footer */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between py-8 border-t border-slate-100">
-          <div className="text-sm font-medium text-slate-500">
-            Showing{" "}
-            <span className="text-slate-900">
-              {(currentPage - 1) * itemsPerPage + 1}
-            </span>{" "}
-            to{" "}
-            <span className="text-slate-900">
-              {Math.min(currentPage * itemsPerPage, totalCount)}
-            </span>{" "}
-            of {totalCount}
-          </div>
+        {/* --- BLUE PAGINATION FOOTER --- */}
+        <div className="bg-white border-t border-zinc-100 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={currentPage === 1 || isPlaceholderData}
-              onClick={() => {
-                setCurrentPage((p) => p - 1);
-                setSelectedIds([]);
-              }}
-              className="rounded-xl h-10 w-10"
-            >
-              <FiChevronLeft />
-            </Button>
-            <span className="text-sm font-bold bg-slate-900 text-white w-10 h-10 flex items-center justify-center rounded-xl">
-              {currentPage}
+            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+              Scope
             </span>
+            <div className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[11px] font-bold shadow-md shadow-blue-100">
+              {policies.length} <span className="text-blue-200 mx-1">/</span>{" "}
+              {totalCount.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-zinc-100/50 p-1 rounded-2xl border border-zinc-100">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              disabled={currentPage === totalPages || isPlaceholderData}
-              onClick={() => {
-                setCurrentPage((p) => p + 1);
-                setSelectedIds([]);
-              }}
-              className="rounded-xl h-10 w-10"
+              className="h-9 w-9 rounded-xl hover:bg-white disabled:opacity-30"
+              disabled={currentPage === 1 || isLoading}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             >
-              <FiChevronRight />
+              <FiChevronLeft className="h-4 w-4" />
             </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <Button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`h-9 w-9 rounded-xl text-[11px] font-black ${
+                    currentPage === pageNum
+                      ? "bg-white text-blue-600 shadow-sm border border-blue-100"
+                      : "text-zinc-400"
+                  }`}
+                  variant="ghost"
+                >
+                  {pageNum}
+                </Button>
+              )
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl hover:bg-white disabled:opacity-30"
+              disabled={currentPage === totalPages || isLoading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              <FiChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em]">
+            Index {currentPage} <span className="mx-2 text-zinc-200">|</span>{" "}
+            {totalPages}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

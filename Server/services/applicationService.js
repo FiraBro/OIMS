@@ -139,17 +139,30 @@ class ApplicationService {
   // ==================================================
   // ADMIN: LIST APPLICATIONS
   // ==================================================
-  async list({ page = 1, limit = 10 }) {
+  async list({ page = 1, limit = 10, search = "" }) {
     const skip = (page - 1) * limit;
 
-    const applications = await Application.find({ isDeleted: false })
+    // 1. Build the filter object
+    let filter = { isDeleted: false };
+
+    // 2. Add search logic if a search term exists
+    if (search) {
+      filter.$or = [
+        { "personal.fullName": { $regex: search, $options: "i" } },
+        { "personal.email": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 3. Execute query
+    const applications = await Application.find(filter)
       .populate("userId")
       .populate("planId")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
 
-    const total = await Application.countDocuments({ isDeleted: false });
+    // 4. Count based on the SAME filter
+    const total = await Application.countDocuments(filter);
 
     return {
       applications,

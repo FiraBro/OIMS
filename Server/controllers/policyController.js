@@ -68,11 +68,13 @@ export const getPolicyById = catchAsync(async (req, res) => {
 // ADMIN: LIST POLICIES (Pagination)
 // ==================================================
 export const listPolicies = catchAsync(async (req, res) => {
-  const { page, limit } = req.query;
+  const { page, limit, search, category } = req.query;
 
   const data = await policyService.listPolicies({
     page: Number(page) || 1,
     limit: Number(limit) || 10,
+    search: search || "",
+    category: category || "",
   });
 
   res.status(200).json({

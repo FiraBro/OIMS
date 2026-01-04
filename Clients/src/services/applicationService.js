@@ -23,8 +23,10 @@ const getMyApplications = async () => {
 // ==========================
 
 // List all applications (admin)
-const listApplications = async () => {
-  const res = await api.get("/applications");
+const listApplications = async (params) => {
+  // We pass 'params' as the second argument to axios.get
+  // This automatically turns { page: 1, search: 'muke' } into ?page=1&search=muke
+  const res = await api.get("/applications", { params });
   return res.data;
 };
 

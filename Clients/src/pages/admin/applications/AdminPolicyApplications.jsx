@@ -36,7 +36,7 @@ const ApplicationRow = memo(({ app, onApprove, onReject, isProcessing }) => (
   <TableRow className="hover:bg-blue-50/30 transition-all group border-none">
     <TableCell className="px-8 py-5">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-2xl bg-zinc-900 text-white flex items-center justify-center font-bold text-xs shadow-lg">
+        <div className="h-10 w-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-lg">
           {app.personal?.fullName?.[0] || <FiUser />}
         </div>
         <div className="flex flex-col">
@@ -51,7 +51,7 @@ const ApplicationRow = memo(({ app, onApprove, onReject, isProcessing }) => (
     </TableCell>
     <TableCell className="px-8 py-5">
       <div className="flex flex-col">
-        <span className="font-black text-zinc-700 text-[10px] mb-1 uppercase tracking-tighter">
+        <span className="font-black text-zinc-600 text-[10px] mb-1">
           {app.planId?.name}
         </span>
         <span className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">

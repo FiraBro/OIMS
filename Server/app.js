@@ -50,7 +50,7 @@ app.use(`/api/${versions}/policies`, policyRoute);
 app.use(`/api/${versions}/claims`, claimRouter);
 app.use(`/api/${versions}/users`, userRouter);
 app.use(`/api/${versions}/notifications`, notificationRouter);
-app.use("/api/admin", adminRoutes);
+app.use(`/api/${versions}/admin`, adminRoutes);
 app.use(`/api/${versions}/dashboard`, dashboardRoutes);
 
 app.use(`/api/${versions}/applications`, applicationRoutes);

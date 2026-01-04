@@ -77,9 +77,11 @@ export const updatePlanValidator = [
 // ─────────────────────────────────────────
 // FILTER PLANS VALIDATOR
 // ─────────────────────────────────────────
+// validators/insurancePlanValidator.js
+
 export const filterPlansValidator = [
-  query("page").optional().isInt({ min: 1 }),
-  query("limit").optional().isInt({ min: 1 }),
+  query("page").optional().isInt({ min: 1 }).toInt(), // .toInt() ensures it's a number
+  query("limit").optional().isInt({ min: 1 }).toInt(),
   query("sortBy").optional().isString(),
   query("order").optional().isIn(["asc", "desc"]),
 
@@ -88,9 +90,10 @@ export const filterPlansValidator = [
     .isIn(Object.values(PLAN_TYPES))
     .withMessage("Invalid plan type"),
 
-  query("status").optional().isIn(["DRAFT", "PUBLISHED", "ARCHIVED"]),
+  // ✅ Changed to lowercase to match your frontend request and DB status
+  query("status").optional().isIn(["draft", "published", "archived", "ALL"]),
 
-  query("minPremium").optional().isFloat({ min: 0 }),
-  query("maxPremium").optional().isFloat({ min: 0 }),
-  query("search").optional().isString(),
+  query("minPremium").optional().isFloat({ min: 0 }).toFloat(),
+  query("maxPremium").optional().isFloat({ min: 0 }).toFloat(),
+  query("search").optional().isString().trim(),
 ];

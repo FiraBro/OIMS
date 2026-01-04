@@ -95,11 +95,13 @@ export const getMyApplications = catchAsync(async (req, res) => {
 // ADMIN: LIST APPLICATIONS
 // ==================================================
 export const listApplications = catchAsync(async (req, res) => {
-  const { page, limit } = req.query;
+  // Add 'search' to the destructured query
+  const { page, limit, search } = req.query;
 
   const data = await applicationService.list({
     page: Number(page) || 1,
     limit: Number(limit) || 10,
+    search: search || "", // Pass it to the service
   });
 
   res.status(200).json({

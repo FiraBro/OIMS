@@ -27,17 +27,37 @@ class PolicyService {
   // ==================================================
   // ADMIN: LIST POLICIES
   // ==================================================
-  async listPolicies({ page = 1, limit = 10 }) {
+  async listPolicies({ page = 1, limit = 10, search = "", category = "" }) {
     const skip = (page - 1) * limit;
 
-    const policies = await Policy.find({ isDeleted: false })
-      .populate("userId")
-      .populate("planId")
+    // 1. Base Filter
+    let filter = { isDeleted: false };
+
+    // 2. Add Search Logic (Searching by Policy Number)
+    if (search) {
+      filter.$or = [
+        { policyNumber: { $regex: search, $options: "i" } },
+        // Note: If you want to search by User Name here,
+        // you usually need to use Aggregation or search by ID
+      ];
+    }
+
+    // 3. Add Category Logic
+    // This assumes 'category' is a field on your Policy model.
+    // If it's on the Plan model, you'll need to filter by planId first.
+    if (category && category !== "All") {
+      filter.category = category;
+    }
+
+    // 4. Execute Query
+    const policies = await Policy.find(filter)
+      .populate("userId", "fullName email") // Only fetch what we need
+      .populate("planId", "name category")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
 
-    const total = await Policy.countDocuments({ isDeleted: false });
+    const total = await Policy.countDocuments(filter);
 
     return {
       policies,

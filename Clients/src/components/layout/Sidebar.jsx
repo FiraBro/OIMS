@@ -3,11 +3,9 @@ import { motion } from "framer-motion";
 import { useAuthStore } from "@/stores/authStore";
 import {
   FiGrid,
-  FiFileText,
   FiUsers,
   FiCheckCircle,
-  FiBarChart2,
-  FiSettings,
+  FiActivity,
   FiLogOut,
   FiShield,
   FiChevronRight,
@@ -21,10 +19,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   {
     group: "Overview",
-    items: [
-      { name: "Dashboard", path: "/admin/dashboard", icon: FiGrid },
-      { name: "Analytics", path: "/admin/reports", icon: FiBarChart2 },
-    ],
+    items: [{ name: "Dashboard", path: "/admin/dashboard", icon: FiGrid }],
   },
   {
     group: "Operations",
@@ -43,8 +38,16 @@ const navItems = [
     ],
   },
   {
-    group: "System",
-    items: [{ name: "Settings", path: "/admin/settings", icon: FiSettings }],
+    // RENAME: From "System" to "Intelligence" or "Governance"
+    group: "Enterprise Intelligence",
+    items: [
+      {
+        // RENAME: From "Settings" to "Control Center"
+        name: "Control Center",
+        path: "/admin/settings",
+        icon: FiActivity, // Changed icon to FiActivity to match the Analytics vibe
+      },
+    ],
   },
 ];
 

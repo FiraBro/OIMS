@@ -14,7 +14,7 @@ import {
   FiEye,
   FiDownload,
   FiSearch,
-  FiAlertCircle,
+  FiInbox,
   FiChevronLeft,
   FiChevronRight,
 } from "react-icons/fi";
@@ -49,112 +49,120 @@ import { PlanEditModal } from "@/components/modal/PLanEditModal";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
-// Optimized Table Row Component
+/* -------------------------------------------------------------------------- */
+/* OPTIMIZED ROW COMPONENT                           */
+/* -------------------------------------------------------------------------- */
+
 const VirtualTableRow = React.memo(
-  ({ plan, index, handleDelete, toggleStatus, onEditClick }) => (
+  ({ plan, index, onDelete, onToggle, onEdit }) => (
     <motion.tr
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.2, delay: index * 0.02 }}
-      className="group hover:bg-slate-50/80 transition-all border-b border-slate-100 last:border-0"
+      transition={{ duration: 0.2, delay: index * 0.01 }}
+      className="group hover:bg-blue-50/30 transition-all border-none"
     >
-      <TableCell className="py-5 pl-6">
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-1">
-            {plan.isPopular && (
-              <Badge className="bg-rose-50 text-rose-600 border-rose-100 text-[9px] w-fit">
-                Popular
-              </Badge>
-            )}
-            <div className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors truncate max-w-[250px]">
-              {plan.name}
-            </div>
-            <div className="text-xs text-slate-400 truncate max-w-[250px] italic">
-              {plan.shortDescription}
-            </div>
+      <TableCell className="py-5 pl-8">
+        <div className="flex flex-col gap-1">
+          {plan.isPopular && (
+            <Badge className="bg-rose-50 text-rose-600 border-none text-[9px] font-black uppercase tracking-tighter w-fit px-2 py-0">
+              Popular
+            </Badge>
+          )}
+          <div className="font-bold text-zinc-900 group-hover:text-blue-700 transition-colors truncate max-w-[250px] font-manrope text-xs uppercase tracking-wide">
+            {plan.name}
+          </div>
+          <div className="text-[10px] text-zinc-400 truncate max-w-[250px] italic">
+            {plan.shortDescription}
           </div>
         </div>
       </TableCell>
-      <TableCell>
+
+      <TableCell className="px-6">
         <div className="flex flex-col">
-          <span className="font-bold text-slate-900">${plan.premium}</span>
-          <span className="text-[10px] text-blue-600 font-black uppercase tracking-widest">
+          <span className="font-black text-zinc-900 font-manrope text-xs">
+            ${plan.premium}
+          </span>
+          <span className="text-[9px] text-blue-600 font-black uppercase tracking-widest">
             {plan.premiumFrequency}
           </span>
         </div>
       </TableCell>
-      <TableCell>
-        <div className="text-sm font-semibold text-slate-700">
+
+      <TableCell className="px-6">
+        <div className="text-xs font-bold text-zinc-700 font-inter">
           ${plan.coverageAmount?.toLocaleString()}
         </div>
-        <div className="text-[10px] text-slate-400 uppercase font-bold">
-          Limit
+        <div className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">
+          Coverage
         </div>
       </TableCell>
-      <TableCell className="text-center">
+
+      <TableCell className="text-center px-6">
         <button
-          onClick={() => toggleStatus(plan)}
-          className="focus:outline-none"
+          onClick={() => onToggle(plan)}
+          className="focus:outline-none active:scale-95 transition-transform"
         >
           <Badge
-            className={`px-3 py-1 rounded-full transition-all active:scale-95 ${
+            className={`px-3 py-1 font-black text-[9px] uppercase tracking-wider border-none shadow-sm ${
               plan.status?.toLowerCase() === "published"
-                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                : "bg-slate-100 text-slate-600 border-slate-200"
+                ? "bg-emerald-50 text-emerald-600 shadow-emerald-50"
+                : "bg-zinc-100 text-zinc-500"
             }`}
-            variant="outline"
           >
             {plan.status}
           </Badge>
         </button>
       </TableCell>
-      <TableCell className="text-right pr-6">
+
+      <TableCell className="text-right pr-8">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-xl border-transparent hover:border-slate-200 transition-all active:scale-90"
+              className="h-9 w-9 rounded-xl hover:bg-white hover:shadow-sm"
             >
-              <FiMoreVertical className="text-slate-500" />
+              <FiMoreVertical className="text-zinc-500" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            sideOffset={8}
-            className="w-52 p-2 rounded-2xl shadow-2xl bg-white border border-slate-100 data-[state=open]:animate-in data-[state=open]:zoom-in-95 data-[state=open]:fade-in-0 duration-200"
+            className="w-52 p-2 rounded-2xl shadow-2xl bg-white border border-zinc-100"
           >
-            <DropdownMenuItem className="gap-3 py-2.5 cursor-pointer rounded-xl focus:bg-slate-50">
-              <FiEye className="text-blue-600" />{" "}
-              <span className="font-medium">Quick View</span>
+            <DropdownMenuItem className="gap-3 py-2.5 cursor-pointer rounded-xl focus:bg-zinc-50 text-[11px] font-bold uppercase tracking-tight">
+              <FiEye className="text-blue-600" /> Quick View
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => onEditClick(plan)}
-              className="gap-3 py-2.5 cursor-pointer rounded-xl focus:bg-slate-50"
+              onClick={() => onEdit(plan)}
+              className="gap-3 py-2.5 cursor-pointer rounded-xl focus:bg-zinc-50 text-[11px] font-bold uppercase tracking-tight"
             >
-              <FiEdit2 className="text-amber-600" />{" "}
-              <span className="font-medium">Edit Plan</span>
+              <FiEdit2 className="text-amber-600" /> Edit Plan
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="my-1 bg-slate-100" />
+            <DropdownMenuSeparator className="my-1 bg-zinc-100" />
             <DropdownMenuItem
-              onClick={() => handleDelete(plan._id)}
-              className="gap-3 py-2.5 cursor-pointer rounded-xl text-red-600 focus:bg-red-50"
+              onClick={() => onDelete(plan._id)}
+              className="gap-3 py-2.5 cursor-pointer rounded-xl text-rose-600 focus:bg-rose-50 text-[11px] font-bold uppercase tracking-tight"
             >
-              <FiTrash2 /> <span className="font-medium">Delete</span>
+              <FiTrash2 /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
     </motion.tr>
-  )
+  ),
+  (prev, next) =>
+    prev.plan._id === next.plan._id && prev.plan.status === next.plan.status
 );
+
+/* -------------------------------------------------------------------------- */
+/* MAIN COMPONENT                              */
+/* -------------------------------------------------------------------------- */
 
 export default function AdminPlanListPage() {
   const navigate = useNavigate();
   const { listAdmin, deletePlan, updatePlan } = usePlans();
 
-  // --- Filtering & Pagination State ---
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -164,7 +172,6 @@ export default function AdminPlanListPage() {
 
   const deferredSearch = useDeferredValue(searchTerm);
 
-  // --- Data Fetching (Server-Side) ---
   const { data, isLoading, isFetching } = listAdmin({
     page: currentPage,
     limit: itemsPerPage,
@@ -175,13 +182,11 @@ export default function AdminPlanListPage() {
   const plans = data?.plans || [];
   const totalCount = data?.total || 0;
   const totalPages = data?.totalPages || 1;
-
-  // Reset page when search or filters change
+  console.log("Rendering AdminPlanListPage with plans:", plans);
   useEffect(() => {
     setCurrentPage(1);
   }, [deferredSearch, statusFilter]);
 
-  // --- Actions ---
   const handleDelete = useCallback(
     async (id) => {
       if (!confirm("Are you sure? This action is permanent.")) return;
@@ -212,35 +217,39 @@ export default function AdminPlanListPage() {
     [updatePlan]
   );
 
-  const handleEditClick = (plan) => {
+  const handleEditClick = useCallback((plan) => {
     setEditingPlan(plan);
     setIsEditModalOpen(true);
-  };
+  }, []);
 
   return (
-    <div className="p-6 md:p-10 space-y-8 max-w-screen-2xl mx-auto min-h-screen">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 italic">
+    <div className="p-8 bg-zinc-50/30 min-h-screen max-w-screen-2xl mx-auto font-inter">
+      {/* HEADER */}
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-black text-zinc-900 tracking-tight uppercase font-manrope">
             Plan Inventory
           </h1>
-          <p className="text-slate-500 font-medium">
-            Managing{" "}
-            <span className="text-blue-600 font-bold">
-              {totalCount.toLocaleString()}
-            </span>{" "}
-            live products
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
+              Inventory:{" "}
+              <span className="text-zinc-900">
+                {totalCount.toLocaleString()}
+              </span>{" "}
+              Live Products
+            </p>
+          </div>
         </div>
         <div className="flex gap-3">
           <Button
             variant="outline"
-            className="rounded-xl border-slate-200 hidden sm:flex gap-2 bg-white"
+            className="rounded-2xl border-zinc-200 h-12 px-6 text-[10px] font-black uppercase tracking-widest bg-white shadow-sm"
           >
-            <FiDownload /> Export CSV
+            <FiDownload className="mr-2" /> Export
           </Button>
           <Button
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg gap-2 px-6 h-12"
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-lg gap-2 px-6 h-12 text-[10px] font-black uppercase tracking-widest"
             onClick={() => navigate("/admin/create/plan")}
           >
             <FiPlus /> New Product
@@ -248,27 +257,34 @@ export default function AdminPlanListPage() {
         </div>
       </header>
 
-      {/* Control Bar */}
-      <div className="flex flex-col lg:flex-row gap-4 justify-between items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-        <div className="relative w-full lg:max-w-md">
-          <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+      {/* CONTROL BAR */}
+      <div className="flex flex-col lg:flex-row gap-4 bg-white p-2 rounded-[2rem] border border-zinc-200 shadow-sm mb-8">
+        <div className="relative flex-1">
+          <FiSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400" />
           <Input
             placeholder="Search thousands of plans..."
-            className="pl-11 h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500/20"
+            className="pl-14 h-14 bg-zinc-50/50 rounded-[1.5rem] text-sm font-medium 
+               border-1 border-gray-100 
+               focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-blue-600 
+               placeholder:text-zinc-400"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-
-        <div className="flex items-center gap-3 w-full lg:w-auto">
+        <div className="flex items-center gap-2 p-1">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="flex-1 lg:w-[160px] h-12 bg-slate-50 border-none rounded-xl shadow-sm">
+            <SelectTrigger
+              className="w-[140px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
+                 border-1 border-gray-100 
+                 focus:ring-0 focus:ring-offset-0 focus:border-blue-600 shadow-sm"
+            >
               <SelectValue placeholder="Status" />
             </SelectTrigger>
-            <SelectContent className="bg-white border-slate-100 rounded-xl shadow-2xl">
+            <SelectContent className="bg-white border-zinc-100 rounded-xl">
               <SelectItem value="ALL">All Status</SelectItem>
               <SelectItem value="published">Published</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
 
@@ -276,105 +292,138 @@ export default function AdminPlanListPage() {
             value={itemsPerPage.toString()}
             onValueChange={(v) => setItemsPerPage(Number(v))}
           >
-            <SelectTrigger className="w-[120px] h-12 bg-slate-50 border-none rounded-xl shadow-sm">
+            <SelectTrigger
+              className="w-[110px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
+                 border-1 border-gray-100 
+                 focus:ring-0 focus:ring-offset-0 focus:border-blue-600 shadow-sm"
+            >
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white border-slate-100 rounded-xl shadow-2xl">
-              <SelectItem value="25">25/page</SelectItem>
-              <SelectItem value="50">50/page</SelectItem>
-              <SelectItem value="100">100/page</SelectItem>
+            <SelectContent className="bg-white border-zinc-100 rounded-xl">
+              <SelectItem value="25">25 / Pg</SelectItem>
+              <SelectItem value="50">50 / Pg</SelectItem>
+              <SelectItem value="100">100 / Pg</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Table Section */}
-      <Card className="overflow-hidden border-slate-200 shadow-xl rounded-2xl bg-white relative">
-        {/* Subtle Loading Overlay */}
-        {isFetching && (
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-10 flex items-center justify-center">
-            <div className="h-8 w-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
+      {/* REGISTRY TABLE */}
+      <Card className="border border-zinc-200 rounded-[2.5rem] overflow-hidden shadow-sm bg-white relative">
+        <AnimatePresence>
+          {(isFetching || isLoading) && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute top-0 left-0 w-full h-[3px] bg-zinc-100 overflow-hidden z-20"
+            >
+              <motion.div
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
+                className="h-full w-1/4 bg-blue-600"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-slate-50/50">
-              <TableRow className="border-b border-slate-100">
-                <TableHead className="font-bold uppercase text-[10px] tracking-widest py-5 pl-6 text-slate-500">
-                  Product Details
-                </TableHead>
-                <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500">
-                  Premium
-                </TableHead>
-                <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500">
-                  Coverage
-                </TableHead>
-                <TableHead className="font-bold uppercase text-[10px] tracking-widest text-center text-slate-500">
-                  Status
-                </TableHead>
-                <TableHead className="text-right font-bold uppercase text-[10px] tracking-widest pr-8 text-slate-500">
-                  Actions
-                </TableHead>
+        <Table>
+          <TableHeader className="bg-zinc-50/50">
+            <TableRow className="border-b border-zinc-100 hover:bg-transparent">
+              <TableHead className="py-6 pl-8 text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+                Product Details
+              </TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+                Premium
+              </TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+                Coverage
+              </TableHead>
+              <TableHead className="px-6 py-6 text-[10px] font-black uppercase text-zinc-400 tracking-widest text-center">
+                Status
+              </TableHead>
+              <TableHead className="pr-8 py-6 text-right text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-zinc-50">
+            {plans.length > 0 ? (
+              plans.map((plan, idx) => (
+                <VirtualTableRow
+                  key={plan._id}
+                  plan={plan}
+                  index={idx}
+                  onDelete={handleDelete}
+                  onToggle={toggleStatus}
+                  onEdit={handleEditClick}
+                />
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="py-32 text-center text-zinc-300 font-black uppercase text-[10px]"
+                >
+                  <FiInbox className="mx-auto text-4xl mb-4" /> Empty Inventory
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {plans.length > 0 ? (
-                <AnimatePresence mode="popLayout">
-                  {plans.map((plan, idx) => (
-                    <VirtualTableRow
-                      key={plan._id}
-                      plan={plan}
-                      index={idx}
-                      handleDelete={handleDelete}
-                      toggleStatus={toggleStatus}
-                      onEditClick={handleEditClick}
-                    />
-                  ))}
-                </AnimatePresence>
-              ) : (
-                !isLoading && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-20 text-center">
-                      <FiAlertCircle className="mx-auto text-4xl text-slate-200 mb-2" />
-                      <p className="text-slate-500 font-medium">
-                        No plans found in the registry.
-                      </p>
-                    </TableCell>
-                  </TableRow>
-                )
-              )}
-            </TableBody>
-          </Table>
-        </div>
+            )}
+          </TableBody>
+        </Table>
 
-        {/* Pagination Footer */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-6 border-t border-slate-100">
-          <p className="text-sm font-semibold text-slate-500 italic">
-            Page {currentPage} of {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="rounded-full h-10 w-10 p-0 border-slate-200"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1 || isLoading}
-            >
-              <FiChevronLeft />
-            </Button>
-            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-full">
-              <span className="h-7 px-3 flex items-center justify-center rounded-full text-xs font-black bg-blue-600 text-white shadow-md">
-                {currentPage}
-              </span>
+        {/* BLUE PAGINATION FOOTER */}
+        <div className="bg-white border-t border-zinc-100 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+              Scope
+            </span>
+            <div className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-[11px] font-bold shadow-md shadow-blue-100">
+              {plans.length} <span className="text-blue-200 mx-1">/</span>{" "}
+              {totalCount.toLocaleString()}
             </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-zinc-100/50 p-1 rounded-2xl border border-zinc-100">
             <Button
-              variant="outline"
-              className="rounded-full h-10 w-10 p-0 border-slate-200"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || isLoading}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl hover:bg-white disabled:opacity-30"
+              disabled={currentPage === 1 || isLoading}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             >
-              <FiChevronRight />
+              <FiChevronLeft className="h-4 w-4" />
             </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+              (pageNum) => (
+                <Button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`h-9 w-9 rounded-xl text-[11px] font-black ${
+                    currentPage === pageNum
+                      ? "bg-white text-blue-600 shadow-sm border border-blue-100"
+                      : "text-zinc-400 hover:text-blue-600"
+                  }`}
+                  variant="ghost"
+                >
+                  {pageNum}
+                </Button>
+              )
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl hover:bg-white disabled:opacity-30"
+              disabled={currentPage === totalPages || isLoading}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              <FiChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="text-[10px] font-black text-zinc-300 uppercase tracking-[0.3em]">
+            Index {currentPage} <span className="mx-2 text-zinc-200">|</span>{" "}
+            {totalPages}
           </div>
         </div>
       </Card>

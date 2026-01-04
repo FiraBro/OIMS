@@ -12,6 +12,7 @@ import userRouter from "./routes/userRoutes.js";
 import notificationRouter from "./routes/notificationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 import AppError from "./utils/AppError.js";
 import globalErrorHandler from "./middlewares/errorHandler.js";
@@ -50,6 +51,7 @@ app.use(`/api/${versions}/claims`, claimRouter);
 app.use(`/api/${versions}/users`, userRouter);
 app.use(`/api/${versions}/notifications`, notificationRouter);
 app.use("/api/admin", adminRoutes);
+app.use(`/api/${versions}/dashboard`, dashboardRoutes);
 
 app.use(`/api/${versions}/applications`, applicationRoutes);
 

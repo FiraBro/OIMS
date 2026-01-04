@@ -1,11 +1,21 @@
 import express from "express";
-import { createAdminUser } from "../controllers/adminController.js";
-import { protect } from "../middlewares/protect.js";
-import { restrictTo } from "../middlewares/protect.js";
+import { getAdminAnalytics } from "../controllers/analyticController.js";
+import {
+  getSettings,
+  updateSettings,
+} from "../controllers/settingController.js";
+import { protect, restrictTo } from "../middlewares/protect.js";
 import { ROLES } from "../constants/roles.js";
 const router = express.Router();
 
-// Only logged-in admin can create another admin
-router.post("/create", protect, restrictTo(ROLES.ADMIN), createAdminUser);
+// PROTECT ALL ADMIN ROUTES
+router.use(protect, restrictTo(ROLES.ADMIN));
+
+// Analytics
+router.get("/analytics/financials", getAdminAnalytics);
+
+// Settings
+router.get("/settings", getSettings);
+router.patch("/settings", updateSettings);
 
 export default router;

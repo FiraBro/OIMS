@@ -248,42 +248,91 @@ export default function AdminPlanListPage() {
         </div>
 
         {/* Right Side: Selects with extra gap */}
-        <div className="flex items-center gap-4 p-1 w-full lg:w-auto justify-end">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="flex items-center gap-4 p-1 w-full lg:w-auto justify-end"
+        >
           {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger
-              className="w-[150px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
-           border-2 border-gray-200 
-           focus:ring-0 focus:ring-offset-0 focus:border-blue-300 transition-all"
-            >
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-zinc-100 rounded-xl">
-              <SelectItem value="ALL">All Status</SelectItem>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-            </SelectContent>
-          </Select>
+          <motion.div
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-[150px]"
+          >
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger
+                className="w-full h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
+           border-2 border-gray-200 shadow-sm
+           hover:border-blue-200 hover:bg-white
+           focus:ring-0 focus:ring-offset-0 focus:border-blue-300 transition-all duration-300"
+              >
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/80 backdrop-blur-xl border-zinc-100 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <SelectItem
+                  value="ALL"
+                  className="focus:bg-blue-50 focus:text-blue-600 font-bold text-[10px] uppercase"
+                >
+                  All Status
+                </SelectItem>
+                <SelectItem
+                  value="published"
+                  className="focus:bg-blue-50 focus:text-blue-600 font-bold text-[10px] uppercase"
+                >
+                  Published
+                </SelectItem>
+                <SelectItem
+                  value="draft"
+                  className="focus:bg-blue-50 focus:text-blue-600 font-bold text-[10px] uppercase"
+                >
+                  Draft
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </motion.div>
 
           {/* Pagination Select */}
-          <Select
-            value={itemsPerPage.toString()}
-            onValueChange={(v) => setItemsPerPage(Number(v))}
+          <motion.div
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-[120px]"
           >
-            <SelectTrigger
-              className="w-[120px] h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
-           border-2 border-gray-200 
-           focus:ring-0 focus:ring-offset-0 focus:border-blue-300 transition-all"
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(v) => setItemsPerPage(Number(v))}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-zinc-100 rounded-xl">
-              <SelectItem value="25">25 / Pg</SelectItem>
-              <SelectItem value="50">50 / Pg</SelectItem>
-              <SelectItem value="100">100 / Pg</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+              <SelectTrigger
+                className="w-full h-12 bg-zinc-100/50 rounded-xl text-[10px] font-black uppercase tracking-widest 
+           border-2 border-gray-200 shadow-sm
+           hover:border-blue-200 hover:bg-white
+           focus:ring-0 focus:ring-offset-0 focus:border-blue-300 transition-all duration-300"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white/80 backdrop-blur-xl border-zinc-100 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                <SelectItem
+                  value="25"
+                  className="focus:bg-blue-50 focus:text-blue-600 font-bold text-[10px] uppercase"
+                >
+                  25 / Pg
+                </SelectItem>
+                <SelectItem
+                  value="50"
+                  className="focus:bg-blue-50 focus:text-blue-600 font-bold text-[10px] uppercase"
+                >
+                  50 / Pg
+                </SelectItem>
+                <SelectItem
+                  value="100"
+                  className="focus:bg-blue-50 focus:text-blue-600 font-bold text-[10px] uppercase"
+                >
+                  100 / Pg
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </motion.div>
+        </motion.div>
       </div>
 
       <Card className="border border-zinc-200 rounded-[2.5rem] overflow-hidden shadow-sm bg-white relative">

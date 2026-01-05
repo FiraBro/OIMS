@@ -37,3 +37,28 @@ export const getAdminAnalytics = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// 2. NEW: Global Search Controller
+export const handleGlobalSearch = async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    // Safety check for empty or short queries
+    if (!q || q.trim().length < 2) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    // Call the service logic we wrote in the previous step
+    const results = await analyticsService.globalSearch(req, res);
+
+    /**
+     * NOTE: If your service function uses res.status().json(),
+     * it will send the response from there.
+     * If your service only RETURNS the data, use:
+     * res.status(200).json({ success: true, data: results });
+     */
+  } catch (error) {
+    console.error("Global Search Controller Error:", error);
+    res.status(500).json({ success: false, message: "Search failed" });
+  }
+};

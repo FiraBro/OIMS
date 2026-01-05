@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { router } from "./routers";
 import { useAuthStore } from "@/stores/authStore";
 import { useEnterpriseDashboard } from "./hooks/useAdmin";
-import MaintenancePage from "./components/common/Maintenance";
+import MaintenancePage from "./pages/users/support/Maintenance";
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const user = useAuthStore((state) => state.user);

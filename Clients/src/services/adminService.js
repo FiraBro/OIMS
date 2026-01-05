@@ -18,4 +18,14 @@ export const adminService = {
     const response = await api.patch("/admin/settings", settingsData);
     return response.data;
   },
+  globalSearch: async (query) => {
+    try {
+      const response = await api.get(`/admin/global/search?q=${query}`);
+      // Return the data directly for the hook to consume
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error("Search API Error:", error);
+      throw error;
+    }
+  },
 };

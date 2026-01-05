@@ -9,13 +9,14 @@ import { ROLES } from "../constants/roles.js";
 const router = express.Router();
 
 // PROTECT ALL ADMIN ROUTES
+router.get("/settings", getSettings);
+
 router.use(protect, restrictTo(ROLES.ADMIN));
 
 // Analytics
 router.get("/analytics/financials", getAdminAnalytics);
 
 // Settings
-router.get("/settings", getSettings);
 router.patch("/settings", updateSettings);
 
 export default router;

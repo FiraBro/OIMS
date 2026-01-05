@@ -41,6 +41,7 @@ export default function Topbar() {
   // 1. Hook Integration
   const { executeSearch, searchResults, isSearching, clearSearch } =
     useEnterpriseDashboard();
+  console.log("search result:", searchResults);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef(null);
 

@@ -70,12 +70,12 @@ export function PlanEditModal({ plan, isOpen, onClose, onSuccess }) {
     setLoading(true);
     try {
       await updatePlan.mutateAsync({ id: plan._id || plan.id, data: formData });
-      toast.success("Plan updated successfully");
+      toast("Plan updated successfully");
       onSuccess?.();
       onClose();
     } catch (err) {
       console.error(err.response?.data || err);
-      toast.error(err.response?.data?.message || "Failed to update plan");
+      toast(err.response?.data?.message || "Failed to update plan");
     } finally {
       setLoading(false);
     }
@@ -91,10 +91,10 @@ export function PlanEditModal({ plan, isOpen, onClose, onSuccess }) {
       const { riskScore: score, recommendations } = data;
       update("riskScore", score);
       setAiRecommendations(recommendations || []);
-      toast.success("Risk score calculated successfully");
+      toast("Risk score calculated successfully");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to calculate risk");
+      toast("Failed to calculate risk");
     } finally {
       setAiLoading(false);
     }

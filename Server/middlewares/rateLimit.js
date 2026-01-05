@@ -9,16 +9,20 @@ const createStore = (prefix) =>
     prefix: `rl:${prefix}:`,
   });
 
-// --- AUTH LIMITER ---
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   store: createStore("auth"),
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    status: 429,
-    message: "Too many login attempts. Blocked for 15m.",
+  // REAL WORLD LOGIC: Key by IP + Email
+  keyGenerator: (req) => {
+    const userEmail = req.body.email || "anonymous";
+    return `${req.ip}_${userEmail}`;
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      status: "fail",
+      message: `Too many attempts for ${req.body.email}. Try again in 15m.`,
+    });
   },
 });
 

@@ -1,5 +1,8 @@
 import express from "express";
-import { getAdminAnalytics } from "../controllers/analyticController.js";
+import {
+  getAdminAnalytics,
+  handleGlobalSearch,
+} from "../controllers/analyticController.js";
 import {
   getSettings,
   updateSettings,
@@ -15,8 +18,7 @@ router.use(protect, restrictTo(ROLES.ADMIN));
 
 // Analytics
 router.get("/analytics/financials", getAdminAnalytics);
-
-// Settings
+router.get("/global/search", handleGlobalSearch);
 router.patch("/settings", updateSettings);
 
 export default router;

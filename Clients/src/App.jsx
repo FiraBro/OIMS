@@ -21,13 +21,16 @@ export default function App() {
       </Suspense>
 
       <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        newestOnTop
-        pauseOnHover
+        position="top-right" // Moves it to the bottom left
+        autoClose={500} // Adjust time (e.g., 4 seconds)
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
         draggable
-        theme="light"
-        limit={3}
+        pauseOnHover
+        theme="light" // Keeps the background white
       />
     </>
   );

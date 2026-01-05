@@ -7,17 +7,39 @@ export const useEnterpriseDashboard = () => {
   const [settings, setSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
-      const [analytics, config] = await Promise.all([
+      if (!silent) setIsLoading(true);
+
+      // We use Promise.allSettled to ensure that if Analytics fails (for customers),
+      // the Settings call still finishes so the Maintenance Page can work.
+      const [analyticsRes, settingsRes] = await Promise.allSettled([
         adminService.getEnterpriseData(),
         adminService.getSettings(),
       ]);
-      setAdminData(analytics);
-      setSettings(config);
+
+      // --- 1. PROCESS SETTINGS (The Maintenance Gate) ---
+      if (settingsRes.status === "fulfilled") {
+        let rawSettings = settingsRes.value?.data ?? settingsRes.value;
+
+        // Handle case where MongoDB returns an array [ { ... } ]
+        if (Array.isArray(rawSettings)) {
+          rawSettings = rawSettings[0];
+        }
+
+        setSettings(rawSettings);
+      }
+
+      // --- 2. PROCESS ANALYTICS ---
+      if (analyticsRes.status === "fulfilled") {
+        const rawAnalytics = analyticsRes.value?.data ?? analyticsRes.value;
+        setAdminData(rawAnalytics);
+      }
     } catch (error) {
-      toast(error.response?.data?.message || "System sync failed");
+      console.error("System Sync Error:", error);
+      toast.error("Failed to sync system settings", {
+        position: "bottom-left",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -27,5 +49,10 @@ export const useEnterpriseDashboard = () => {
     fetchData();
   }, [fetchData]);
 
-  return { adminData, settings, isLoading, refresh: fetchData };
+  return {
+    adminData,
+    settings,
+    isLoading,
+    refresh: fetchData,
+  };
 };

@@ -28,10 +28,10 @@ export const useClaims = (filters = {}) => {
     mutationFn: (formData) => claimService.createClaim(formData),
     onSuccess: () => {
       queryClient.invalidateQueries(["claims-me"]);
-      toast.success("Claim submitted successfully!");
+      toast("Claim submitted successfully!");
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || "Failed to submit claim");
+      toast(error.response?.data?.message || "Failed to submit claim");
     },
   });
 
@@ -41,7 +41,7 @@ export const useClaims = (filters = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries(["claims-admin"]);
       queryClient.invalidateQueries(["claims-me"]);
-      toast.success("Claim status updated");
+      toast("Claim status updated");
     },
   });
 
@@ -50,7 +50,7 @@ export const useClaims = (filters = {}) => {
     mutationFn: (id) => claimService.softDeleteClaim(id),
     onSuccess: () => {
       queryClient.invalidateQueries(["claims-admin"]);
-      toast.success("Claim removed");
+      toast("Claim removed");
     },
   });
 

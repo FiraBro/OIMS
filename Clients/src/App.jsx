@@ -5,14 +5,38 @@ import "react-toastify/dist/ReactToastify.css";
 
 import { router } from "./routers";
 import { useAuthStore } from "@/stores/authStore";
-
+import { useEnterpriseDashboard } from "./hooks/useAdmin";
+import MaintenancePage from "./components/common/Maintenance";
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
+  const user = useAuthStore((state) => state.user);
 
-  // Run once on app mount
+  // Fetch global settings (Maintenance Mode, etc.)
+
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  // App.jsx
+  const { settings, isLoading } = useEnterpriseDashboard();
+
+  if (isLoading) return null;
+
+  // Convert to strict boolean (handles true, "true", or undefined)
+  const isMaintenanceActive =
+    settings?.maintenanceMode === true ||
+    String(settings?.maintenanceMode) === "true";
+  const isUserNotAdmin = user?.role !== "admin";
+
+  console.log("FINAL GATE CHECK:", {
+    maintenanceInDB: settings?.maintenanceMode,
+    isMaintenanceActive,
+    isUserNotAdmin,
+  });
+
+  if (isMaintenanceActive && isUserNotAdmin) {
+    return <MaintenancePage />;
+  }
 
   return (
     <>
@@ -21,16 +45,14 @@ export default function App() {
       </Suspense>
 
       <ToastContainer
-        position="top-right" // Moves it to the bottom left
-        autoClose={500} // Adjust time (e.g., 4 seconds)
+        position="top-right" // Bot-style position
+        autoClose={6000} // 4 seconds (500 was too fast!)
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
         pauseOnHover
-        theme="light" // Keeps the background white
+        draggable
+        theme="light" // Keeps it clean white
       />
     </>
   );

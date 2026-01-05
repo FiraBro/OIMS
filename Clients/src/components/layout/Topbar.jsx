@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FiSearch,
   FiBell,
@@ -7,9 +7,16 @@ import {
   FiLogOut,
   FiChevronDown,
   FiCommand,
+  FiLoader,
+  FiUser,
+  FiFileText,
+  FiShield,
+  FiActivity,
 } from "react-icons/fi";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/authStore";
+import { useEnterpriseDashboard } from "@/hooks/useAdmin"; // Import your hook
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,49 +27,149 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-// Animation Variants
-const containerVariants = {
-  hidden: { opacity: 0, y: -10 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      staggerChildren: 0.06,
-      delayChildren: 0.05,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -12 },
-  visible: {
-    opacity: 1,
-    x: 0,
-    transition: { type: "spring", stiffness: 300, damping: 24 },
-  },
+// Animation for Search Dropdown
+const dropdownVariants = {
+  hidden: { opacity: 0, y: 10, scale: 0.95 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, scale: 0.95, transition: { duration: 0.1 } },
 };
 
 export default function Topbar() {
   const { logout, user } = useAuthStore();
+  const navigate = useNavigate();
 
+  // 1. Hook Integration
+  const { executeSearch, searchResults, isSearching, clearSearch } =
+    useEnterpriseDashboard();
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef(null);
+
+  // Close search when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleResultClick = (link) => {
+    navigate(link);
+    clearSearch();
+    setShowResults(false);
+  };
+
+  // Icon mapping for categories
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case "Users":
+        return <FiUser className="text-blue-500" />;
+      case "Policies":
+        return <FiShield className="text-emerald-500" />;
+      case "Claims":
+        return <FiActivity className="text-amber-500" />;
+      case "Insurance Plans":
+        return <FiFileText className="text-purple-500" />;
+      default:
+        return <FiSearch />;
+    }
+  };
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        staggerChildren: 0.06,
+        delayChildren: 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -12 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { type: "spring", stiffness: 300, damping: 24 },
+    },
+  };
   return (
     <header className="h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-50 flex items-center justify-between px-6 shadow-sm">
       {/* 1. Global Search: Pro "Command Palette" Style */}
-      <div className="flex-1 max-w-md relative group">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-          <FiSearch className="text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+      <div className="flex-1 max-w-md relative group" ref={searchRef}>
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none z-10">
+          {isSearching ? (
+            <FiLoader className="text-blue-600 animate-spin" />
+          ) : (
+            <FiSearch className="text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+          )}
         </div>
+
         <Input
           type="text"
-          placeholder="Search everything..."
+          placeholder="Search everything... (Policies, Users, Claims)"
           className="pl-10 pr-12 bg-slate-100/50 border-transparent focus:bg-white focus:border-blue-500/30 focus-visible:ring-4 focus-visible:ring-blue-500/10 transition-all rounded-xl w-full text-sm"
+          onChange={(e) => {
+            executeSearch(e.target.value);
+            setShowResults(true);
+          }}
+          onFocus={() => setShowResults(true)}
         />
+
         <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-sm select-none">
           <FiCommand className="text-[10px] text-slate-400" />
           <span className="text-[10px] font-bold text-slate-400">K</span>
         </div>
-      </div>
 
+        {/* --- SEARCH RESULTS DROPDOWN --- */}
+        <AnimatePresence>
+          {showResults && searchResults.length > 0 && (
+            <motion.div
+              variants={dropdownVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="absolute top-full mt-2 w-full bg-white border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-50 max-h-[480px] overflow-y-auto"
+            >
+              <div className="p-2">
+                {searchResults.map((result) => (
+                  <button
+                    key={result.id}
+                    onClick={() => handleResultClick(result.link)}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-all group text-left"
+                  >
+                    <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all">
+                      {getCategoryIcon(result.category)}
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-slate-900 truncate">
+                          {result.title}
+                        </p>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                          {result.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate">
+                        {result.subtitle}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="bg-slate-50 p-2 border-t border-slate-100">
+                <p className="text-[10px] text-center text-slate-400 font-medium">
+                  Showing {searchResults.length} results
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       {/* 2. Right Side Actions */}
       <div className="flex items-center gap-3">
         {/* Help Circle */}

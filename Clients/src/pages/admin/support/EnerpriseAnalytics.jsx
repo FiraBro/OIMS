@@ -5,14 +5,10 @@ import {
   FiUsers,
   FiPieChart,
   FiFilter,
-  FiArrowUpRight,
-  FiActivity,
+  FiDollarSign,
 } from "react-icons/fi";
 import {
-  BarChart,
-  Bar,
   XAxis,
-  YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
@@ -21,6 +17,7 @@ import {
   Cell,
   AreaChart,
   Area,
+  Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -38,89 +35,96 @@ const MONTH_MAP = {
   11: "Nov",
   12: "Dec",
 };
+
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function EnterpriseAnalytics({ data }) {
-  // Memoized Chart Data Formatting
-  const retentionChart = useMemo(
-    () =>
-      data?.retentionMetrics?.map((m) => ({
-        name: MONTH_MAP[m._id] || `M${m._id}`,
+  // 1. Sort and Map Retention Data
+  const retentionChart = useMemo(() => {
+    if (!data?.retentionMetrics) return [];
+    return [...data.retentionMetrics]
+      .sort((a, b) => a._id - b._id) // Ensure Jan comes before Dec
+      .map((m) => ({
+        name: MONTH_MAP[m._id] || `Month ${m._id}`,
         New: m.newPolicies,
         Renewals: m.renewals,
-      })),
-    [data]
-  );
+      }));
+  }, [data]);
 
   const funnelSteps = [
     {
-      label: "Market Reach (Total Users)",
+      label: "Total Market",
       count: data?.funnel?.totalUsers || 0,
-      color: "bg-slate-200",
+      color: "bg-blue-300",
     },
     {
-      label: "Policy Interest",
+      label: "Interested",
       count: data?.funnel?.interested || 0,
       color: "bg-blue-400",
     },
     {
-      label: "Active Conversions",
+      label: "Converted",
       count: data?.funnel?.activePaid || 0,
       color: "bg-emerald-500",
     },
   ];
 
+  // Helper for Loss Ratio Color
+  const getLossRatioColor = (ratio) => {
+    if (ratio > 80) return "text-red-400";
+    if (ratio > 60) return "text-amber-400";
+    return "text-emerald-400";
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Financial Health Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="rounded-[2rem] border-none shadow-xl bg-slate-900 text-white overflow-hidden">
-          <CardHeader className="pb-2">
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">
-              Live Loss Ratio
+    <div className="p-4 space-y-6 animate-in fade-in duration-700">
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="rounded-3xl border-none shadow-lg bg-slate-900 text-white">
+          <CardContent className="pt-6">
+            <p className="text-[10px] font-bold uppercase opacity-60">
+              Loss Ratio
             </p>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black">
-                {data?.profitability?.lossRatio}%
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-3xl font-black">
+                {data?.profitability?.lossRatio ?? 0}%
               </span>
               <FiTrendingUp
-                className={
-                  data?.profitability?.lossRatio > 80
-                    ? "text-red-400"
-                    : "text-emerald-400"
-                }
+                className={getLossRatioColor(data?.profitability?.lossRatio)}
               />
             </div>
-            <p className="text-[10px] font-bold opacity-50 mt-4 uppercase">
-              Status:{" "}
-              {data?.profitability?.lossRatio > 80 ? "Critical" : "Optimized"}
-            </p>
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2 rounded-[2rem] border-none shadow-xl bg-white p-6">
-          <CardHeader className="p-0 mb-4 flex flex-row items-center justify-between">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Acquisition Efficiency
-            </CardTitle>
+        <Card className="rounded-3xl border-none shadow-lg bg-white">
+          <CardContent className="pt-6">
+            <p className="text-[10px] font-bold uppercase text-slate-400">
+              Total Payout
+            </p>
+            <div className="flex items-center gap-2 mt-1 text-slate-900">
+              <FiDollarSign className="text-red-500" />
+              <span className="text-3xl font-black">
+                ${data?.totalPayout || 0}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2 rounded-3xl border-none shadow-lg bg-white p-5">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-[10px] font-black uppercase text-slate-400">
+              Conversion Funnel
+            </span>
             <FiFilter className="text-slate-300" />
-          </CardHeader>
-          <div className="space-y-5">
+          </div>
+          <div className="flex gap-2">
             {funnelSteps.map((step, i) => {
               const percentage =
                 data?.funnel?.totalUsers > 0
-                  ? ((step.count / data.funnel.totalUsers) * 100).toFixed(0)
+                  ? (step.count / data.funnel.totalUsers) * 100
                   : 0;
               return (
-                <div key={i} className="space-y-1">
-                  <div className="flex justify-between text-[10px] font-black uppercase">
-                    <span>{step.label}</span>
-                    <span>
-                      {step.count} ({percentage}%)
-                    </span>
-                  </div>
+                <div key={i} className="flex-1 space-y-2">
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
@@ -128,6 +132,12 @@ export default function EnterpriseAnalytics({ data }) {
                       className={`h-full ${step.color}`}
                     />
                   </div>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase truncate">
+                    {step.label}
+                  </p>
+                  <p className="text-sm font-black text-slate-800">
+                    {step.count}
+                  </p>
                 </div>
               );
             })}
@@ -135,18 +145,18 @@ export default function EnterpriseAnalytics({ data }) {
         </Card>
       </div>
 
-      {/* Trend & Risk Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-6">
+        {/* Retention Area Chart */}
+        <Card className="rounded-[2rem] border-none shadow-xl bg-white p-6">
           <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-            <FiUsers /> Retention & Renewals
+            <FiUsers /> Growth Trend
           </CardTitle>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={retentionChart}>
                 <defs>
                   <linearGradient id="colorNew" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -159,9 +169,23 @@ export default function EnterpriseAnalytics({ data }) {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fontWeight: "bold" }}
+                  tick={{ fontSize: 10 }}
                 />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "15px",
+                    border: "none",
+                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                  }}
+                />
+                <Legend
+                  iconType="circle"
+                  wrapperStyle={{
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                  }}
+                />
                 <Area
                   type="monotone"
                   dataKey="New"
@@ -173,7 +197,7 @@ export default function EnterpriseAnalytics({ data }) {
                   type="monotone"
                   dataKey="Renewals"
                   stroke="#10b981"
-                  fill="transparent"
+                  fill="none"
                   strokeWidth={3}
                 />
               </AreaChart>
@@ -181,26 +205,40 @@ export default function EnterpriseAnalytics({ data }) {
           </div>
         </Card>
 
-        <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-6">
+        {/* Risk Distribution Pie Chart */}
+        <Card className="rounded-[2rem] border-none shadow-xl bg-white p-6">
           <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-            <FiPieChart /> Premium Risk Distribution
+            <FiPieChart /> Risk Portfolio
           </CardTitle>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={data?.riskDistribution}
+                  data={data?.riskDistribution || []}
                   dataKey="premiumVolume"
                   nameKey="category"
                   innerRadius={60}
-                  outerRadius={85}
-                  paddingAngle={5}
+                  outerRadius={80}
+                  paddingAngle={8}
                 >
-                  {data?.riskDistribution?.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  {(data?.riskDistribution || []).map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={COLORS[i % COLORS.length]}
+                      stroke="none"
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend
+                  verticalAlign="bottom"
+                  iconType="circle"
+                  wrapperStyle={{
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    textTransform: "uppercase",
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>

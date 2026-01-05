@@ -23,19 +23,19 @@ export default function RegisterForm({
   const validateCurrentStep = () => {
     if (activeStep === 0) {
       if (!formData.fullName.trim()) {
-        toast.error("Please enter your full name");
+        toast("Please enter your full name");
         return false;
       }
       if (!formData.email.trim()) {
-        toast.error("Please enter your email");
+        toast("Please enter your email");
         return false;
       }
       if (!formData.password.trim()) {
-        toast.error("Please enter a password");
+        toast("Please enter a password");
         return false;
       }
       if (formData.password !== formData.passwordConfirm) {
-        toast.error("Passwords do not match");
+        toast("Passwords do not match");
         return false;
       }
     }
@@ -49,7 +49,7 @@ export default function RegisterForm({
 
     if (activeStep === steps.length - 1) {
       if (!acceptTerms) {
-        toast.error("Please accept the terms and conditions");
+        toast("Please accept the terms and conditions");
         return;
       }
       onSubmit(); // ✅ clean call

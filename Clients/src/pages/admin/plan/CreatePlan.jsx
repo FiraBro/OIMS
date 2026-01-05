@@ -86,7 +86,7 @@ export default function CreatePlan() {
 
     createPlan.mutate(payload, {
       onSuccess: () => {
-        toast.success("Plan created successfully!");
+        toast("Plan created successfully!");
         setForm({
           name: "",
           shortDescription: "",
@@ -113,7 +113,7 @@ export default function CreatePlan() {
           err.response?.data?.message ||
           err.message ||
           "Failed to create plan.";
-        toast.error(message);
+        toast(message);
       },
     });
   };

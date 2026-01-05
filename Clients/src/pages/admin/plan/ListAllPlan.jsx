@@ -181,7 +181,7 @@ export default function AdminPlanListPage() {
       if (!confirm("Are you sure?")) return;
       try {
         await deletePlan.mutateAsync(id);
-        toast.success("Plan removed");
+        toast("Plan removed");
       } catch (e) {
         toast.error(e.message);
       }
@@ -198,9 +198,9 @@ export default function AdminPlanListPage() {
           id: plan._id,
           data: { status: newStatus },
         });
-        toast.success(`Plan is now ${newStatus}`);
+        toast(`Plan is now ${newStatus}`);
       } catch (e) {
-        toast.error(e.message);
+        toast(e.message);
       }
     },
     [updatePlan]

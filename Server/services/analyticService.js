@@ -151,7 +151,7 @@ export const globalSearch = async (req, res) => {
         title: u.fullName,
         subtitle: u.email,
         badge: u.role,
-        link: `/admin/users/${u._id}`,
+        link: `/admin/users`,
       })),
       ...policies.map((p) => ({
         id: p._id,
@@ -159,7 +159,7 @@ export const globalSearch = async (req, res) => {
         title: p.policyNumber,
         subtitle: p.planSnapshot?.planName || "Insurance Policy",
         badge: "Active",
-        link: `/admin/policies/${p._id}`,
+        link: `/admin/all-policies`,
       })),
       ...claims.map((c) => ({
         id: c._id,
@@ -167,7 +167,7 @@ export const globalSearch = async (req, res) => {
         title: `Claim: ${c.claimId}`,
         subtitle: `Amount: $${c.amount}`,
         badge: c.status,
-        link: `/admin/claims/${c._id}`,
+        link: `/admin/all-claims`,
       })),
       // --- MAP TO YOUR ACTUAL PLAN FIELDS ---
       ...plans.map((pl) => ({
@@ -176,7 +176,7 @@ export const globalSearch = async (req, res) => {
         title: pl.name, // Changed from pl.planName
         subtitle: `${pl.category} | ${pl.planType}`,
         badge: `$${pl.premium}`, // Changed from pl.basePrice
-        link: `/admin/plans/${pl._id}`,
+        link: `admin/all-plans`,
       })),
     ];
 

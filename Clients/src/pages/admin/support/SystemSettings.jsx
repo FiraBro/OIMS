@@ -13,10 +13,10 @@ export default function SystemSettings({ initialSettings, onUpdateSuccess }) {
     try {
       setIsSaving(true);
       await adminService.updateSettings(formData);
-      toast.success("Global configurations synchronized");
+      toast("Global configurations synchronized");
       if (onUpdateSuccess) onUpdateSuccess();
     } catch (err) {
-      toast.error("Failed to update system settings");
+      toast("Failed to update system settings");
     } finally {
       setIsSaving(false);
     }

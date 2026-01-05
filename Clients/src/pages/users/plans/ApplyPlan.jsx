@@ -101,7 +101,7 @@ export default function ApplyPlan() {
         console.log("res", res);
         setPlan(res.data); // <-- use res.data instead of res
       } catch (err) {
-        toast.error("Failed to load plan details");
+        toast("Failed to load plan details");
       } finally {
         setLoading(false);
       }
@@ -129,19 +129,19 @@ export default function ApplyPlan() {
           !formData.personal.email ||
           !formData.personal.phone
         ) {
-          toast.error("Please fill in all required personal information");
+          toast("Please fill in all required personal information");
           return false;
         }
         return true;
       case 1:
         if (plan.maxMembers > 1 && !formData.nominee.name) {
-          toast.error("Please enter nominee name");
+          toast("Please enter nominee name");
           return false;
         }
         return true;
       case 5:
         if (!formData.agree) {
-          toast.error("You must agree to terms and conditions");
+          toast("You must agree to terms and conditions");
           return false;
         }
         return true;
@@ -211,13 +211,11 @@ export default function ApplyPlan() {
       });
 
       await applicationService.applyForPolicy(form);
-      toast.success("Application submitted!");
+      toast("Application submitted!");
       navigate("/my-applications");
     } catch (err) {
       console.error("Payload Error:", err.response?.data);
-      toast.error(
-        err.response?.data?.message || "Check your input and try again"
-      );
+      toast(err.response?.data?.message || "Check your input and try again");
     }
   };
 

@@ -44,10 +44,10 @@ export const usePolicies = () => {
       onSuccess: () => {
         // Invalidate all policy queries to trigger a fresh background fetch
         queryClient.invalidateQueries({ queryKey: ["policies"] });
-        if (successMsg) toast.success(successMsg);
+        if (successMsg) toast(successMsg);
       },
       onError: (error) => {
-        toast.error(error?.response?.data?.message || "Action failed");
+        toast(error?.response?.data?.message || "Action failed");
       },
     });
   };
@@ -77,7 +77,7 @@ export const usePolicies = () => {
     mutationFn: (id) => policyService.deletePolicy(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["policies"] });
-      toast.success("Policy permanently deleted");
+      toast("Policy permanently deleted");
     },
   });
 

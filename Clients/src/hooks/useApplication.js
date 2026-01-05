@@ -31,10 +31,10 @@ export const useApplications = (filters = {}) => {
     mutationFn: (formData) => applicationService.applyForPolicy(formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications-me"] });
-      toast.success("Application submitted successfully!");
+      toast("Application submitted successfully!");
     },
     onError: (error) =>
-      toast.error(error.response?.data?.message || "Application failed"),
+      toast(error.response?.data?.message || "Application failed"),
   });
 
   const approveMutation = useMutation({
@@ -42,7 +42,7 @@ export const useApplications = (filters = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications-admin"] });
       queryClient.invalidateQueries({ queryKey: ["policies"] });
-      toast.success("Application approved");
+      toast("Application approved");
     },
   });
 
@@ -50,7 +50,7 @@ export const useApplications = (filters = {}) => {
     mutationFn: (id) => applicationService.rejectApplication(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications-admin"] });
-      toast.warn("Application rejected");
+      toast("Application rejected");
     },
   });
 
@@ -58,7 +58,7 @@ export const useApplications = (filters = {}) => {
     mutationFn: (id) => applicationService.deleteApplication(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications-admin"] });
-      toast.info("Application deleted");
+      toast("Application deleted");
     },
   });
 

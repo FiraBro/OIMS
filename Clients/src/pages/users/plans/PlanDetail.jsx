@@ -52,7 +52,7 @@ export default function PlanDetail() {
         if (isMounted) {
           setError("Failed to load plan details.");
           // Only toast if we are CERTAIN we are still on the page
-          toast.error("Could not find that insurance plan.", {
+          toast("Could not find that insurance plan.", {
             toastId: "fetch-error", // Prevents duplicate toasts
           });
         }
@@ -189,7 +189,7 @@ export default function PlanDetail() {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
                 onClick={() => {
                   navigate(`/apply/${plan._id}`);
-                  toast.success("Redirecting to application form!"); // ✅ Toast success
+                  toast("Redirecting to application form!"); // ✅ Toast success
                 }}
               >
                 Apply Now

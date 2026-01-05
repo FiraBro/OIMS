@@ -102,9 +102,9 @@ export default function EnterpriseAnalytics({ data }) {
               Total Payout
             </p>
             <div className="flex items-center gap-2 mt-1 text-slate-900">
-              <FiDollarSign className="text-red-500" />
+              <FiDollarSign className="text-red-500 text-2xl" />
               <span className="text-3xl font-black">
-                ${data?.totalPayout || 0}
+                {data?.totalPayout || 0}
               </span>
             </div>
           </CardContent>

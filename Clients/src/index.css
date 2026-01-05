@@ -21,8 +21,48 @@
   --border: 214.3 31.8% 91.4%;
   --input: 210 36% 96%;
   --ring: 221.2 83% 53%;
+  --toastify-color-progress-light: #ff5733; /* Put your hex color here */
+
+  /* If you want to change the color for specific types: */
+  /* --toastify-color-progress-success: #00ff00;
+  --toastify-color-progress-error: #ff0000; */
 }
 
+/* .Toastify__progress-bar {
+  background: #ff5733 !important;
+} */
+
+/* 1. Change the Progress Bar color */
+/* Force the background to white for ALL toast types (success, error, info, etc) */
+.Toastify__toast--success,
+.Toastify__toast--error,
+.Toastify__toast--info,
+.Toastify__toast {
+  background-color: #ffffff !important;
+  color: #1f1f1f !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  min-height: 50px !important;
+}
+
+/* Force the progress bar to be Blue for every type */
+.Toastify__progress-bar--success,
+.Toastify__progress-bar--error,
+.Toastify__progress-bar--info,
+.Toastify__progress-bar {
+  background: #4285f4 !important; /* Your Blue color */
+  height: 3px !important;
+}
+
+/* Make sure the text inside stays dark */
+.Toastify__toast-body {
+  color: #1f1f1f !important;
+}
+
+/* Optional: change the icons color to blue too */
+.Toastify__toast-icon {
+  fill: #4285f4 !important;
+}
 /* Dark theme */
 .dark {
   --background: 224 71% 4%;

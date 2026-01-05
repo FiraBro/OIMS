@@ -179,7 +179,7 @@ export default function PolicyList() {
         console.error(err);
       }
     }
-    toast.success(`Bulk updated ${successCount} policies`);
+    toast(`Bulk updated ${successCount} policies`);
     setSelectedIds([]);
     setIsProcessing(false);
     setProgress(0);

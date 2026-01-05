@@ -1,12 +1,13 @@
 import policy from "../models/policy.js";
 import claim from "../models/claim.js";
 import User from "../models/user.js";
+import InsurancePlan from "../models/plan.js";
+
 export const getFinancialAnalytics = async () => {
   const results = await policy.aggregate([
     { $match: { isDeleted: false } },
     {
       $facet: {
-        // 1. FINANCIAL PERFORMANCE (Loss Ratio Basis)
         profitability: [
           {
             $group: {
@@ -16,8 +17,6 @@ export const getFinancialAnalytics = async () => {
             },
           },
         ],
-
-        // 2. RISK DISTRIBUTION (Enterprise Risk layer)
         riskDistribution: [
           {
             $group: {
@@ -35,8 +34,6 @@ export const getFinancialAnalytics = async () => {
             },
           },
         ],
-
-        // 3. COHORT RETENTION (Checking renewals/loyalty)
         retentionMetrics: [
           {
             $group: {
@@ -49,8 +46,6 @@ export const getFinancialAnalytics = async () => {
           },
           { $sort: { _id: 1 } },
         ],
-
-        // 4. CLAIMS TREND (Your existing logic)
         claimsTrend: [
           {
             $lookup: {
@@ -83,18 +78,111 @@ export const getFinancialAnalytics = async () => {
     },
   ]);
 
-  // 5. CONVERSION FUNNEL (Separate query as it starts from Users, not Policies)
   const totalUsers = await User.countDocuments();
   const usersWithPolicies = await policy.distinct("user");
 
   const funnel = {
     totalUsers,
     interested: usersWithPolicies.length,
-    activePaid: results[0].profitability[0]?.policyCount || 0,
+    activePaid: results[0]?.profitability[0]?.policyCount || 0,
   };
 
   return {
     ...results[0],
     funnel,
   };
+};
+
+export const globalSearch = async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.trim().length < 2) {
+      return res.status(200).json([]);
+    }
+
+    const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const searchRegex = new RegExp(escapedQuery, "i");
+
+    const [users, policies, claims, plans] = await Promise.all([
+      User.find({
+        $or: [{ fullName: searchRegex }, { email: searchRegex }],
+      })
+        .limit(4)
+        .select("fullName email role"),
+
+      policy
+        .find({
+          $or: [
+            { policyNumber: searchRegex },
+            { "planSnapshot.planName": searchRegex },
+          ],
+          isDeleted: false,
+        })
+        .limit(4)
+        .select("policyNumber planSnapshot premium"),
+
+      claim
+        .find({
+          $or: [{ claimId: searchRegex }, { status: searchRegex }],
+          isDeleted: false,
+        })
+        .limit(4)
+        .select("claimId amount status"),
+
+      // --- FIXED FOR YOUR PLAN MODEL ---
+      InsurancePlan.find({
+        $or: [
+          { name: searchRegex }, // Changed from planName to name
+          { planType: searchRegex },
+          { category: searchRegex }, // Added category search (e.g., "Health")
+          { slug: searchRegex }, // Added slug search
+        ],
+        isDeleted: false, // Added to match your schema
+      })
+        .limit(4)
+        .select("name planType premium category"), // Selected existing fields
+    ]);
+
+    const results = [
+      ...users.map((u) => ({
+        id: u._id,
+        category: "Users",
+        title: u.fullName,
+        subtitle: u.email,
+        badge: u.role,
+        link: `/admin/users/${u._id}`,
+      })),
+      ...policies.map((p) => ({
+        id: p._id,
+        category: "Policies",
+        title: p.policyNumber,
+        subtitle: p.planSnapshot?.planName || "Insurance Policy",
+        badge: "Active",
+        link: `/admin/policies/${p._id}`,
+      })),
+      ...claims.map((c) => ({
+        id: c._id,
+        category: "Claims",
+        title: `Claim: ${c.claimId}`,
+        subtitle: `Amount: $${c.amount}`,
+        badge: c.status,
+        link: `/admin/claims/${c._id}`,
+      })),
+      // --- MAP TO YOUR ACTUAL PLAN FIELDS ---
+      ...plans.map((pl) => ({
+        id: pl._id,
+        category: "Insurance Plans",
+        title: pl.name, // Changed from pl.planName
+        subtitle: `${pl.category} | ${pl.planType}`,
+        badge: `$${pl.premium}`, // Changed from pl.basePrice
+        link: `/admin/plans/${pl._id}`,
+      })),
+    ];
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Global Search Error:", error);
+    res.status(500).json({ message: "Search execution failed" });
+  }
 };

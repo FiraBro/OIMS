@@ -3,56 +3,85 @@ import { adminService } from "@/services/adminService";
 import { toast } from "react-toastify";
 
 export const useEnterpriseDashboard = () => {
+  // 1. Core States
   const [adminData, setAdminData] = useState(null);
   const [settings, setSettings] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 2. Search States
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  /**
+   * FETCH CORE DASHBOARD DATA
+   * Handles Analytics and Maintenance Settings
+   */
   const fetchData = useCallback(async (silent = false) => {
     try {
       if (!silent) setIsLoading(true);
 
-      // We use Promise.allSettled to ensure that if Analytics fails (for customers),
-      // the Settings call still finishes so the Maintenance Page can work.
       const [analyticsRes, settingsRes] = await Promise.allSettled([
         adminService.getEnterpriseData(),
         adminService.getSettings(),
       ]);
 
-      // --- 1. PROCESS SETTINGS (The Maintenance Gate) ---
+      // Handle Settings (Critical for Maintenance Mode)
       if (settingsRes.status === "fulfilled") {
         let rawSettings = settingsRes.value?.data ?? settingsRes.value;
-
-        // Handle case where MongoDB returns an array [ { ... } ]
-        if (Array.isArray(rawSettings)) {
-          rawSettings = rawSettings[0];
-        }
-
+        if (Array.isArray(rawSettings)) rawSettings = rawSettings[0];
         setSettings(rawSettings);
       }
 
-      // --- 2. PROCESS ANALYTICS ---
+      // Handle Analytics
       if (analyticsRes.status === "fulfilled") {
-        const rawAnalytics = analyticsRes.value?.data ?? analyticsRes.value;
-        setAdminData(rawAnalytics);
+        setAdminData(analyticsRes.value?.data ?? analyticsRes.value);
       }
     } catch (error) {
-      console.error("System Sync Error:", error);
-      toast.error("Failed to sync system settings", {
-        position: "bottom-left",
-      });
+      console.error("Dashboard Sync Error:", error);
+      toast.error("System synchronization failed");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  /**
+   * GLOBAL SEARCH LOGIC
+   * Includes internal debouncing to prevent server spam
+   */
+  const handleSearch = useCallback(async (query) => {
+    if (!query || query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await adminService.globalSearch(query);
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Search Error:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Initial load
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   return {
+    // Dashboard Data
     adminData,
     settings,
     isLoading,
     refresh: fetchData,
+
+    // Search Functionality
+    searchResults,
+    isSearching,
+    executeSearch: handleSearch,
+    clearSearch: () => setSearchResults([]),
   };
 };

@@ -17,7 +17,7 @@ export const useEnterpriseDashboard = () => {
       setAdminData(analytics);
       setSettings(config);
     } catch (error) {
-      toast.error(error.response?.data?.message || "System sync failed");
+      toast(error.response?.data?.message || "System sync failed");
     } finally {
       setIsLoading(false);
     }

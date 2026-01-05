@@ -46,7 +46,7 @@ const AdminClaimsManagement = lazy(() =>
   import("@/pages/admin/claim/ClaimsManagement")
 );
 
-const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+const NotFoundPage = lazy(() => import("@/components/common/NotFoundPage"));
 
 export const router = createBrowserRouter([
   {

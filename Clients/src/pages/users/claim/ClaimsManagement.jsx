@@ -68,7 +68,7 @@ export default function ClaimsManagement() {
       // ✅ USE YOUR SERVICE HERE
       await claimService.createClaim(data);
 
-      toast.success("Claim submitted successfully!");
+      toast("Claim submitted successfully!");
 
       // Reset Form
       setFormData({ policyId: "", claimType: "", description: "", amount: "" });
@@ -76,7 +76,7 @@ export default function ClaimsManagement() {
       setFileName("");
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Failed to submit claim.";
-      toast.error(errorMsg);
+      toast(errorMsg);
     } finally {
       setLoading(false);
     }

@@ -25,7 +25,7 @@ export const useUsers = (filters) => {
       });
 
       if (!allMatchingUsers || allMatchingUsers.length === 0) {
-        toast.info("No records found to export");
+        toast("No records found to export");
         return;
       }
 
@@ -53,9 +53,9 @@ export const useUsers = (filters) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Export successful");
+      toast("Export successful");
     } catch (err) {
-      toast.error("Export failed");
+      toast("Export failed");
       console.error(err);
     } finally {
       setIsExporting(false);
@@ -67,7 +67,7 @@ export const useUsers = (filters) => {
     mutationFn: ({ id, data }) => userService.updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(["users-admin"]);
-      toast.success("User successfully updated");
+      toast("User successfully updated");
     },
   });
 
@@ -76,7 +76,7 @@ export const useUsers = (filters) => {
     mutationFn: (id) => userService.deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries(["users-admin"]);
-      toast.success("User permanently removed");
+      toast("User permanently removed");
     },
   });
 

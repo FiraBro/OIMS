@@ -79,7 +79,7 @@ export default function AuthForm() {
     setIsLoading(false);
 
     if (result.status === "success") {
-      toast.success("Login successful!");
+      toast("Login successful!");
 
       // Check role immediately from the result or updated store
       // Use result.data.user.role if your login function returns the user object

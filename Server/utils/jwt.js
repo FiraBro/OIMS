@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 export const signToken = (user) => {
   // Debugging: This will show you exactly what value is being used in the logs
   const expiry = process.env.JWT_ACCESS_EXPIRES || "1d";
-  console.log(`Signing token for user ${user._id} with expiry: ${expiry}`);
 
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: expiry,

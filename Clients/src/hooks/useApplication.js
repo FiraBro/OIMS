@@ -5,12 +5,14 @@ import { toast } from "react-toastify";
 export const useApplications = (filters = {}) => {
   const queryClient = useQueryClient();
 
-  // --- 1️⃣ Query: My Applications (User View) ---
   const myApplicationsQuery = useQuery({
-    queryKey: ["applications-me"],
-    queryFn: applicationService.getMyApplications,
-    staleTime: 60000,
+    queryKey: ["applications", "me", filters],
+    queryFn: () => applicationService.getMyApplications(filters),
+    staleTime: 30000, // 30 seconds
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 mins
+    placeholderData: (prev) => prev, // Smooth transition between tabs
   });
+  console.log("my application:", myApplicationsQuery.data);
 
   // --- 2️⃣ Query: All Applications (Admin View) ---
   const adminApplicationsQuery = useQuery({
@@ -63,12 +65,21 @@ export const useApplications = (filters = {}) => {
   });
 
   return {
+    apps: myApplicationsQuery.data?.applications || [],
+    counts: myApplicationsQuery.data?.counts || {
+      all: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+    },
+    isLoading: myApplicationsQuery.isLoading,
+    isFetching: myApplicationsQuery.isFetching,
+    error: myApplicationsQuery.error,
     adminApplications: adminApplicationsQuery.data?.applications || [],
     meta: {
       total: adminApplicationsQuery.data?.total || 0,
       totalPages: adminApplicationsQuery.data?.totalPages || 1,
     },
-    isLoading: adminApplicationsQuery.isLoading,
     // Combined processing state for UI feedback
     isProcessing:
       approveMutation.isPending ||

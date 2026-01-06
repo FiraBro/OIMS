@@ -55,7 +55,7 @@ export default function ApplyPlan() {
 
   // --- Logic Integration ---
   const { getPlanById } = usePlans();
-  const { apply, isProcessing } = useApplications();
+  const { actions, isProcessing } = useApplications();
   const { data: planRes, isLoading: planLoading } = getPlanById(planId);
   const plan = planRes?.data;
 
@@ -131,10 +131,10 @@ export default function ApplyPlan() {
     formData.files.forEach((file) => form.append("documents", file));
 
     try {
-      await apply(form);
+      await actions.apply(form);
       navigate("/my-applications");
     } catch (err) {
-      /* Toast is handled in the hook */
+      console.log(err);
     }
   };
 

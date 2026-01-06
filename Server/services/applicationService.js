@@ -51,6 +51,7 @@ class ApplicationService {
 
   async approve(id, adminId) {
     try {
+      // 1. Fetch the Application
       const app = await Application.findOne({
         _id: id,
         isDeleted: false,
@@ -60,11 +61,11 @@ class ApplicationService {
       if (app.status !== "pending")
         throw new AppError("Only pending applications can be approved", 400);
 
-      // Load the plan using real model
-      const planData = await Plan.findById(app.planId); // ✅ FIXED
+      // 2. Load Plan Data
+      const planData = await Plan.findById(app.planId);
       if (!planData) throw new AppError("Plan not found", 404);
 
-      // Check for existing active policy
+      // 3. Check for existing active policy
       const existingPolicy = await Policy.findOne({
         userId: app.userId,
         planId: app.planId,
@@ -78,22 +79,24 @@ class ApplicationService {
           400
         );
 
-      // Generate start and end dates based on plan
+      // 4. Date Calculations
       const startDate = new Date();
       const endDate = new Date();
       const durationMonths = planData.validityPeriod
         ? planData.validityPeriod / 30
         : 12;
-
       endDate.setMonth(endDate.getMonth() + durationMonths);
 
-      // Approve application
+      // 5. Update Application
       app.status = "approved";
+      app.startDate = startDate;
+      app.endDate = endDate;
       app.updatedBy = adminId;
       await app.save();
 
-      // Create policy
-      const policy = await Policy.create({
+      // 6. Create Policy
+      // Note: Without session, we can pass a simple object to .create()
+      const newPolicy = await Policy.create({
         userId: app.userId,
         planId: app.planId,
         startDate,
@@ -105,8 +108,9 @@ class ApplicationService {
         createdBy: adminId,
       });
 
-      return { application: app, policy };
+      return { application: app, policy: newPolicy };
     } catch (err) {
+      // No abortTransaction needed here
       throw err;
     }
   }
@@ -128,27 +132,36 @@ class ApplicationService {
 
   // USER: GET MY APPLICATIONS (Optimized)
   // ==================================================
-  async getMyApplications(userId, { status = "" } = {}) {
+  async getMyApplications(userId, { status = "", page = 1, limit = 10 } = {}) {
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
     // 1. Build dynamic filter
     const filter = { userId, isDeleted: false };
     if (status) {
       filter.status = status;
     }
 
-    // 2. Fetch data (Consider adding .limit() if users have 1000+ personal apps)
-    const applications = await Application.find(filter)
-      .populate("planId")
-      .sort({ createdAt: -1 })
-      .lean();
+    // 2. Run Queries in Parallel for Maximum Performance
+    const [applications, totalCount, countsArray] = await Promise.all([
+      // Fetch paginated data
+      Application.find(filter)
+        .populate("planId")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
 
-    // 3. Get Counts for Tab Badges (Efficient parallel execution)
-    // This allows the frontend to show counts for ALL tabs in one request
-    const countsArray = await Application.aggregate([
-      { $match: { userId, isDeleted: false } },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
+      // Fetch total count for this specific filter (for pagination meta)
+      Application.countDocuments(filter),
+
+      // Fetch counts for all tabs (for UI badges)
+      Application.aggregate([
+        { $match: { userId, isDeleted: false } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
     ]);
 
-    // Transform aggregate array into a simple object: { pending: 5, approved: 10 ... }
+    // 3. Transform aggregate array into a simple object: { pending: 5, ... }
     const counts = countsArray.reduce(
       (acc, curr) => {
         acc[curr._id] = curr.count;
@@ -161,6 +174,12 @@ class ApplicationService {
     return {
       applications,
       counts,
+      pagination: {
+        total: totalCount,
+        page: parseInt(page),
+        totalPages: Math.ceil(totalCount / limit),
+        limit: parseInt(limit),
+      },
     };
   }
 

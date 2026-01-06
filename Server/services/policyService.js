@@ -1,15 +1,55 @@
 import Policy from "../models/policy.js";
 import AppError from "../utils/AppError.js";
-
+import mongoose from "mongoose";
+import InsurancePlan from "../models/plan.js";
 class PolicyService {
   // ==================================================
-  // USER: GET ALL POLICIES
-  // ==================================================
-  async getMyPolicies(userId) {
-    return await Policy.find({ userId, isDeleted: false })
-      .populate("planId")
-      .sort({ createdAt: -1 })
-      .lean();
+  async getMyPolicies(userId, { page = 1, limit = 10, search = "" }) {
+    const skip = (page - 1) * limit;
+
+    // Ensure userId is handled correctly as a query filter
+    let query = { userId: userId, isDeleted: false };
+
+    if (search) {
+      // FIX: Use the imported InsurancePlan model directly instead of mongoose.model()
+      const matchingPlans = await InsurancePlan.find({
+        name: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const planIds = matchingPlans.map((p) => p._id);
+
+      // We use $and to ensure the userId and isDeleted filters are always respected
+      query = {
+        userId: userId,
+        isDeleted: false,
+        $or: [
+          { "personal.fullName": { $regex: search, $options: "i" } },
+          { status: { $regex: search, $options: "i" } },
+          { policyNumber: { $regex: search, $options: "i" } },
+          { planId: { $in: planIds } },
+        ],
+      };
+    }
+
+    const [applications, totalRecords] = await Promise.all([
+      Policy.find(query)
+        .populate("planId")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Policy.countDocuments(query),
+    ]);
+
+    return {
+      applications,
+      pagination: {
+        total: totalRecords,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(totalRecords / limit),
+      },
+    };
   }
 
   // ==================================================

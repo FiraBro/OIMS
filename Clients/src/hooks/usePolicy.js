@@ -7,14 +7,20 @@ export const usePolicies = () => {
 
   // --- QUERIES ---
 
-  // Get current user's policies
-  const useMyPolicies = () => {
+  // Get current user's policies - Now supports search and pagination
+  const useMyPolicies = (query = {}) => {
     return useQuery({
-      queryKey: ["policies", "my"],
-      queryFn: policyService.getMyPolicies,
-      staleTime: 1000 * 60 * 5, // Data stays fresh for 5 minutes
+      // 1. Keep the query object in the key so React Query refetches on change
+      queryKey: ["policies", "my", query],
+
+      // 2. Explicitly pass the query object to your service
+      queryFn: () => policyService.getMyPolicies(query),
+
+      staleTime: 1000 * 60 * 5,
+      placeholderData: (previousData) => previousData,
     });
   };
+  // console.log("data from poly hook:", useMyPolicies);
 
   // List all policies (Admin) - Supports filtering/pagination
   const useAdminPolicies = (query = {}) => {
@@ -24,7 +30,7 @@ export const usePolicies = () => {
       placeholderData: (previousData) => previousData, // Keeps UI stable while fetching new pages
     });
   };
-  console.log("useAdminPolicies function called", useAdminPolicies);
+  // console.log("useAdminPolicies function called", useAdminPolicies);
 
   // Get single policy
   const usePolicy = (id) => {

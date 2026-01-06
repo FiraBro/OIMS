@@ -5,9 +5,14 @@ import api from "../lib/axios";
 // ==========================
 
 // Get policies belonging to the logged-in user
-const getMyPolicies = async () => {
-  const res = await api.get("/policies/my");
-  return res.data;
+// Example in your policyService.js
+const getMyPolicies = async (query = {}) => {
+  const { page, limit, search, status } = query;
+  const response = await api.get("/policies/my", {
+    params: { page, limit, search, status },
+  });
+  console.log("data from policy service:", response.data);
+  return response.data;
 };
 
 // ==========================

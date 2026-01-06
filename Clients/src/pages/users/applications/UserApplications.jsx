@@ -1,202 +1,227 @@
 import React, { useState, memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FiFileText,
   FiRefreshCw,
   FiClock,
   FiCheckCircle,
   FiXCircle,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { resolveDocumentUrl } from "@/utils/resolveURL";
 import { useAuthStore } from "@/stores/authStore";
 import { useApplications } from "@/hooks/useApplication";
+import UserApplicationDetailModal from "@/components/modal/UserApplicationDetailModal";
 
-// 1. Memoized Card for performance
-const ApplicationCard = memo(({ app, index, onViewFile }) => {
-  const getStatusDetails = (status) => {
-    const s = (status || "pending").toLowerCase();
-    if (s === "approved")
-      return {
-        label: "Approved",
-        class: "bg-green-100 text-green-700",
-        icon: <FiCheckCircle />,
-      };
-    if (s === "rejected")
-      return {
-        label: "Rejected",
-        class: "bg-red-100 text-red-700",
-        icon: <FiXCircle />,
-      };
-    return {
+const tableVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05 } },
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
+};
+
+const StatusBadge = memo(({ status }) => {
+  const s = (status || "pending").toLowerCase();
+  const config = {
+    approved: {
+      label: "Approved",
+      class: "bg-green-50 text-green-700 border-green-200",
+      icon: <FiCheckCircle />,
+    },
+    rejected: {
+      label: "Rejected",
+      class: "bg-red-50 text-red-700 border-red-200",
+      icon: <FiXCircle />,
+    },
+    pending: {
       label: "Pending",
-      class: "bg-yellow-100 text-yellow-700",
+      class: "bg-yellow-50 text-yellow-700 border-yellow-200",
       icon: <FiClock />,
-    };
+    },
   };
-
-  const status = getStatusDetails(app.status);
-  const formatDate = (date) =>
-    date ? new Date(date).toLocaleDateString() : "-";
-
+  const current = config[s] || config.pending;
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.01, 0.3) }} // Cap delay for large lists
+    <Badge
+      variant="outline"
+      className={`${current.class} flex items-center gap-1.5 font-medium shadow-none`}
     >
-      <Card className="mb-4 border-gray-200 hover:shadow-sm transition-all">
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg">
-              {app.planId?.name || "Insurance Plan"}
-            </CardTitle>
-            <Badge className={`${status.class} flex items-center gap-1`}>
-              {status.icon} {status.label}
-            </Badge>
-          </div>
-        </CardHeader>
-        <Separator />
-        <CardContent className="grid md:grid-cols-3 gap-4 pt-4">
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold">
-              Submitted
-            </p>
-            <span className="text-sm">{formatDate(app.createdAt)}</span>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase font-semibold">
-              Period
-            </p>
-            <span className="text-sm">
-              {formatDate(app.startDate)} - {formatDate(app.endDate)}
-            </span>
-          </div>
-          <div className="flex justify-end items-center">
-            {app.documents?.length > 0 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onViewFile(app.documents[0].url)}
-              >
-                <FiFileText className="mr-2" /> View Document
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+      {current.icon} {current.label}
+    </Badge>
   );
 });
 
-ApplicationCard.displayName = "ApplicationCard";
-
-export default function UserApplications() {
+export default function UserApplicationsTable() {
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const { authReady, isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState("all");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [currentDocument, setCurrentDocument] = useState(null);
+  const [page, setPage] = useState(1);
 
-  // Use hook with server-side filtering logic
-  const { apps, counts, isLoading, isFetching, error, refresh } =
+  const { apps, counts, meta, isLoading, isFetching, actions } =
     useApplications({
       status: activeTab === "all" ? "" : activeTab,
+      page,
+      limit: 10,
     });
 
-  if (!authReady)
+  const formatDate = (date) =>
+    date
+      ? new Date(date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—";
+
+  if (!authReady || isLoading)
     return (
-      <div className="p-6">
-        <Skeleton className="h-40 w-full" />
+      <div className="p-8">
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   if (!isAuthenticated)
     return (
-      <Card className="m-6 p-10 text-center">
-        Please log in to view applications.
-      </Card>
+      <div className="p-20 text-center font-medium text-zinc-500">
+        Please login to view history.
+      </div>
     );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto min-h-screen">
-      <div className="flex justify-between items-end mb-8">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      className="p-6 max-w-7xl mx-auto min-h-screen space-y-6"
+    >
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Applications</h1>
-          <p className="text-muted-foreground">
-            Manage and track your insurance requests.
+          <h1 className="text-2xl font-black text-zinc-900 tracking-tight">
+            Application History
+          </h1>
+          <p className="text-zinc-500 text-sm">
+            Manage and track your active insurance requests.
           </p>
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          onClick={refresh}
+          onClick={actions.refresh}
           disabled={isFetching}
+          className="rounded-xl border-zinc-200 active:scale-95 transition-all"
         >
-          <FiRefreshCw className={`mr-2 ${isFetching ? "animate-spin" : ""}`} />
-          {isFetching ? "Syncing..." : "Refresh"}
+          <FiRefreshCw
+            className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+          />{" "}
+          Sync
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-gray-100/50 p-1">
-          {["all", "pending", "approved", "rejected"].map((tab) => (
-            <TabsTrigger key={tab} value={tab} className="capitalize">
-              {tab}{" "}
-              <Badge variant="secondary" className="ml-2 bg-white">
-                {counts[tab] || 0}
-              </Badge>
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => {
+          setActiveTab(val);
+          setPage(1);
+        }}
+      >
+        <TabsList className="bg-zinc-100/80 p-1 rounded-xl mb-4">
+          {["all", "pending", "approved", "rejected"].map((t) => (
+            <TabsTrigger
+              key={t}
+              value={t}
+              className="capitalize px-6 rounded-lg data-[state=active]:shadow-sm"
+            >
+              {t}{" "}
+              <span className="ml-2 opacity-40 text-[10px]">
+                {counts[t] || 0}
+              </span>
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <TabsContent value={activeTab} className="mt-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-32 w-full" />
-              ))}
-            </div>
-          ) : apps.length === 0 ? (
-            <Card className="border-dashed py-20 text-center">
-              <FiFileText className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">
-                No {activeTab} applications found.
-              </p>
-            </Card>
-          ) : (
-            <div className="pb-10">
-              {apps.map((app, index) => (
-                <ApplicationCard
+        <Card className="border-zinc-200 shadow-none rounded-2xl overflow-hidden">
+          <Table>
+            <TableHeader className="bg-zinc-50/50">
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="text-zinc-400 uppercase text-[10px] font-black tracking-widest">
+                  Plan Name
+                </TableHead>
+                <TableHead className="text-zinc-400 uppercase text-[10px] font-black tracking-widest text-center">
+                  Submitted
+                </TableHead>
+                <TableHead className="text-zinc-400 uppercase text-[10px] font-black tracking-widest">
+                  Status
+                </TableHead>
+                <TableHead className="text-zinc-400 uppercase text-[10px] font-black tracking-widest">
+                  Period
+                </TableHead>
+                <TableHead className="text-right text-zinc-400 uppercase text-[10px] font-black tracking-widest">
+                  Details
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <motion.tbody variants={tableVariants} key={activeTab}>
+              {apps.map((app) => (
+                <motion.tr
+                  variants={rowVariants}
                   key={app._id}
-                  app={app}
-                  index={index}
-                  onViewFile={(url) => {
-                    setCurrentDocument(resolveDocumentUrl(url));
-                    setModalOpen(true);
-                  }}
-                />
+                  className="hover:bg-zinc-50/50 transition-colors border-b border-zinc-100 last:border-0"
+                >
+                  <TableCell className="font-bold text-zinc-900 py-5">
+                    {app.planId?.name}
+                  </TableCell>
+                  <TableCell className="text-zinc-500 text-xs text-center">
+                    {formatDate(app.createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={app.status} />
+                  </TableCell>
+                  <TableCell className="text-zinc-400 text-xs italic">
+                    {app.status === "approved"
+                      ? `${formatDate(app.startDate)} - ${formatDate(
+                          app.endDate
+                        )}`
+                      : "Pending Approval"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedApp(app);
+                        setDetailModalOpen(true);
+                      }}
+                      className="text-blue-600 hover:bg-blue-50 rounded-lg"
+                    >
+                      <FiFileText className="mr-2" /> View
+                    </Button>
+                  </TableCell>
+                </motion.tr>
               ))}
-            </div>
-          )}
-        </TabsContent>
+            </motion.tbody>
+          </Table>
+        </Card>
       </Tabs>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden">
-          <div className="bg-gray-100 h-full w-full">
-            <iframe
-              src={currentDocument}
-              title="Viewer"
-              className="w-full h-full border-none"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+      <UserApplicationDetailModal
+        app={selectedApp}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+      />
+    </motion.div>
   );
 }

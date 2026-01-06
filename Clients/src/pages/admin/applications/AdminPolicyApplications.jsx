@@ -22,6 +22,8 @@ import {
   FiInbox,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import ApplicationDetailModal from "@/components/modal/ApplicationDetailModal";
+import { toast } from "react-toastify";
 
 const getStatusStyles = (status) => {
   const s = status?.toLowerCase();
@@ -32,103 +34,139 @@ const getStatusStyles = (status) => {
   return "bg-gray-50 text-gray-400";
 };
 
-const ApplicationRow = memo(({ app, onApprove, onReject, isProcessing }) => (
-  <TableRow className="hover:bg-blue-50/30 transition-all group border-none">
-    <TableCell className="px-8 py-5">
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-lg">
-          {app.personal?.fullName?.[0] || <FiUser />}
+const ApplicationRow = memo(
+  ({ app, onApprove, onReject, onView, isProcessing }) => (
+    <TableRow className="hover:bg-blue-50/30 transition-all group border-none">
+      <TableCell className="px-8 py-5">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-lg">
+            {app.personal?.fullName?.[0] || <FiUser />}
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-zinc-900 text-xs uppercase tracking-wide">
+              {app.personal?.fullName}
+            </span>
+            <span className="text-[10px] text-zinc-400 lowercase">
+              {app.personal?.email}
+            </span>
+          </div>
         </div>
+      </TableCell>
+      <TableCell className="px-8 py-5">
         <div className="flex flex-col">
-          <span className="font-bold text-zinc-900 text-xs uppercase tracking-wide">
-            {app.personal?.fullName}
+          <span className="font-black text-zinc-600 text-[10px] mb-1">
+            {app.planId?.name}
           </span>
-          <span className="text-[10px] text-zinc-400 lowercase">
-            {app.personal?.email}
+          <span className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">
+            Registry Node
           </span>
         </div>
-      </div>
-    </TableCell>
-    <TableCell className="px-8 py-5">
-      <div className="flex flex-col">
-        <span className="font-black text-zinc-600 text-[10px] mb-1">
-          {app.planId?.name}
-        </span>
-        <span className="text-[9px] text-blue-600 font-bold uppercase tracking-widest">
-          Registry Node
-        </span>
-      </div>
-    </TableCell>
-    <TableCell className="px-8 py-5 font-bold text-zinc-500 text-[10px] uppercase">
-      {new Date(app.createdAt).toLocaleDateString()}
-    </TableCell>
-    <TableCell className="px-8 py-5">
-      <Badge
-        className={`px-3 py-1 font-black text-[9px] uppercase tracking-wider border-none ${getStatusStyles(
-          app.status
-        )}`}
-      >
-        {app.status}
-      </Badge>
-    </TableCell>
-    <TableCell className="px-8 py-5 text-right">
-      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-9 w-9 rounded-xl hover:bg-white shadow-sm"
-          disabled={isProcessing}
+      </TableCell>
+      <TableCell className="px-8 py-5 font-bold text-zinc-500 text-[10px] uppercase">
+        {new Date(app.createdAt).toLocaleDateString()}
+      </TableCell>
+      <TableCell className="px-8 py-5">
+        <Badge
+          className={`px-3 py-1 font-black text-[9px] uppercase tracking-wider border-none ${getStatusStyles(
+            app.status
+          )}`}
         >
-          <FiEye className="h-4 w-4 text-zinc-500" />
-        </Button>
-        {app.status === "pending" && (
-          <>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 rounded-xl hover:text-emerald-600"
-              onClick={() => onApprove(app._id)}
-              disabled={isProcessing}
-            >
-              <FiCheckCircle className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 rounded-xl hover:text-rose-600"
-              onClick={() => onReject(app._id)}
-              disabled={isProcessing}
-            >
-              <FiXCircle className="h-4 w-4" />
-            </Button>
-          </>
-        )}
-      </div>
-    </TableCell>
-  </TableRow>
-));
+          {app.status}
+        </Badge>
+      </TableCell>
+      <TableCell className="px-8 py-5 text-right">
+        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-9 w-9 rounded-xl hover:bg-white shadow-sm"
+            onClick={() => onView(app)} // 👈 This opens the modal
+            disabled={isProcessing}
+          >
+            <FiEye className="h-4 w-4 text-zinc-500" />
+          </Button>
+          {app.status === "pending" && (
+            <>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 rounded-xl hover:text-emerald-600"
+                onClick={() => onApprove(app._id)}
+                disabled={isProcessing}
+              >
+                <FiCheckCircle className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 rounded-xl hover:text-rose-600"
+                onClick={() => onReject(app._id)}
+                disabled={isProcessing}
+              >
+                <FiXCircle className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+);
 
 export default function AdminPolicyApplications() {
+  const [selectedApp, setSelectedApp] = useState(null); // Track the app for the modal
+  const [modalOpen, setModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
 
-  const { adminApplications, meta, isLoading, isProcessing, approve, reject } =
+  const { adminApplications, meta, isLoading, isProcessing, actions, reject } =
     useApplications({
       page,
       limit: 10,
       search: deferredSearch,
       isAdmin: true,
     });
+  console.log("policy application:", adminApplications);
 
   useEffect(() => setPage(1), [deferredSearch]);
 
+  const handleView = (app) => {
+    setSelectedApp(app);
+    setModalOpen(true);
+  };
+
   const handleApprove = async (id) => {
-    if (confirm("Approve this application?")) await approve(id);
+    // We don't need a toastId here if the hook handles it
+    try {
+      await actions.approve(id);
+      // Only close the modal on success
+      setModalOpen(false);
+    } catch (err) {
+      // React Query usually handles the global error toast,
+      // but you can keep a console log for debugging
+      console.error("Approval error:", err);
+    }
   };
 
   const handleReject = async (id) => {
-    if (confirm("Reject this application?")) await reject(id);
+    const toastId = toast.loading("Rejecting application...");
+
+    try {
+      await actions.reject(id);
+
+      toast.success("Application Rejected", {
+        id: toastId,
+        description: "The applicant will be notified of this decision.",
+      });
+
+      setModalOpen(false);
+    } catch (err) {
+      toast.error("Action Failed", {
+        id: toastId,
+        description: err.message,
+      });
+    }
   };
 
   return (
@@ -219,6 +257,7 @@ export default function AdminPolicyApplications() {
                   app={app}
                   onApprove={handleApprove}
                   onReject={handleReject}
+                  onView={handleView} // 👈 Pass the new function here
                   isProcessing={isProcessing}
                 />
               ))
@@ -279,6 +318,14 @@ export default function AdminPolicyApplications() {
           </div>
         </div>
       </div>
+      <ApplicationDetailModal
+        app={selectedApp}
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onApprove={handleApprove}
+        onReject={reject}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }

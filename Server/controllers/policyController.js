@@ -5,12 +5,24 @@ import catchAsync from "../utils/catchAsync.js";
 // USER: GET MY POLICIES
 // ==================================================
 export const getMyPolicies = catchAsync(async (req, res) => {
-  const policies = await policyService.getMyPolicies(req.user.id);
+  // 1. Extract query params (with defaults)
+  const { page, limit, search } = req.query;
 
+  // 2. Pass them as an object to the service
+  const result = await policyService.getMyPolicies(req.user.id, {
+    page: page || 1,
+    limit: limit || 10,
+    search: search || "",
+  });
+
+  // 3. Update the response to include the new pagination metadata
   res.status(200).json({
     status: "success",
-    results: policies.length,
-    data: policies,
+    results: result.applications.length, // count of current page
+    data: {
+      applications: result.applications,
+      pagination: result.pagination,
+    },
   });
 });
 

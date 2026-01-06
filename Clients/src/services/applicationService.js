@@ -12,8 +12,8 @@ const applyForPolicy = async (formData) => {
 };
 
 // Get logged-in user's applications
-const getMyApplications = async () => {
-  const res = await api.get("/applications/my-applications");
+const getMyApplications = async (params) => {
+  const res = await api.get("/applications/my-applications", { params });
   console.log("getMyApplications response:", res);
   return res.data;
 };

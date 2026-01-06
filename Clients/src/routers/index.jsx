@@ -26,7 +26,7 @@ const UserApplications = lazy(() =>
   import("@/pages/users/applications/UserApplications")
 );
 const ClaimSubmissionForm = lazy(() =>
-  import("@/pages/users/claim/ClaimsManagement")
+  import("@/pages/users/claim/ClaimsSubmition")
 );
 const MyClaims = lazy(() => import("@/pages/users/claim/MyClaims"));
 const MyPolicies = lazy(() => import("@/pages/users/policy/MyPolicy"));

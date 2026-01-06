@@ -126,14 +126,42 @@ class ApplicationService {
     return app;
   }
 
+  // USER: GET MY APPLICATIONS (Optimized)
   // ==================================================
-  // USER: GET MY APPLICATIONS
-  // ==================================================
-  async getMyApplications(userId) {
-    return await Application.find({ userId, isDeleted: false })
+  async getMyApplications(userId, { status = "" } = {}) {
+    // 1. Build dynamic filter
+    const filter = { userId, isDeleted: false };
+    if (status) {
+      filter.status = status;
+    }
+
+    // 2. Fetch data (Consider adding .limit() if users have 1000+ personal apps)
+    const applications = await Application.find(filter)
       .populate("planId")
       .sort({ createdAt: -1 })
       .lean();
+
+    // 3. Get Counts for Tab Badges (Efficient parallel execution)
+    // This allows the frontend to show counts for ALL tabs in one request
+    const countsArray = await Application.aggregate([
+      { $match: { userId, isDeleted: false } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+
+    // Transform aggregate array into a simple object: { pending: 5, approved: 10 ... }
+    const counts = countsArray.reduce(
+      (acc, curr) => {
+        acc[curr._id] = curr.count;
+        acc.all = (acc.all || 0) + curr.count;
+        return acc;
+      },
+      { all: 0, pending: 0, approved: 0, rejected: 0 }
+    );
+
+    return {
+      applications,
+      counts,
+    };
   }
 
   // ==================================================

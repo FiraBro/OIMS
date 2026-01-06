@@ -7,11 +7,15 @@ export const useClaims = (filters = {}) => {
 
   // 1️⃣ Query: My Personal Claims (User Side)
   const myClaimsQuery = useQuery({
-    queryKey: ["claims-me"],
-    queryFn: claimService.getMyClaims,
-    staleTime: 30000, // Data stays fresh for 30 seconds
+    queryKey: ["claims-me", filters],
+    // Change this line:
+    queryFn: () => claimService.getMyClaims(filters),
+    staleTime: 30000,
   });
 
+  // This will still log undefined on the very first frame
+  // because the network request is asynchronous.
+  console.log("data", myClaimsQuery.data?.data);
   // 2️⃣ Query: All Claims (Admin Side)
   const adminClaimsQuery = useQuery({
     queryKey: ["claims-admin", filters],
@@ -57,7 +61,7 @@ export const useClaims = (filters = {}) => {
   return {
     // --- UPDATED DATA MAPPING ---
     // According to your console log, the array is directly in .claims
-    myClaims: myClaimsQuery.data?.claims || [],
+    myClaims: myClaimsQuery.data?.data.claims || [],
     adminClaims: adminClaimsQuery.data?.claims || [],
 
     meta: {

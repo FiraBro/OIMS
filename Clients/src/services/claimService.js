@@ -9,12 +9,13 @@ const createClaim = async (formData) => {
   const res = await api.post("/claims/create", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
+  console.log("data fetch:", res.data);
   return res.data;
 };
 
 // 2️⃣ Get my claims (logged-in user)
-const getMyClaims = async () => {
-  const res = await api.get("/claims/me");
+const getMyClaims = async (query = {}) => {
+  const res = await api.get("/claims/me", { params: query });
   console.log("getMyClaims response:", res);
   return res.data;
 };

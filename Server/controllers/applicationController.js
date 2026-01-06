@@ -83,12 +83,13 @@ export const rejectApplication = catchAsync(async (req, res) => {
 // ==================================================
 export const getMyApplications = catchAsync(async (req, res) => {
   // Capture status from query: e.g., /my-apps?status=pending
-  const { status, page, limit } = req.query;
+  const { status, page, limit, search } = req.query;
 
   const result = await applicationService.getMyApplications(req.user.id, {
     status,
     page: Number(page) || 1,
     limit: Number(limit) || 10,
+    search: search || "",
   });
 
   res.status(200).json({

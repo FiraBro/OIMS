@@ -2,10 +2,10 @@ import Application from "../models/application.js";
 import Policy from "../models/policy.js";
 import { validatePlan, validateDates } from "../utils/validation.js";
 import AppError from "../utils/AppError.js";
-
+import mongoose from "mongoose";
 import crypto from "crypto";
 
-import Plan from "../models/plan.js"; // ✅ FIXED
+import InsurancePlan from "../models/plan.js"; // ✅ FIXED
 
 class ApplicationService {
   // ==================================================
@@ -132,36 +132,59 @@ class ApplicationService {
 
   // USER: GET MY APPLICATIONS (Optimized)
   // ==================================================
-  async getMyApplications(userId, { status = "", page = 1, limit = 10 } = {}) {
+  async getMyApplications(
+    userId,
+    { status = "", page = 1, limit = 10, search = "" } = {}
+  ) {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // 1. Build dynamic filter
+    // 1. Base filter MUST always be applied
     const filter = { userId, isDeleted: false };
-    if (status) {
+
+    // 2. Handle Status Tab Filter
+    if (status && status !== "all") {
       filter.status = status;
     }
 
-    // 2. Run Queries in Parallel for Maximum Performance
+    // 3. Handle Search Filter (FIXED LOGIC)
+    if (search && search.trim() !== "") {
+      const matchingPlans = await InsurancePlan.find({
+        name: { $regex: search, $options: "i" },
+      }).select("_id");
+
+      const planIds = matchingPlans.map((p) => p._id);
+
+      // FIX: Wrap search in an $and with the existing filter
+      // or simply add the $or to the existing filter object carefully.
+      filter.$or = [
+        { "personal.fullName": { $regex: search, $options: "i" } },
+        { status: { $regex: search, $options: "i" } },
+        { planId: { $in: planIds } },
+      ];
+    }
+
+    // 4. Parallel Execution (Remains the same)
     const [applications, totalCount, countsArray] = await Promise.all([
-      // Fetch paginated data
-      Application.find(filter)
+      Application.find(filter) // This now correctly requires (User AND Search)
         .populate("planId")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
         .lean(),
 
-      // Fetch total count for this specific filter (for pagination meta)
       Application.countDocuments(filter),
 
-      // Fetch counts for all tabs (for UI badges)
       Application.aggregate([
-        { $match: { userId, isDeleted: false } },
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(userId),
+            isDeleted: false,
+          },
+        },
         { $group: { _id: "$status", count: { $sum: 1 } } },
       ]),
     ]);
 
-    // 3. Transform aggregate array into a simple object: { pending: 5, ... }
     const counts = countsArray.reduce(
       (acc, curr) => {
         acc[curr._id] = curr.count;
@@ -172,6 +195,7 @@ class ApplicationService {
     );
 
     return {
+      status: "success",
       applications,
       counts,
       pagination: {

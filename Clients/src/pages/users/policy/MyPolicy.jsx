@@ -177,7 +177,7 @@ export default function MyPolicies() {
                     <TableCell className="text-right pr-8">
                       <Button
                         onClick={() => setRenewalTarget(policy)}
-                        className="bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-9 hover:bg-zinc-800 shadow-lg shadow-zinc-200 active:scale-95 transition-all"
+                        className="bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-9 hover:bg-blue-400 shadow-lg shadow-zinc-200 active:scale-95 transition-all"
                       >
                         Renew
                       </Button>

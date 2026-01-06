@@ -1,182 +1,364 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { FiRefreshCw } from "react-icons/fi";
-import { policyService } from "@/services/policyService";
-import PolicyActions from "@/components/modal/PolicyActions";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePolicies } from "@/hooks/usePolicy";
 import { useAuthStore } from "@/stores/authStore";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  FiRefreshCw,
+  FiSearch,
+  FiUploadCloud,
+  FiChevronLeft,
+  FiChevronRight,
+  FiCheckCircle,
+  FiShield,
+  FiX,
+} from "react-icons/fi";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function MyPolicies() {
-  const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("");
+  const { useMyPolicies, renewPolicy } = usePolicies();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // Fix 1: Added Debounce state
+  const [page, setPage] = useState(1);
+  const [renewalTarget, setRenewalTarget] = useState(null);
 
-  // FIX 1: Stable Selectors. Do NOT return a new object {} here.
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const authReady = useAuthStore((state) => state.authReady);
 
-  // FIX 2: Stable Fetch Function.
-  // Functional update for activeTab removes the need for activeTab dependency.
-  const fetchPolicies = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await policyService.getMyPolicies();
-      const policiesData = res.data || [];
-      setPolicies(policiesData);
-
-      setActiveTab((prevTab) => {
-        if (policiesData.length > 0 && !prevTab) {
-          return policiesData[0]?.planId?.category || "General";
-        }
-        return prevTab;
-      });
-    } catch (err) {
-      console.error("Failed to fetch policies", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // FIX 3: Effect now relies on primitive values that don't change reference.
+  // Fix 2: Implement Debounce effect to prevent flickering/empty results while typing
   useEffect(() => {
-    if (authReady && isAuthenticated) {
-      fetchPolicies();
-    }
-  }, [authReady, isAuthenticated, fetchPolicies]);
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400); // Wait 400ms after user stops typing
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
-  // Derived Categories
-  const policyCategories = useMemo(() => {
-    const categories = policies.map((p) => p.planId?.category).filter(Boolean);
-    return [...new Set(categories)];
-  }, [policies]);
+  // Fix 3: Use debouncedSearch for the hook
+  const { data, isLoading, isFetching, refetch } = useMyPolicies({
+    page,
+    search: debouncedSearch,
+    limit: 10,
+  });
 
-  // FIX 4: Safety guard - If categories change and activeTab is now invalid, reset it.
-  useEffect(() => {
-    if (policyCategories.length > 0 && !policyCategories.includes(activeTab)) {
-      setActiveTab(policyCategories[0]);
-    }
-  }, [policyCategories, activeTab]);
-
-  const filteredPolicies = useMemo(() => {
-    if (!activeTab) return policies;
-    return policies.filter((p) => p.planId?.category === activeTab);
-  }, [policies, activeTab]);
-
-  const getPolicyDetails = (policy) => {
-    const plan = policy.planId || {};
-    return {
-      name: plan.name || policy.name || "Unnamed Policy",
-      policyNumber: policy.policyNumber || "N/A",
-      status: policy.status || "Active",
-      premium: policy.premium || plan.premium || 0,
-    };
+  // Fix 4: Updated selectors to match your specific API response: { data: { applications: [...] } }
+  const policies = data?.data?.applications || [];
+  const meta = data?.data?.pagination || {
+    total: data?.results || policies.length,
+    totalPages: Math.ceil((data?.results || 0) / 10) || 1,
   };
 
-  if (!authReady || !isAuthenticated) {
+  // Reset to page 1 ONLY when debounced search actually changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  if (!isAuthenticated)
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <p className="text-gray-500 text-lg">
-          Login required to view your policies
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+        <FiShield className="w-12 h-12 text-zinc-200" />
+        <p className="font-bold text-zinc-400 uppercase tracking-widest text-xs">
+          Access Denied: Please Login
         </p>
       </div>
     );
-  }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Policies</h1>
-          <p className="text-gray-500 mt-2">
-            View and manage all your active policies
+          <h1 className="text-3xl font-black text-zinc-900 tracking-tight">
+            Policies
+          </h1>
+          <p className="text-zinc-500 text-sm">
+            Manage and renew your active protections
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={fetchPolicies}
-          disabled={loading}
-          className="flex items-center gap-2 mt-4 md:mt-0"
-        >
-          <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-80">
+            <FiSearch
+              className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
+                isFetching ? "text-blue-500" : "text-zinc-400"
+              }`}
+            />
+            <Input
+              placeholder="Search by plan name or status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-zinc-100 border-none rounded-2xl h-11 focus-visible:ring-zinc-200"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="rounded-2xl border-zinc-200 h-11 w-11 p-0 shadow-sm bg-white"
+          >
+            <FiRefreshCw className={isFetching ? "animate-spin" : ""} />
+          </Button>
+        </div>
       </div>
 
-      {policyCategories.length > 0 ? (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="flex flex-wrap gap-2 mb-6">
-            {policyCategories.map((category) => (
-              <TabsTrigger key={category} value={category}>
-                {category}
-                <Badge variant="secondary" className="ml-2">
-                  {
-                    policies.filter((p) => p.planId?.category === category)
-                      .length
-                  }
-                </Badge>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {policyCategories.map((category) => (
-            <TabsContent key={category} value={category} className="mt-4">
-              {loading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="h-32 bg-gray-100 rounded-xl" />
-                </div>
-              ) : (
-                <div className="grid gap-6">
-                  {filteredPolicies.map((policy, idx) => {
-                    const details = getPolicyDetails(policy);
-                    return (
-                      <motion.div
-                        key={policy._id || idx}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
+      <Card className="rounded-[2.5rem] border-zinc-100 shadow-xl shadow-zinc-100/50 overflow-hidden bg-white">
+        <Table>
+          <TableHeader className="bg-zinc-50/50">
+            <TableRow className="hover:bg-transparent border-zinc-100">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400 py-6 pl-8">
+                Policy
+              </TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                Premium
+              </TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                Status
+              </TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest text-zinc-400 pr-8">
+                Actions
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableSkeleton rows={5} />
+            ) : policies.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center text-zinc-400">
+                    <FiSearch className="w-8 h-8 mb-2 opacity-20" />
+                    <p className="font-medium">
+                      No policies found matching "{debouncedSearch}"
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              <AnimatePresence mode="wait">
+                {policies.map((policy) => (
+                  <TableRow
+                    key={policy._id}
+                    className="border-zinc-50 hover:bg-zinc-50/30 transition-colors"
+                  >
+                    <TableCell className="pl-8 py-5">
+                      <div className="font-bold text-zinc-900">
+                        {policy.planId?.name}
+                      </div>
+                      <div className="text-[10px] text-zinc-400 font-mono uppercase tracking-tighter">
+                        ID: {policy._id.slice(-8)} • Exp:{" "}
+                        {new Date(policy.endDate).toLocaleDateString()}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-bold text-zinc-900">
+                        ${policy.planId?.premium}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 uppercase">
+                        {policy.planId?.premiumFrequency || "monthly"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-emerald-50 text-emerald-700 border-none shadow-none text-[10px] font-bold uppercase tracking-wider px-3">
+                        {policy.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-8">
+                      <Button
+                        onClick={() => setRenewalTarget(policy)}
+                        className="bg-zinc-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest px-6 h-9 hover:bg-zinc-800 shadow-lg shadow-zinc-200 active:scale-95 transition-all"
                       >
-                        <Card className="rounded-xl border border-gray-200 hover:shadow-md transition">
-                          <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex-1 w-full text-left">
-                              <CardTitle className="text-lg font-semibold mb-2">
-                                {details.name}
-                              </CardTitle>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Badge className="bg-green-100 text-green-700 border-none">
-                                  {details.status}
-                                </Badge>
-                                <span className="text-sm text-gray-500">
-                                  #{details.policyNumber}
-                                </span>
-                                <span className="text-sm font-medium text-blue-600">
-                                  ${details.premium} /{" "}
-                                  {policy.planId?.premiumFrequency || "mo"}
-                                </span>
-                              </div>
-                            </div>
-                            <PolicyActions policy={policy} />
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 text-lg mb-4">
-            {loading ? "Loading policies..." : "No policies found"}
-          </p>
-          {!loading && (
-            <Button onClick={fetchPolicies}>Refresh Policies</Button>
-          )}
+                        Renew
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </AnimatePresence>
+            )}
+          </TableBody>
+        </Table>
+
+        <div className="p-6 border-t border-zinc-100 flex justify-between items-center bg-zinc-50/20">
+          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+            {meta.total || 0} Records Total
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={page === 1 || isLoading}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-xl h-10 w-10 p-0 border-zinc-200 bg-white"
+            >
+              <FiChevronLeft />
+            </Button>
+            <Button
+              variant="outline"
+              disabled={page >= (meta.totalPages || 1) || isLoading}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-xl h-10 w-10 p-0 border-zinc-200 bg-white"
+            >
+              <FiChevronRight />
+            </Button>
+          </div>
         </div>
-      )}
+      </Card>
+
+      <RenewalModal
+        policy={renewalTarget}
+        open={!!renewalTarget}
+        onClose={() => setRenewalTarget(null)}
+        mutation={renewPolicy}
+      />
     </div>
   );
+}
+
+// ... RenewalModal and TableSkeleton remain the same ...
+
+function RenewalModal({ policy, open, onClose, mutation }) {
+  const [file, setFile] = useState(null);
+
+  if (!policy) return null;
+
+  const handleUpload = async () => {
+    if (!file) return;
+
+    // Logic: In production, upload to cloud storage here first
+    const formData = {
+      paymentMethod: "bank_transfer",
+      receiptUrl: "uploads/bank_slip_mock.png",
+      requestedAt: new Date(),
+    };
+
+    await mutation.mutateAsync({ id: policy._id, data: formData });
+    onClose();
+    setFile(null);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md p-0 overflow-hidden rounded-[2.5rem] border-none bg-white shadow-2xl">
+        <div className="p-8 space-y-6">
+          <DialogHeader className="flex flex-row justify-between items-start">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-2">
+                Secure Renewal
+              </div>
+              <DialogTitle className="text-2xl font-black text-zinc-900 tracking-tight">
+                {policy.planId?.name}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="p-5 bg-zinc-50 rounded-[1.5rem] border border-zinc-100 space-y-3">
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                Bank Details
+              </p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Account Name</span>
+                  <span className="font-bold text-zinc-900">
+                    Secure Insure Ltd.
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Account #</span>
+                  <span className="font-mono font-bold text-zinc-900">
+                    100012345678
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-zinc-200/50">
+                  <span className="text-zinc-400 font-bold">Total Amount</span>
+                  <span className="text-lg font-black text-zinc-900">
+                    ${policy.planId?.premium}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative group">
+              <input
+                type="file"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                onChange={(e) => setFile(e.target.files[0])}
+                accept="image/*,application/pdf"
+              />
+              <div
+                className={`p-8 border-2 border-dashed rounded-[1.5rem] flex flex-col items-center justify-center transition-all ${
+                  file
+                    ? "border-emerald-200 bg-emerald-50/30"
+                    : "border-zinc-100 group-hover:bg-zinc-50"
+                }`}
+              >
+                {file ? (
+                  <div className="text-center">
+                    <FiCheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                    <p className="text-xs font-bold text-emerald-700 truncate max-w-[200px]">
+                      {file.name}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <FiUploadCloud className="text-zinc-300 w-8 h-8 mb-2" />
+                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest text-center">
+                      Upload Transfer Receipt
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={handleUpload}
+              disabled={!file || mutation.isPending}
+              className="w-full h-14 bg-zinc-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-zinc-200 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {mutation.isPending ? "Processing..." : "Submit Verification"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={onClose}
+              className="text-[10px] font-black text-zinc-400 uppercase tracking-widest hover:bg-transparent"
+            >
+              Cancel Request
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TableSkeleton({ rows }) {
+  return [...Array(rows)].map((_, i) => (
+    <TableRow key={i}>
+      <TableCell className="pl-8 py-5">
+        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="h-3 w-48" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-16" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </TableCell>
+      <TableCell className="text-right pr-8">
+        <Skeleton className="h-9 w-24 ml-auto rounded-xl" />
+      </TableCell>
+    </TableRow>
+  ));
 }

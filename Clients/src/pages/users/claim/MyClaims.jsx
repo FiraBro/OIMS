@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { claimService } from "@/services/claimService";
+import { useClaims } from "@/hooks/useClaim"; // Integrated Hook
 import {
   Card,
   CardContent,
@@ -47,15 +47,12 @@ import { format } from "date-fns";
 import { useAuthStore } from "@/stores/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Animation variants
+// Animation variants (Original)
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
   },
 };
 
@@ -64,39 +61,20 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 12,
-    },
+    transition: { type: "spring", stiffness: 100, damping: 12 },
   },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 200,
-      damping: 20,
-    },
-  },
+  visible: { opacity: 1, scale: 1 },
   hover: {
     scale: 1.02,
     y: -4,
-    boxShadow:
-      "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 15,
-    },
+    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+    transition: { type: "spring", stiffness: 300, damping: 15 },
   },
-  tap: {
-    scale: 0.98,
-  },
+  tap: { scale: 0.98 },
 };
 
 const rowVariants = {
@@ -111,98 +89,57 @@ const rowVariants = {
       damping: 20,
     },
   }),
-  hover: {
-    backgroundColor: "rgba(243, 244, 246, 0.5)",
-    transition: { duration: 0.2 },
-  },
-};
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
-};
-
-const staggerChildren = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const loadingVariants = {
-  animate: {
-    scale: [1, 1.1, 1],
-    transition: {
-      duration: 1.5,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
-  },
+  hover: { backgroundColor: "rgba(243, 244, 246, 0.5)" },
 };
 
 export default function MyClaims() {
-  const [claims, setClaims] = useState([]);
-  const [filteredClaims, setFilteredClaims] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+
+  // 1. Integration with useClaims Hook
+  const { myClaims = [], loading, refresh } = useClaims();
+  console.log("claim", myClaims);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const { isAuthenticated } = useAuthStore();
-  const navigate = useNavigate();
 
-  const fetchClaims = async () => {
-    try {
-      setLoading(true);
-      const response = await claimService.getMyClaims();
-      console.log("Fetched claims:", response);
-      const claimsData = response.claims || response.data || [];
-      setClaims(claimsData);
-      setFilteredClaims(claimsData);
-    } catch (err) {
-      console.error("Error fetching claims:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // 2. Optimization for Thousands of Claims (useMemo)
+  const filteredClaims = useMemo(() => {
+    const data = Array.isArray(myClaims) ? myClaims : [];
+    return data.filter((claim) => {
+      const matchesSearch =
+        !searchTerm ||
+        [claim.policyNumber, claim.claimType, claim.description].some((field) =>
+          field?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-    fetchClaims();
-  }, [isAuthenticated]);
+      const matchesStatus =
+        statusFilter === "all" ||
+        claim.status?.toLowerCase() === statusFilter.toLowerCase();
 
-  useEffect(() => {
-    let result = claims;
+      return matchesSearch && matchesStatus;
+    });
+  }, [myClaims, searchTerm, statusFilter]);
 
-    if (searchTerm) {
-      result = result.filter(
-        (claim) =>
-          claim.policyNumber
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          claim.claimType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          claim.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+  // 3. Optimized Stats calculation
+  const stats = useMemo(() => {
+    const data = Array.isArray(myClaims) ? myClaims : [];
+    return {
+      total: data.length,
+      approved: data.filter((c) => c.status?.toLowerCase() === "approved")
+        .length,
+      pending: data.filter((c) =>
+        ["pending", "processing", "under review"].includes(
+          c.status?.toLowerCase()
+        )
+      ).length,
+      totalAmount: data.reduce(
+        (sum, c) => sum + (parseFloat(c.amount) || 0),
+        0
+      ),
+    };
+  }, [myClaims]);
 
-    if (statusFilter !== "all") {
-      result = result.filter((claim) => claim.status === statusFilter);
-    }
-
-    setFilteredClaims(result);
-  }, [searchTerm, statusFilter, claims]);
-
+  // Styling Helpers (Original Logic)
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case "approved":
@@ -220,7 +157,6 @@ export default function MyClaims() {
   };
 
   const getStatusBadge = (status) => {
-    const statusLower = status?.toLowerCase();
     const variantMap = {
       approved: "default",
       pending: "outline",
@@ -228,11 +164,10 @@ export default function MyClaims() {
       "under review": "secondary",
       processing: "secondary",
     };
-
     return (
       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
         <Badge
-          variant={variantMap[statusLower] || "outline"}
+          variant={variantMap[status?.toLowerCase()] || "outline"}
           className="flex items-center gap-1.5 border-gray-300"
         >
           {getStatusIcon(status)}
@@ -242,103 +177,37 @@ export default function MyClaims() {
     );
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    try {
-      return format(new Date(dateString), "MMM dd, yyyy");
-    } catch {
-      return "Invalid Date";
-    }
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      minimumFractionDigits: 2,
     }).format(amount || 0);
-  };
-
-  const handleViewDetails = (claimId) => {
-    navigate(`/claims/${claimId}`);
-  };
-
-  const handleNewClaim = () => {
-    navigate("/claims/new");
-  };
-
-  const handleDownloadDocument = async (claimId) => {
-    try {
-      console.log("Download document for claim:", claimId);
-    } catch (err) {
-      console.error("Error downloading document:", err);
-    }
-  };
 
   if (!isAuthenticated) {
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen flex items-center justify-center bg-gray-50 p-6"
-      >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        >
-          <Card className="max-w-md w-full border-yellow-200 bg-yellow-50">
-            <CardContent className="p-10 text-center">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              >
-                <Shield className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
-              </motion.div>
-              <h2 className="text-xl font-semibold text-gray-900">
-                Login Required
-              </h2>
-              <p className="text-gray-600 mt-2">
-                Please log in to view and manage your claims.
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="max-w-md w-full border-yellow-200 bg-yellow-50 text-center p-10">
+          <Shield className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
+          <h2 className="text-xl font-semibold">Login Required</h2>
+          <p className="text-gray-600">Please log in to manage your claims.</p>
+        </Card>
+      </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
-          <Skeleton className="h-64" />
+      <div className="min-h-screen bg-gray-50 p-8 space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
         </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
-
-  const stats = {
-    total: claims.length,
-    approved: claims.filter((c) => c.status?.toLowerCase() === "approved")
-      .length,
-    pending: claims.filter(
-      (c) =>
-        c.status?.toLowerCase() === "pending" ||
-        c.status?.toLowerCase() === "processing" ||
-        c.status?.toLowerCase() === "under review"
-    ).length,
-    totalAmount: claims.reduce(
-      (sum, claim) => sum + (parseFloat(claim.amount) || 0),
-      0
-    ),
-  };
 
   return (
     <motion.div
@@ -347,595 +216,211 @@ export default function MyClaims() {
       variants={containerVariants}
       className="min-h-screen bg-[#fff] p-4 md:p-8"
     >
+      {/* Navbar Fix: Prevents layout shift when Radix/Shadcn UI dropdowns open */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `body { pointer-events: auto !important; padding-right: 0px !important; }`,
+        }}
+      />
+
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <motion.div
-          variants={fadeInUp}
+          variants={itemVariants}
           className="flex flex-col md:flex-row md:items-center justify-between gap-4"
         >
           <div>
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3"
-            >
-              <motion.div
-                whileHover={{ rotate: 15 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <Shield className="h-8 w-8 text-blue-600" />
-              </motion.div>
-              My Claims
-            </motion.h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3">
+              <Shield className="h-8 w-8 text-blue-600" /> My Claims
+            </h1>
             <p className="text-gray-600 mt-2">
               Track and manage all your insurance claims in one place
             </p>
           </div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={handleNewClaim}
-              className="bg-blue-600 hover:bg-blue-700 text-white gap-2 cursor-pointer"
-              size="lg"
-            >
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "linear",
-                  repeatDelay: 5,
-                }}
+          <Button
+            onClick={() => navigate("/claims/new")}
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            size="lg"
+          >
+            <PlusCircle className="h-5 w-5" /> Submit New Claim
+          </Button>
+        </motion.div>
+
+        {/* Stats Cards (Original Style) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Claims"
+            value={stats.total}
+            icon={<FileText className="text-blue-600" />}
+            bgColor="bg-blue-50"
+            borderColor="bg-blue-500"
+          />
+          <StatCard
+            title="Approved"
+            value={stats.approved}
+            icon={<CheckCircle className="text-emerald-600" />}
+            bgColor="bg-emerald-50"
+            borderColor="bg-emerald-500"
+          />
+          <StatCard
+            title="In Review"
+            value={stats.pending}
+            icon={<Clock className="text-amber-600" />}
+            bgColor="bg-amber-50"
+            borderColor="bg-amber-500"
+          />
+          <StatCard
+            title="Claim Value"
+            value={formatCurrency(stats.totalAmount)}
+            icon={<DollarSign className="text-emerald-400" />}
+            isDark
+          />
+        </div>
+
+        {/* Filters */}
+        <Card className="border-gray-200">
+          <CardContent className="p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search claims..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 border-gray-300"
+              />
+            </div>
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[180px] border-gray-300">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={refresh}
+                className="gap-2 border-gray-300"
               >
-                <PlusCircle className="h-5 w-5" />
-              </motion.div>
-              Submit New Claim
-            </Button>
-          </motion.div>
-        </motion.div>
+                <RefreshCw className="h-4 w-4" /> Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Stats Cards */}
-        <motion.div
-          variants={staggerChildren}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
-          {/* Total Claims */}
-          <motion.div variants={itemVariants}>
-            <motion.div
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Card className="relative overflow-hidden border-none shadow-sm bg-white">
-                <motion.div
-                  className="absolute top-0 left-0 w-1 h-full bg-blue-500"
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                />
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Total Claims
-                      </p>
-                      <motion.h3
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", delay: 0.3 }}
-                        className="mt-1 text-3xl font-bold text-gray-900"
-                      >
-                        {stats.total}
-                      </motion.h3>
-                    </div>
-                    <motion.div
-                      className="p-3 bg-blue-50 rounded-xl"
-                      whileHover={{ rotate: 10, scale: 1.1 }}
-                      transition={{ type: "spring", stiffness: 300 }}
+        {/* Table (Original Original Style) */}
+        <Card className="shadow-lg border-gray-200">
+          <CardHeader className="border-b border-gray-200">
+            <CardTitle>Claim History</CardTitle>
+            <CardDescription>
+              {filteredClaims.length} claims found
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-gray-200">
+                  <TableHead>Claim ID</TableHead>
+                  <TableHead>Policy Number</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <AnimatePresence>
+                  {filteredClaims.map((claim, index) => (
+                    <motion.tr
+                      key={claim._id}
+                      custom={index}
+                      variants={rowVariants}
+                      initial="hidden"
+                      animate="visible"
+                      className="hover:bg-gray-50 border-b border-gray-100"
                     >
-                      <FileText className="h-6 w-6 text-blue-600" />
-                    </motion.div>
-                  </div>
-                  <div className="mt-4 flex items-center text-sm">
-                    <span className="text-gray-400 font-medium">
-                      Lifetime Submissions
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-
-          {/* Approved Claims */}
-          <motion.div variants={itemVariants}>
-            <motion.div
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Card className="relative overflow-hidden border-none shadow-sm bg-white">
-                <motion.div
-                  className="absolute top-0 left-0 w-1 h-full bg-emerald-500"
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                />
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Approved
-                      </p>
-                      <motion.h3
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", delay: 0.4 }}
-                        className="mt-1 text-3xl font-bold text-emerald-600"
-                      >
-                        {stats.approved}
-                      </motion.h3>
-                    </div>
-                    <motion.div
-                      className="p-3 bg-emerald-50 rounded-xl"
-                      whileHover={{ rotate: 10, scale: 1.1 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <CheckCircle className="h-6 w-6 text-emerald-600" />
-                    </motion.div>
-                  </div>
-                  <div className="mt-4 flex items-center text-sm">
-                    <span className="text-emerald-600 font-medium">
-                      {stats.total > 0
-                        ? Math.round((stats.approved / stats.total) * 100)
-                        : 0}
-                      % Success Rate
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-
-          {/* Pending Claims */}
-          <motion.div variants={itemVariants}>
-            <motion.div
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Card className="relative overflow-hidden border-none shadow-sm bg-white">
-                <motion.div
-                  className="absolute top-0 left-0 w-1 h-full bg-amber-500"
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                />
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        In Review
-                      </p>
-                      <motion.h3
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", delay: 0.5 }}
-                        className="mt-1 text-3xl font-bold text-amber-600"
-                      >
-                        {stats.pending}
-                      </motion.h3>
-                    </div>
-                    <motion.div
-                      className="p-3 bg-amber-50 rounded-xl"
-                      animate={{
-                        rotate: [0, 10, 0],
-                      }}
-                      transition={{
-                        rotate: {
-                          repeat: Infinity,
-                          duration: 2,
-                          ease: "easeInOut",
-                        },
-                      }}
-                    >
-                      <Clock className="h-6 w-6 text-amber-600" />
-                    </motion.div>
-                  </div>
-                  <div className="mt-4 flex items-center text-sm">
-                    <span className="text-gray-400 font-medium italic">
-                      Awaiting Assessment
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-
-          {/* Total Amount */}
-          <motion.div variants={itemVariants}>
-            <motion.div
-              variants={cardVariants}
-              initial="hidden"
-              animate="visible"
-              whileHover="hover"
-              whileTap="tap"
-            >
-              <Card className="relative overflow-hidden border-none shadow-sm bg-slate-900 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        Claim Value
-                      </p>
-                      <motion.h3
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", delay: 0.6 }}
-                        className="mt-1 text-2xl font-bold text-white"
-                      >
-                        {formatCurrency(stats.totalAmount)}
-                      </motion.h3>
-                    </div>
-                    <motion.div
-                      className="p-3 bg-slate-800 rounded-xl border border-slate-700"
-                      animate={loadingVariants.animate}
-                    >
-                      <DollarSign className="h-6 w-6 text-emerald-400" />
-                    </motion.div>
-                  </div>
-                  <div className="mt-4 flex items-center text-sm">
-                    <span className="text-slate-400 font-medium">
-                      Estimated Payout
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-
-        {/* Filters and Search */}
-        <motion.div variants={fadeInUp}>
-          <Card className="border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <motion.div
-                  className="relative flex-1 w-full md:w-auto"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search claims by policy, type, or description..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 w-full border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
-                  />
-                </motion.div>
-
-                <motion.div
-                  className="flex items-center gap-4 w-full md:w-auto"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full md:w-[180px] border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-300 rounded-md shadow-lg">
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="under review">Under Review</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      className="gap-2 border border-gray-300"
-                      variant="outline"
-                      onClick={fetchClaims}
-                      disabled={!isAuthenticated}
-                    >
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, ease: "linear" }}
-                        style={{ display: "inline-block" }}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </motion.span>
-                      Refresh
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Claims Table */}
-        <motion.div variants={fadeInUp}>
-          <Card className="shadow-lg border border-gray-200">
-            <CardHeader className="border-b border-gray-200">
-              <CardTitle>Claim History</CardTitle>
-              <CardDescription>
-                {filteredClaims.length} claim
-                {filteredClaims.length !== 1 ? "s" : ""} found
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AnimatePresence mode="wait">
-                {filteredClaims.length === 0 ? (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="text-center py-12"
-                  >
-                    <motion.div
-                      animate={{ y: [0, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                    >
-                      <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                    </motion.div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {claims.length === 0
-                        ? "No claims yet"
-                        : "No matching claims found"}
-                    </h3>
-                    <p className="text-gray-500 mb-6">
-                      {claims.length === 0
-                        ? "Get started by submitting your first claim"
-                        : "Try adjusting your search or filter criteria"}
-                    </p>
-                    {claims.length === 0 && (
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Button
-                          onClick={handleNewClaim}
-                          className="gap-2 cursor-pointer"
+                      <TableCell className="font-medium">
+                        {claim._id?.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>{claim.policyNumber}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-50 text-blue-700"
                         >
-                          <PlusCircle className="h-5 w-5" />
-                          Submit Your First Claim
+                          {claim.claimType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(claim.amount)}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(claim.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/claims/${claim._id}`)}
+                          className="mr-2"
+                        >
+                          <Eye className="h-4 w-4 mr-1" /> View
                         </Button>
-                      </motion.div>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="table"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="rounded-md border border-gray-100"
-                  >
-                    <Table className="border border-gray-200">
-                      <TableHeader className="border-b border-gray-100">
-                        <TableRow className="border-b border-gray-200 mt-2">
-                          <TableHead className="w-[180px]">Claim ID</TableHead>
-                          <TableHead>Policy Number</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Submitted</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        <AnimatePresence>
-                          {filteredClaims.map((claim, index) => (
-                            <motion.tr
-                              key={claim._id}
-                              custom={index}
-                              initial="hidden"
-                              animate="visible"
-                              exit={{ opacity: 0, x: -20 }}
-                              variants={rowVariants}
-                              whileHover="hover"
-                              className="hover:bg-gray-50"
-                            >
-                              <TableCell className="font-medium">
-                                {claim._id?.substring(0, 8)}...
-                              </TableCell>
-                              <TableCell>
-                                <div className="font-medium">
-                                  {claim.policyNumber}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <motion.div whileHover={{ scale: 1.05 }}>
-                                  <Badge
-                                    variant="outline"
-                                    className="bg-blue-50 text-blue-700"
-                                  >
-                                    {claim.claimType}
-                                  </Badge>
-                                </motion.div>
-                              </TableCell>
-                              <TableCell className="font-semibold">
-                                {formatCurrency(claim.amount)}
-                              </TableCell>
-                              <TableCell>
-                                {getStatusBadge(claim.status)}
-                              </TableCell>
-                              <TableCell className="text-gray-500">
-                                {formatDate(
-                                  claim.submittedAt || claim.createdAt
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleViewDetails(claim._id)
-                                      }
-                                      className="gap-1 border border-gray-300"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                      View
-                                    </Button>
-                                  </motion.div>
-                                  <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleDownloadDocument(claim._id)
-                                      }
-                                      className="gap-1"
-                                    >
-                                      <Download className="h-4 w-4" />
-                                    </Button>
-                                  </motion.div>
-                                </div>
-                              </TableCell>
-                            </motion.tr>
-                          ))}
-                        </AnimatePresence>
-                      </TableBody>
-                    </Table>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </CardContent>
-            {filteredClaims.length > 0 && (
-              <CardFooter className="border-t border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between text-sm text-gray-500 w-full">
-                  <div>
-                    Showing {filteredClaims.length} of {claims.length} claims
-                  </div>
-                  <div className="flex items-center gap-4 cursor-pointer">
-                    <Button variant="outline" size="sm" disabled>
-                      Previous
-                    </Button>
-                    <span className="font-medium">Page 1 of 1</span>
-                    <Button variant="outline" size="sm" disabled>
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              </CardFooter>
-            )}
-          </Card>
-        </motion.div>
-
-        {/* Help Section */}
-        <motion.div
-          variants={fadeInUp}
-          initial="hidden"
-          animate="visible"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-        >
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Need Help With Your Claims?
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Our dedicated claims support team is here to assist you
-                    24/7. Get answers to your questions or request assistance
-                    with pending claims.
-                  </p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <motion.div
-                      className="flex items-center gap-2"
-                      whileHover={{ x: 5 }}
-                    >
-                      <motion.div
-                        className="h-2 w-2 bg-blue-600 rounded-full"
-                        animate={{ scale: [1, 1.5, 1] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                      />
-                      <span>24/7 Support Hotline</span>
-                    </motion.div>
-                    <motion.div
-                      className="flex items-center gap-2"
-                      whileHover={{ x: 5 }}
-                    >
-                      <motion.div
-                        className="h-2 w-2 bg-blue-600 rounded-full"
-                        animate={{ scale: [1, 1.5, 1] }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 2,
-                          delay: 0.5,
-                        }}
-                      />
-                      <span>Email Support</span>
-                    </motion.div>
-                    <motion.div
-                      className="flex items-center gap-2"
-                      whileHover={{ x: 5 }}
-                    >
-                      <motion.div
-                        className="h-2 w-2 bg-blue-600 rounded-full"
-                        animate={{ scale: [1, 1.5, 1] }}
-                        transition={{ repeat: Infinity, duration: 2, delay: 1 }}
-                      />
-                      <span>Live Chat</span>
-                    </motion.div>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      variant="outline"
-                      className="gap-2 border cursor-pointer border-gray-300"
-                      onClick={() => navigate("/support")}
-                    >
-                      <AlertCircle className="h-4 w-4" />
-                      Get Help
-                    </Button>
-                  </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      onClick={handleNewClaim}
-                      className="gap-2 bg-blue-600 text-white cursor-pointer hover:bg-blue-700"
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                      New Claim
-                    </Button>
-                  </motion.div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => console.log("Download", claim._id)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
+    </motion.div>
+  );
+}
+
+// Sub-component for clean Stats Cards
+function StatCard({ title, value, icon, bgColor, borderColor, isDark }) {
+  return (
+    <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
+      <Card
+        className={`relative overflow-hidden border-none shadow-sm ${
+          isDark ? "bg-slate-900 text-white" : "bg-white"
+        }`}
+      >
+        {!isDark && (
+          <div className={`absolute top-0 left-0 w-1 h-full ${borderColor}`} />
+        )}
+        <CardContent className="p-6 flex items-center justify-between">
+          <div>
+            <p
+              className={`text-xs font-semibold uppercase tracking-wider ${
+                isDark ? "text-slate-400" : "text-gray-500"
+              }`}
+            >
+              {title}
+            </p>
+            <h3 className="mt-1 text-2xl font-bold">{value}</h3>
+          </div>
+          <div
+            className={`p-3 rounded-xl ${
+              isDark ? "bg-slate-800 border border-slate-700" : bgColor
+            }`}
+          >
+            {icon}
+          </div>
+        </CardContent>
+      </Card>
     </motion.div>
   );
 }

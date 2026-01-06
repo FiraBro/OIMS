@@ -1,10 +1,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useClaims } from "@/hooks/useClaim"; // Integrated Hook
+import { useClaims } from "@/hooks/useClaim";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
   CardFooter,
@@ -27,12 +26,12 @@ import {
   PlusCircle,
   Search,
   Filter,
-  Download,
-  Eye,
   RefreshCw,
-  AlertTriangle,
-  DollarSign,
+  Eye,
   Shield,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
 } from "lucide-react";
 import {
   Select,
@@ -43,84 +42,65 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { useAuthStore } from "@/stores/authStore";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Animation variants (Original)
+// Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+    transition: { staggerChildren: 0.05 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 100, damping: 12 },
-  },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 },
-  hover: {
-    scale: 1.02,
-    y: -4,
-    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-    transition: { type: "spring", stiffness: 300, damping: 15 },
-  },
-  tap: { scale: 0.98 },
-};
-
-const rowVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: (i) => ({
-    opacity: 1,
-    x: 0,
-    transition: {
-      delay: i * 0.05,
-      type: "spring",
-      stiffness: 200,
-      damping: 20,
-    },
-  }),
-  hover: { backgroundColor: "rgba(243, 244, 246, 0.5)" },
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0 },
 };
 
 export default function MyClaims() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
-
-  // 1. Integration with useClaims Hook
   const { myClaims = [], loading, refresh } = useClaims();
-  console.log("claim", myClaims);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
-  // 2. Optimization for Thousands of Claims (useMemo)
+  // FIX: Prevent Navbar/Layout shifting when Select opens
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      body { 
+        padding-right: 0px !important; 
+        overflow: auto !important; 
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   const filteredClaims = useMemo(() => {
     const data = Array.isArray(myClaims) ? myClaims : [];
     return data.filter((claim) => {
       const matchesSearch =
         !searchTerm ||
-        [claim.policyNumber, claim.claimType, claim.description].some((field) =>
+        [claim.policyNumber, claim.claimType].some((field) =>
           field?.toLowerCase().includes(searchTerm.toLowerCase())
         );
-
       const matchesStatus =
         statusFilter === "all" ||
         claim.status?.toLowerCase() === statusFilter.toLowerCase();
-
       return matchesSearch && matchesStatus;
     });
   }, [myClaims, searchTerm, statusFilter]);
 
-  // 3. Optimized Stats calculation
+  const totalPages = Math.ceil(filteredClaims.length / itemsPerPage);
+  const paginatedClaims = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredClaims.slice(start, start + itemsPerPage);
+  }, [filteredClaims, currentPage]);
+
   const stats = useMemo(() => {
     const data = Array.isArray(myClaims) ? myClaims : [];
     return {
@@ -128,9 +108,7 @@ export default function MyClaims() {
       approved: data.filter((c) => c.status?.toLowerCase() === "approved")
         .length,
       pending: data.filter((c) =>
-        ["pending", "processing", "under review"].includes(
-          c.status?.toLowerCase()
-        )
+        ["pending", "processing"].includes(c.status?.toLowerCase())
       ).length,
       totalAmount: data.reduce(
         (sum, c) => sum + (parseFloat(c.amount) || 0),
@@ -139,164 +117,85 @@ export default function MyClaims() {
     };
   }, [myClaims]);
 
-  // Styling Helpers (Original Logic)
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "pending":
-        return <Clock className="h-4 w-4 text-amber-500" />;
-      case "rejected":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      case "under review":
-      case "processing":
-        return <Search className="h-4 w-4 text-blue-500" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const variantMap = {
-      approved: "default",
-      pending: "outline",
-      rejected: "destructive",
-      "under review": "secondary",
-      processing: "secondary",
-    };
-    return (
-      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        <Badge
-          variant={variantMap[status?.toLowerCase()] || "outline"}
-          className="flex items-center gap-1.5 border-gray-300"
-        >
-          {getStatusIcon(status)}
-          <span className="capitalize">{status || "Unknown"}</span>
-        </Badge>
-      </motion.div>
-    );
-  };
-
-  const formatCurrency = (amount) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount || 0);
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="max-w-md w-full border-yellow-200 bg-yellow-50 text-center p-10">
-          <Shield className="h-12 w-12 mx-auto text-yellow-600 mb-4" />
-          <h2 className="text-xl font-semibold">Login Required</h2>
-          <p className="text-gray-600">Please log in to manage your claims.</p>
-        </Card>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-8 space-y-6">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingSkeleton />;
 
   return (
     <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="min-h-screen bg-[#fff] p-4 md:p-8"
+      className="min-h-screen bg-slate-50/50 p-4 md:p-8"
     >
-      {/* Navbar Fix: Prevents layout shift when Radix/Shadcn UI dropdowns open */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `body { pointer-events: auto !important; padding-right: 0px !important; }`,
-        }}
-      />
-
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <motion.div
-          variants={itemVariants}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 flex items-center gap-3">
-              <Shield className="h-8 w-8 text-blue-600" /> My Claims
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <motion.div variants={itemVariants}>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+              <div className="bg-blue-600 p-2 rounded-lg text-white">
+                <Shield className="h-6 w-6" />
+              </div>
+              Claims Center
             </h1>
-            <p className="text-gray-600 mt-2">
-              Track and manage all your insurance claims in one place
+            <p className="text-slate-500 mt-2">
+              Track and manage your insurance requests
             </p>
-          </div>
-          <Button
-            onClick={() => navigate("/claims/new")}
-            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
-            size="lg"
-          >
-            <PlusCircle className="h-5 w-5" /> Submit New Claim
-          </Button>
-        </motion.div>
+          </motion.div>
 
-        {/* Stats Cards (Original Style) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <motion.div variants={itemVariants}>
+            <Button
+              onClick={() => navigate("/claims/new")}
+              className="text-white bg-blue-600 hover:bg-blue-700 shadow-md transition-all active:scale-95"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" /> New Claim
+            </Button>
+          </motion.div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Total Claims"
+            title="Total Filed"
             value={stats.total}
-            icon={<FileText className="text-blue-600" />}
-            bgColor="bg-blue-50"
-            borderColor="bg-blue-500"
+            icon={<FileText className="text-blue-500" />}
           />
           <StatCard
             title="Approved"
             value={stats.approved}
-            icon={<CheckCircle className="text-emerald-600" />}
-            bgColor="bg-emerald-50"
-            borderColor="bg-emerald-500"
+            icon={<CheckCircle className="text-emerald-500" />}
           />
           <StatCard
-            title="In Review"
+            title="Processing"
             value={stats.pending}
-            icon={<Clock className="text-amber-600" />}
-            bgColor="bg-amber-50"
-            borderColor="bg-amber-500"
+            icon={<Clock className="text-amber-500" />}
           />
           <StatCard
-            title="Claim Value"
-            value={formatCurrency(stats.totalAmount)}
-            icon={<DollarSign className="text-emerald-400" />}
+            title="Total Value"
+            value={`$${stats.totalAmount.toLocaleString()}`}
+            icon={<DollarSign className="text-slate-600" />}
             isDark
           />
         </div>
 
-        {/* Filters */}
-        <Card className="border-gray-200">
-          <CardContent className="p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {/* Filters & Table */}
+        <Card className="border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-white flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <Input
-                placeholder="Search claims..."
+                placeholder="Search by policy..."
+                className="pl-9 border-slate-200 focus:ring-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-300"
               />
             </div>
-            <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[180px] border-gray-300">
-                  <Filter className="h-4 w-4 mr-2" />
+                <SelectTrigger className="w-[148] border border-gray-200 rounded-xl bg-white text-gray-700 focus:ring-blue-400 ">
+                  <Filter className="h-4 w-4 mr-2 text-slate-400" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-white">
-                  <SelectItem value="all">All Status</SelectItem>
+                <SelectContent className="border border-gray-300 bg-white">
+                  <SelectItem value="all">All Claims</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
@@ -304,123 +203,174 @@ export default function MyClaims() {
               </Select>
               <Button
                 variant="outline"
+                size="icon"
                 onClick={refresh}
-                className="gap-2 border-gray-300"
+                className="border-slate-200"
               >
-                <RefreshCw className="h-4 w-4" /> Refresh
+                <RefreshCw className="h-4 w-4 text-slate-600" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Table (Original Original Style) */}
-        <Card className="shadow-lg border-gray-200">
-          <CardHeader className="border-b border-gray-200">
-            <CardTitle>Claim History</CardTitle>
-            <CardDescription>
-              {filteredClaims.length} claims found
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="border-b border-gray-200">
-                  <TableHead>Claim ID</TableHead>
-                  <TableHead>Policy Number</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
+              <TableHeader className="bg-slate-50">
+                <TableRow className="border-slate-200">
+                  <TableHead className="text-slate-600 font-semibold">
+                    Claim ID
+                  </TableHead>
+                  <TableHead className="text-slate-600 font-semibold">
+                    Policy Number
+                  </TableHead>
+                  <TableHead className="text-slate-600 font-semibold">
+                    Type
+                  </TableHead>
+                  <TableHead className="text-slate-600 font-semibold text-right">
+                    Amount
+                  </TableHead>
+                  <TableHead className="text-slate-600 font-semibold text-center">
+                    Status
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <AnimatePresence>
-                  {filteredClaims.map((claim, index) => (
-                    <motion.tr
+                <AnimatePresence mode="wait">
+                  {paginatedClaims.map((claim) => (
+                    <TableRow
                       key={claim._id}
-                      custom={index}
-                      variants={rowVariants}
-                      initial="hidden"
-                      animate="visible"
-                      className="hover:bg-gray-50 border-b border-gray-100"
+                      className="border-slate-100 hover:bg-slate-50/50 transition-colors"
                     >
-                      <TableCell className="font-medium">
-                        {claim._id?.substring(0, 8)}...
+                      <TableCell className="font-mono text-xs text-slate-400">
+                        #{claim._id?.slice(-6)}
                       </TableCell>
-                      <TableCell>{claim.policyNumber}</TableCell>
+                      <TableCell className="font-medium text-slate-700">
+                        {claim.policyNumber}
+                      </TableCell>
                       <TableCell>
                         <Badge
-                          variant="outline"
-                          className="bg-blue-50 text-blue-700"
+                          variant="secondary"
+                          className="bg-slate-100 text-slate-600 hover:bg-slate-100"
                         >
                           {claim.claimType}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-semibold">
-                        {formatCurrency(claim.amount)}
+                      <TableCell className="text-right font-semibold text-slate-900">
+                        ${claim.amount?.toLocaleString()}
                       </TableCell>
-                      <TableCell>{getStatusBadge(claim.status)}</TableCell>
+                      <TableCell className="text-center">
+                        <StatusBadge status={claim.status} />
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/claims/${claim._id}`)}
-                          className="mr-2"
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => console.log("Download", claim._id)}
+                          onClick={() => navigate(`/claims/${claim._id}`)}
+                          className="hover:bg-blue-50 hover:text-blue-600"
                         >
-                          <Download className="h-4 w-4" />
+                          <Eye className="h-4 w-4 mr-2" /> Details
                         </Button>
                       </TableCell>
-                    </motion.tr>
+                    </TableRow>
                   ))}
                 </AnimatePresence>
               </TableBody>
             </Table>
-          </CardContent>
+          </div>
+
+          <CardFooter className="flex items-center justify-between border-t border-slate-100 p-4 bg-slate-50/30">
+            <p className="text-sm text-slate-500">
+              Page {currentPage} of {totalPages || 1}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => p - 1)}
+                disabled={currentPage === 1}
+                className="border-slate-200"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="border-slate-200"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
         </Card>
       </div>
     </motion.div>
   );
 }
 
-// Sub-component for clean Stats Cards
-function StatCard({ title, value, icon, bgColor, borderColor, isDark }) {
+// Sub-components for cleaner code
+function StatCard({ title, value, icon, isDark }) {
   return (
-    <motion.div variants={cardVariants} whileHover="hover" whileTap="tap">
-      <Card
-        className={`relative overflow-hidden border-none shadow-sm ${
-          isDark ? "bg-slate-900 text-white" : "bg-white"
-        }`}
-      >
-        {!isDark && (
-          <div className={`absolute top-0 left-0 w-1 h-full ${borderColor}`} />
-        )}
-        <CardContent className="p-6 flex items-center justify-between">
-          <div>
-            <p
-              className={`text-xs font-semibold uppercase tracking-wider ${
-                isDark ? "text-slate-400" : "text-gray-500"
-              }`}
-            >
-              {title}
-            </p>
-            <h3 className="mt-1 text-2xl font-bold">{value}</h3>
-          </div>
-          <div
-            className={`p-3 rounded-xl ${
-              isDark ? "bg-slate-800 border border-slate-700" : bgColor
+    <Card
+      className={`border-slate-200 shadow-sm transition-all hover:shadow-md ${
+        isDark ? "bg-slate-900 text-white border-slate-800" : "bg-white"
+      }`}
+    >
+      <CardContent className="p-6 flex items-center justify-between">
+        <div>
+          <p
+            className={`text-sm font-medium ${
+              isDark ? "text-slate-400" : "text-slate-500"
             }`}
           >
-            {icon}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+            {title}
+          </p>
+          <h3 className="text-2xl font-bold mt-1 tracking-tight">{value}</h3>
+        </div>
+        <div
+          className={`p-3 rounded-xl ${
+            isDark ? "bg-slate-800" : "bg-slate-50 border border-slate-100"
+          }`}
+        >
+          {icon}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatusBadge({ status }) {
+  const s = status?.toLowerCase();
+  if (s === "approved")
+    return (
+      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
+        Approved
+      </Badge>
+    );
+  if (s === "rejected")
+    return (
+      <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">
+        Rejected
+      </Badge>
+    );
+  return (
+    <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+      Pending
+    </Badge>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="p-8 space-y-6 max-w-7xl mx-auto">
+      <Skeleton className="h-10 w-48" />
+      <div className="grid grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-28 rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-[400px] w-full rounded-xl" />
+    </div>
   );
 }

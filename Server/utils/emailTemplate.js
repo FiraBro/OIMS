@@ -57,3 +57,27 @@ export const notificationEmail = (
   }`;
   return { subject, html, text };
 };
+
+export const ticketStatusUpdateEmail = (name, ticketId, newStatus, url) => {
+  const subject = `Update on your Ticket: ${ticketId}`;
+
+  // Color coding the status for the UI
+  const statusColor = newStatus === "RESOLVED" ? "#4CAF50" : "#2196F3";
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; border: 1px solid #eee; padding: 20px;">
+      <h2 style="color: ${statusColor};">Ticket Status Updated</h2>
+      <p>Hello <strong>${name}</strong>,</p>
+      <p>The status of your support ticket <strong>${ticketId}</strong> has been changed to:</p>
+      <div style="display: inline-block; padding: 5px 15px; background-color: ${statusColor}; color: white; border-radius: 15px; font-weight: bold; margin: 10px 0;">
+        ${newStatus}
+      </div>
+      <p>Click below to view the latest messages or details regarding this change:</p>
+      <a href="${url}" style="display:inline-block; padding: 12px 25px; background-color: #333; color: white; text-decoration: none; border-radius: 5px;">View Ticket Thread</a>
+      <hr style="border: none; border-top: 1px solid #eee; margin-top: 20px;">
+      <small>&copy; ${new Date().getFullYear()} FiraBoss Support Team.</small>
+    </div>
+  `;
+  const text = `Hello ${name},\n\nYour ticket ${ticketId} status is now: ${newStatus}.\nView here: ${url}`;
+  return { subject, html, text };
+};

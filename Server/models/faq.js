@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const faqSchema = new mongoose.Schema(
   {
-    question: { type: String, required: true, trim: true },
-    answer: { type: String, required: true },
+    question: { type: String, required: false, trim: true },
+    answer: { type: String, required: false },
     category: {
       type: String,
       enum: ["GENERAL", "PAYMENT", "CLAIM", "POLICY"],

@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-
+import "./cron/escalation.js";
 import authRouter from "./routes/authRoutes.js";
 import insurancePlanRouter from "./routes/planRoutes.js";
 import policyRoute from "./routes/policyRoutes.js";
@@ -13,6 +13,7 @@ import notificationRouter from "./routes/notificationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import ticketRoutes from "./routes/ticketRoutes.js";
 
 import AppError from "./utils/AppError.js";
 import globalErrorHandler from "./middlewares/errorHandler.js";
@@ -52,7 +53,7 @@ app.use(`/api/${versions}/users`, userRouter);
 app.use(`/api/${versions}/notifications`, notificationRouter);
 app.use(`/api/${versions}/admin`, adminRoutes);
 app.use(`/api/${versions}/dashboard`, dashboardRoutes);
-
+app.use(`/api/${versions}/support/tickets`, ticketRoutes);
 app.use(`/api/${versions}/applications`, applicationRoutes);
 
 // ===== 404 Handler (No *) =====

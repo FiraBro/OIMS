@@ -2,8 +2,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { hashToken } from "../utils/hashToken.js";
-
-const ROLES = ["customer", "admin", "agent"];
+import { ROLES } from "../constants/roles.js";
 
 // User schema
 const userSchema = new mongoose.Schema({

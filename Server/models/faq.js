@@ -9,6 +9,7 @@ const faqSchema = new mongoose.Schema(
       enum: ["GENERAL", "PAYMENT", "CLAIM", "POLICY"],
       default: "GENERAL",
     },
+    embedding: [Number], // The 1536-dimension vector from OpenAI
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

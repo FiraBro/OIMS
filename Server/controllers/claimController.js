@@ -22,8 +22,23 @@ export const createClaim = catchAsync(async (req, res) => {
 });
 
 export const getMyClaims = catchAsync(async (req, res) => {
-  const claims = await claimService.getMyClaims(req.user.id);
-  res.json({ status: "success", data: claims });
+  // 1. Destructure with defaults
+  const { page = 1, limit = 10, search = "", status } = req.query;
+
+  // 2. Call service with cleaned data
+  const result = await claimService.getMyClaims(req.user.id, {
+    page: Number(page),
+    limit: Number(limit),
+    search: String(search),
+    status: status, // If undefined, the Service filter won't apply it
+  });
+
+  // 3. Standardized response
+  res.status(200).json({
+    status: "success",
+    results: result.claims.length,
+    data: result,
+  });
 });
 
 export const getClaimById = catchAsync(async (req, res) => {

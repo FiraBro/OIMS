@@ -16,16 +16,6 @@ const getClient = () => {
   return genAIInstance;
 };
 
-// --- DEBUG LOGS (Optional, remove in production) ---
-console.log(
-  "DEBUG: GEMINI_API_KEY Length:",
-  process.env.GEMINI_API_KEY?.length
-);
-console.log(
-  "DEBUG: GEMINI_API_KEY Starts with:",
-  process.env.GEMINI_API_KEY?.substring(0, 5)
-);
-
 /**
  * PHASE A: Get Embeddings
  * Used for storing and searching FAQs in MongoDB.
@@ -54,7 +44,7 @@ export const getAIAnswer = async (query, context) => {
     const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `
-      You are a professional health insurance support bot for FiraBoss Insurance.
+      You are a professional Online Insurance support bot for FiraBoss Insurance.
       
       CONTEXT FROM FAQ:
       ${context}

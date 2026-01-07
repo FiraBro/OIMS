@@ -42,6 +42,8 @@ const ticketSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Claim", // Must match your Claim model name
     },
+    userQuery: String,
+    botDraft: String,
     isEscalated: { type: Boolean, default: false },
     slaDeadline: { type: Date }, // We set this during creation
     subject: { type: String, required: true, trim: true },

@@ -61,16 +61,48 @@ class ClaimService {
 
     return claim;
   }
-  async getMyClaims(userId) {
-    return await Claim.find({
-      user: userId, // Match schema field "user"
-      // Removed "isDeleted" because it's not in your schema
-    })
-      .populate("user", "fullName email") // Optional: get user details
-      .sort({ submittedAt: -1 }) // Match schema field "submittedAt"
-      .lean();
-  }
+  async getMyClaims(userId, query = {}) {
+    const { page = 1, limit = 10, status, search } = query;
 
+    // 1. Build a dynamic filter object
+    const filter = { user: userId };
+
+    // Filter by status if provided (e.g., 'pending', 'approved')
+    if (status) {
+      filter.status = status;
+    }
+
+    // Basic search functionality (e.g., searching by claim title or description)
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // 2. Execute query with pagination
+    const skip = (page - 1) * limit;
+
+    const [claims, totalCount] = await Promise.all([
+      Claim.find(filter)
+        .populate("user", "fullName email")
+        .sort({ submittedAt: -1 })
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
+      Claim.countDocuments(filter),
+    ]);
+
+    return {
+      claims,
+      meta: {
+        totalCount,
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: skip + claims.length < totalCount,
+      },
+    };
+  }
   async getClaimById(id, userId) {
     const claim = await Claim.findOne({ _id: id, isDeleted: false })
       .populate("policyId")

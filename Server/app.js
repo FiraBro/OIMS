@@ -14,6 +14,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
+import chatRoutes from "./routes/aiRoutes.js";
 
 import AppError from "./utils/AppError.js";
 import globalErrorHandler from "./middlewares/errorHandler.js";
@@ -55,6 +56,7 @@ app.use(`/api/${versions}/admin`, adminRoutes);
 app.use(`/api/${versions}/dashboard`, dashboardRoutes);
 app.use(`/api/${versions}/support/tickets`, ticketRoutes);
 app.use(`/api/${versions}/applications`, applicationRoutes);
+app.use(`/api/${versions}/chat`, chatRoutes);
 
 // ===== 404 Handler (No *) =====
 app.use((req, res, next) => {

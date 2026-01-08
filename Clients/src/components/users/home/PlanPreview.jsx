@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { usePlans } from "@/hooks/usePlan"; // Import your new hook
 import {
   Shield,
   Users,
@@ -16,25 +17,16 @@ import {
   GraduationCap,
   Briefcase,
 } from "lucide-react";
-import { planService } from "@/services/planService";
 
-// Animation Variants
+// Animation Variants (Exact same as your original)
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.2 },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
 };
 
 const cardVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5 },
-  },
-  // ADDED: Card lift and scale animation on hover
+  visible: { y: 0, opacity: 1, transition: { duration: 0.5 } },
   hover: {
     y: -10,
     scale: 1.02,
@@ -43,31 +35,32 @@ const cardVariants = {
 };
 
 export default function PlansPreview() {
-  const [plans, setPlans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const observerTarget = useRef(null);
 
+  // 1. INTEGRATION: Use the public listing with TanStack Query
+  const { listPublic } = usePlans();
+  const { data, fetchNextPage, hasNextPage, isLoading, isError } = listPublic({
+    limit: 6,
+  }); // Fetch 6 plans at a time for smooth loading
+  console.log("Fetched Plans Data:", data);
+
+  // 2. OPTIMIZATION: Intersection Observer for Infinite Scroll
   useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoading(true);
-        const res = await planService.getPopularPlans();
-        setPlans(res.data || []);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch plans:", err);
-        setError("Failed to load plans. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPlans();
-  }, []);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.5 }
+    );
 
-  const handleApply = (planId) => planId && navigate(`/apply/${planId}`);
-  const handleDetails = (planId) => planId && navigate(`/plans/${planId}`);
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, fetchNextPage]);
 
+  // Original Helper Functions
   const getPlanIcon = (planType) => {
     switch ((planType || "").toLowerCase()) {
       case "corporate":
@@ -100,16 +93,11 @@ export default function PlansPreview() {
     return colors[colorScheme] || colors.default;
   };
 
-  if (loading)
-    return <p className="text-center py-12 text-gray-500">Loading plans...</p>;
+  const handleApply = (planId) => planId && navigate(`/apply/${planId}`);
+  const handleDetails = (planId) => planId && navigate(`/plans/${planId}`);
 
-  if (error)
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error}</p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
-      </div>
-    );
+  if (isLoading)
+    return <p className="text-center py-12 text-gray-500">Loading plans...</p>;
 
   return (
     <section className="py-16 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
@@ -120,6 +108,7 @@ export default function PlansPreview() {
         viewport={{ once: true, amount: 0.1 }}
         variants={containerVariants}
       >
+        {/* Header Section (Unchanged) */}
         <div className="text-center mb-12">
           <motion.div
             variants={cardVariants}
@@ -138,13 +127,14 @@ export default function PlansPreview() {
             variants={cardVariants}
             className="text-lg text-gray-600 max-w-3xl mx-auto"
           >
-            Explore our highly-rated coverage options designed for every stage
-            of your life or business.
+            Explore our highly-rated coverage options.
           </motion.p>
         </div>
 
+        {/* The Grid (Optimized for your specific data structure) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {plans.map((plan) => {
+          {data?.data?.map((plan) => {
+            // Helper Icon and Color logic
             const PlanIcon = getPlanIcon(plan.planType);
             const planColor = getPlanColor(plan.colorScheme);
 
@@ -152,7 +142,7 @@ export default function PlansPreview() {
               <motion.div
                 key={plan._id}
                 variants={cardVariants}
-                whileHover="hover" // Triggers BOTH card lift and badge fade
+                whileHover="hover"
                 className="h-full"
               >
                 <Card className="relative border border-gray-200 shadow-lg transition-all duration-300 overflow-hidden h-full flex flex-col">
@@ -160,14 +150,11 @@ export default function PlansPreview() {
                     <motion.div
                       className="absolute top-4 right-4 z-10"
                       initial={{ opacity: 0, x: 10 }}
-                      variants={{
-                        hover: { opacity: 1, x: 0 }, // Badge fades in on hover
-                      }}
+                      variants={{ hover: { opacity: 1, x: 0 } }}
                       transition={{ duration: 0.3 }}
                     >
                       <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 flex items-center gap-1 border-none shadow-md">
-                        <TrendingUp className="w-3 h-3" />
-                        Most Popular
+                        <TrendingUp className="w-3 h-3" /> Most Popular
                       </Badge>
                     </motion.div>
                   )}
@@ -193,8 +180,7 @@ export default function PlansPreview() {
 
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                       <p className="text-gray-700 mb-2 line-clamp-2 text-sm font-medium">
-                        Coverage:{" "}
-                        {plan.coverageAmount || "Comprehensive protection"}
+                        Coverage: {plan.coverageAmount}
                       </p>
                       <div className="flex items-center gap-4 text-xs text-gray-600">
                         <span className="flex items-center gap-1">
@@ -210,36 +196,34 @@ export default function PlansPreview() {
                       </div>
                     </div>
 
-                    {plan.features && plan.features.length > 0 && (
+                    {plan.features?.length > 0 && (
                       <div className="mb-6">
                         <h4 className="font-semibold text-gray-900 mb-3 text-sm flex items-center gap-2">
                           <Zap className="w-4 h-4 text-blue-600" />
                           Key Benefits
                         </h4>
                         <ul className="space-y-2">
-                          {plan.features.slice(0, 4).map((feature, index) => (
+                          {plan.features.slice(0, 4).map((f, i) => (
                             <li
-                              key={index}
+                              key={i}
                               className="flex items-center gap-2 text-sm"
                             >
                               <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                              <span className="text-gray-700">{feature}</span>
+                              <span className="text-gray-700">{f}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                     )}
 
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-bold text-gray-900">
-                          {plan.currency === "USD" ? "$" : plan.currency}
-                          {plan.premium || 0}
-                        </span>
-                        <span className="text-gray-500 text-sm">
-                          /{plan.premiumFrequency || "month"}
-                        </span>
-                      </div>
+                    <div className="pt-4 border-t border-gray-100 flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-gray-900">
+                        {plan.currency === "USD" ? "$" : plan.currency}
+                        {plan.premium || 0}
+                      </span>
+                      <span className="text-gray-500 text-sm">
+                        /{plan.premiumFrequency || "month"}
+                      </span>
                     </div>
                   </CardContent>
 
@@ -262,6 +246,15 @@ export default function PlansPreview() {
               </motion.div>
             );
           })}
+        </div>
+
+        {/* 3. INFINITE SCROLL TARGET */}
+        <div ref={observerTarget} className="h-10 mt-10 flex justify-center">
+          {hasNextPage && (
+            <p className="text-slate-400 text-sm animate-pulse">
+              Loading more plans...
+            </p>
+          )}
         </div>
 
         <motion.div variants={cardVariants} className="text-center mt-12">

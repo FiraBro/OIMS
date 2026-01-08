@@ -30,6 +30,17 @@ export const getAllTickets = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+export const getMyTickets = async (req, res) => {
+  try {
+    const tickets = await TicketService.getUserTickets(req.user.id);
+
+    res
+      .status(200)
+      .json({ success: true, count: tickets.length, data: tickets });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // 3. Get single ticket details
 export const getTicketDetails = async (req, res) => {

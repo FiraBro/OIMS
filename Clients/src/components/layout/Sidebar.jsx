@@ -13,6 +13,7 @@ import {
   FiPlusCircle, // For Create Plan
   FiList, // For All Plans
   FiLayers, // For Applications
+  FiMessageSquare,
 } from "react-icons/fi";
 import { cn } from "@/lib/utils";
 
@@ -38,14 +39,23 @@ const navItems = [
     ],
   },
   {
-    // RENAME: From "System" to "Intelligence" or "Governance"
+    // NEW GROUP: For managing Live Chat and Support Tickets
+    group: "Service Governance",
+    items: [
+      {
+        name: "Support Desk",
+        path: "/admin/support/tickets", // This points to your AdminSupportDashboard
+        icon: FiMessageSquare, // Ensure you import FiMessageSquare from react-icons/fi
+      },
+    ],
+  },
+  {
     group: "Enterprise Intelligence",
     items: [
       {
-        // RENAME: From "Settings" to "Control Center"
         name: "Control Center",
         path: "/admin/settings",
-        icon: FiActivity, // Changed icon to FiActivity to match the Analytics vibe
+        icon: FiActivity,
       },
     ],
   },

@@ -26,7 +26,7 @@ export const handleChat = async (req, res) => {
     // Sort and get top results
     const relatedFaqs = scoredFaqs
       .sort((a, b) => b.score - a.score)
-      .slice(0, 2);
+      .slice(0, 15);
 
     const contextText = relatedFaqs
       .map((f) => `Q: ${f.question} A: ${f.answer}`)

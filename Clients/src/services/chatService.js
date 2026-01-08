@@ -5,6 +5,7 @@ import api from "@/lib/axios";
  * Uses the pre-configured Axios instance for consistency across the app.
  */
 export const sendChatQuery = async ({ userId, query }) => {
+  console.log("Sending query to backend:", query, userId);
   try {
     // We use the relative path because the base URL is already in your axios config
     const response = await api.post("/chat/query", {

@@ -21,6 +21,7 @@ export const useChatbot = (userId) => {
       ]);
     },
     onSuccess: (data) => {
+      console.log("Backend said:", data);
       // Add bot response
       setMessages((prev) => [
         ...prev,
@@ -31,7 +32,10 @@ export const useChatbot = (userId) => {
       ]);
     },
     onError: (error) => {
-      console.error("Chat Error:", error);
+      console.error(
+        "The exact error is:",
+        error.response?.data || error.message
+      );
       setMessages((prev) => [
         ...prev,
         {

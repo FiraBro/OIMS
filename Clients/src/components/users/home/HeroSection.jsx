@@ -35,7 +35,7 @@ export default function HeroSection() {
           transition={{ delay: 0.6, duration: 0.8 }}
         >
           {/* Explore Button - Redirects to /plan */}
-          <Link to="/apply/plans">
+          <Link to="/plans">
             <Button
               size="lg"
               className="px-8 flex items-center gap-2 w-full md:w-auto cursor-pointer"

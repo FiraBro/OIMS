@@ -1,25 +1,30 @@
-import { lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import React, { lazy, Suspense } from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-/* Layouts (same folder) */
+/* Layouts */
 import UserLayout from "@/layout/UserLayout";
 import AdminLayout from "@/layout/AdminLayout";
 
 /* Guards */
 import ProtectedRoute from "@/pages/auth/form/ProtectRoutes";
+
+/* Standard Pages */
 import CreatePlanPage from "@/pages/admin/plan/CreatePlan";
 import Settings from "@/pages/admin/support/Setting";
 import AdminPlanListPage from "@/pages/admin/plan/ListAllPlan";
 import PolicyList from "@/pages/admin/policy/PolicyList";
+import AdminSupportDashboard from "@/pages/admin/ticket/AllTicket";
 
-/* Public Pages */
+/* Specialized Chat Pages (Standalone) */
+import TicketDetailPage from "@/pages/users/support/TicketConversation";
+import AdminLiveChat from "@/pages/admin/support/AdminLiveChat";
+
+/* Lazy Loaded Components */
 const HomePage = lazy(() => import("@/pages/users/home/HomePage"));
 const PlansPage = lazy(() => import("@/pages/users/plans/PlanPages"));
 const PlanDetail = lazy(() => import("@/pages/users/plans/PlanDetail"));
 const SupportPage = lazy(() => import("@/pages/users/support/SupportPage"));
 const AuthPage = lazy(() => import("@/pages/auth/AuthPage"));
-
-/* User Protected Pages */
 const ProfilePage = lazy(() => import("@/pages/users/profile/ProfilePage"));
 const ApplyPlan = lazy(() => import("@/pages/users/plans/ApplyPlan"));
 const UserApplications = lazy(() =>
@@ -30,8 +35,6 @@ const ClaimSubmissionForm = lazy(() =>
 );
 const MyClaims = lazy(() => import("@/pages/users/claim/MyClaims"));
 const MyPolicies = lazy(() => import("@/pages/users/policy/MyPolicy"));
-
-/* Admin Pages */
 const AdminDashboard = lazy(() =>
   import("@/pages/admin/dashboard/AdminDashboard")
 );
@@ -45,10 +48,12 @@ const AdminUsersPage = lazy(() => import("@/pages/admin/users/AdminUserPages"));
 const AdminClaimsManagement = lazy(() =>
   import("@/pages/admin/claim/ClaimsManagement")
 );
-
 const NotFoundPage = lazy(() => import("@/components/common/NotFoundPage"));
 
 export const router = createBrowserRouter([
+  /* 1. MAIN USER EXPERIENCE 
+     Routes inside UserLayout will have the standard Navbar and Footer.
+  */
   {
     path: "/",
     element: <UserLayout />,
@@ -57,7 +62,6 @@ export const router = createBrowserRouter([
       { path: "plans", element: <PlansPage /> },
       { path: "plans/:id", element: <PlanDetail /> },
       { path: "support", element: <SupportPage /> },
-
       {
         path: "profile",
         element: (
@@ -106,12 +110,25 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-
       { path: "*", element: <NotFoundPage /> },
     ],
   },
 
-  /* ---------------- Admin (protected ONCE) ---------------- */
+  /* 2. STANDALONE USER CONVERSATION 
+     Placed outside UserLayout so it is full-screen Telegram style.
+  */
+  {
+    path: "/support/tickets/:id",
+    element: (
+      <ProtectedRoute>
+        <TicketDetailPage />
+      </ProtectedRoute>
+    ),
+  },
+
+  /* 3. MAIN ADMIN DASHBOARD 
+     Routes inside AdminLayout will have the Admin Sidebar/Nav.
+  */
   {
     path: "/admin",
     element: (
@@ -128,13 +145,23 @@ export const router = createBrowserRouter([
       { path: "all-claims", element: <AdminClaimsManagement /> },
       { path: "create/plan", element: <CreatePlanPage /> },
       { path: "all-plans", element: <AdminPlanListPage /> },
-
-      {
-        path: "settings",
-        element: <Settings />,
-      },
+      { path: "support/tickets", element: <AdminSupportDashboard /> },
+      { path: "settings", element: <Settings /> },
     ],
   },
 
+  /* 4. STANDALONE ADMIN LIVE CHAT 
+     Placed outside AdminLayout so the Sidebar disappears during chat.
+  */
+  {
+    path: "/admin/tickets/:id",
+    element: (
+      <ProtectedRoute isAdminRequired={true}>
+        <AdminLiveChat />
+      </ProtectedRoute>
+    ),
+  },
+
+  /* 5. AUTHENTICATION */
   { path: "/auth", element: <AuthPage /> },
 ]);

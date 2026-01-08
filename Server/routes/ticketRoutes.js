@@ -3,52 +3,55 @@ import * as ticketController from "../controllers/ticketController.js";
 import { addFAQ, fetchFAQs, editFAQ } from "../controllers/faqController.js";
 import { protect, restrictTo } from "../middlewares/protect.js";
 import { ROLES } from "../constants/roles.js";
+
 const router = express.Router();
 
-/**
- * All routes below would typically be protected by an authentication middleware
- */
+/* ============================
+   AUTHENTICATION (ALL ROUTES)
+============================ */
 router.use(protect);
 
-// --- CUSTOMER & GENERAL ENDPOINTS ---
+/* ============================
+   TICKETS – CUSTOMER & STAFF
+============================ */
 
-router
-  .route("/")
-  /** @route POST /api/v1/support/tickets - Create a new ticket */
-  .post(ticketController.createTicket)
+router.post("/", ticketController.createTicket);
+router.get("/my-tickets", ticketController.getMyTickets);
 
-  /** @route GET /api/v1/support/tickets - List my tickets (Customer) or all tickets (Agent) */
-  .get(ticketController.getAllTickets);
+router.get(
+  "/",
+  restrictTo(ROLES.ADMIN, ROLES.AGENT),
+  ticketController.getAllTickets
+);
 
-router
-  .route("/:id")
-  /** @route GET /api/v1/support/tickets/:id - Get full conversation and ticket details */
-  .get(ticketController.getTicketDetails);
+router.get("/:id", ticketController.getTicketDetails);
 
-router
-  .route("/:id/messages")
-  /** @route POST /api/v1/support/tickets/:id/messages - Add a reply to a ticket */
-  .post(ticketController.addReply);
+router.post("/:id/messages", ticketController.addReply);
 
-// --- AGENT & ADMIN ONLY ENDPOINTS ---
+/* ============================
+   TICKETS – STAFF ONLY
+============================ */
 
-/** @route PATCH /api/v1/support/tickets/:id/status - Update ticket status (Staff Only) */
 router.patch(
   "/:id/status",
-  // authorize('agent', 'admin'),
+  restrictTo(ROLES.ADMIN, ROLES.AGENT),
   ticketController.updateStatus
 );
 
-/** @route PATCH /api/v1/support/tickets/:id/assign - Assign ticket to an agent */
 router.patch(
   "/:id/assign",
-  // authorize('admin'),
+  restrictTo(ROLES.ADMIN),
   ticketController.assignTicket
 );
-router.get("/", fetchFAQs);
 
-// Protected Admin routes: Only staff can manage the content
-router.post("/faqs", protect, restrictTo(ROLES.ADMIN), addFAQ);
-router.patch("/faqs/:id", protect, restrictTo(ROLES.ADMIN), editFAQ);
+/* ============================
+   FAQ – PUBLIC & ADMIN
+============================ */
+
+router.get("/faqs", fetchFAQs);
+
+router.post("/faqs", restrictTo(ROLES.ADMIN), addFAQ);
+
+router.patch("/faqs/:id", restrictTo(ROLES.ADMIN), editFAQ);
 
 export default router;

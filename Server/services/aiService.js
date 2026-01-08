@@ -41,22 +41,23 @@ export const getAIAnswer = async (query, context) => {
   try {
     const client = getClient();
     // Using 'gemini-2.0-flash' which replaces the older 1.5 versions
-    const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
-      You are a professional Online Insurance support bot for FiraBoss Insurance.
-      
-      CONTEXT FROM FAQ:
-      ${context}
-      
-      USER QUESTION:
-      ${query}
-      
-      INSTRUCTIONS:
-      - Use ONLY the context above to answer.
-      - If the answer is not found in the context, strictly say: "I don't know".
-      - Keep the tone helpful but concise.
-    `;
+  You are a FiraBoss Insurance Support bot. Use the PROVIDED FAQ LIST to help the user.
+
+  [PROVIDED FAQ LIST]:
+  ${context}
+
+  [USER QUESTION]:
+  ${query}
+
+  [INSTRUCTIONS]:
+  1. Search the FAQ LIST for any information related to the question.
+  2. If the FAQ LIST contains the answer, rephrase it helpfully.
+  3. If the FAQ LIST is empty OR clearly does not mention the topic, ONLY then say: "I don't know".
+  4. Do not mention "based on the documents" or "in the FAQ". Just answer.
+`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

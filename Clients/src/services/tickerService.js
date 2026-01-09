@@ -8,15 +8,17 @@ export const ticketService = {
   },
 
   // Get ALL tickets (Admin/Agent View)
-  getAllTickets: async () => {
-    const response = await api.get("/support/tickets");
+  getAllTickets: async (params = {}) => {
+    const response = await api.get("/support/tickets", { params });
     // Ensure we return the array directly or handle the nested data object
-    return response.data;
+    console.log("Response from getAllTickets:", response);
+    return response;
   },
 
   // Get tickets for the logged-in user
-  getMyTickets: async () => {
-    const response = await api.get("/support/tickets/my-tickets");
+  getMyTickets: async (params = {}) => {
+    const response = await api.get("/support/tickets/my-tickets", { params });
+    console.log("Response from getMyTickets:", response);
     return response.data;
   },
 

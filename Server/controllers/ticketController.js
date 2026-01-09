@@ -19,26 +19,64 @@ export const createTicket = async (req, res) => {
 // 2. Get list of tickets (Filtered by role)
 export const getAllTickets = async (req, res) => {
   try {
-    // Senior Logic: If user is not an agent, only show THEIR tickets
-    const filter = req.user.role === "user" ? { user: req.user.id } : {};
-    const tickets = await TicketService.getAllTickets(filter);
+    const { page, limit, search, status } = req.query;
 
-    res
-      .status(200)
-      .json({ success: true, count: tickets.length, data: tickets });
+    // 1. Role-based security filter
+    let filters = req.user.role === "user" ? { user: req.user.id } : {};
+
+    // 2. Add Status filter if provided (e.g., ?status=OPEN)
+    if (status) {
+      filters.status = status;
+    }
+
+    // 3. Call service with filters and pagination options
+    const result = await TicketService.getAllTickets(filters, {
+      page,
+      limit,
+      search,
+    });
+    console.log("Fetched Tickets:", result); // Debug log
+    res.status(200).json({
+      success: true,
+      data: result.tickets,
+      pagination: result.pagination,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 export const getMyTickets = async (req, res) => {
   try {
-    const tickets = await TicketService.getUserTickets(req.user.id);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const search = req.query.search || "";
+    const status = req.query.status;
 
-    res
-      .status(200)
-      .json({ success: true, count: tickets.length, data: tickets });
+    // Call service with parameters
+    const { tickets, total } = await TicketService.getUserTickets(req.user.id, {
+      page,
+      limit,
+      search,
+      status,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    res.status(200).json({
+      success: true,
+      data: tickets,
+      pagination: {
+        page,
+        pages: totalPages,
+        total,
+        limit,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Error fetching tickets: " + error.message,
+    });
   }
 };
 

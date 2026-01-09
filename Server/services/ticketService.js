@@ -7,23 +7,74 @@ import getDeadline from "../utils/getDeadline.js";
 export const createTicket = (data) =>
   Ticket.create({ ...data, slaDeadline: getDeadline(data.priority) });
 
-export const getUserTickets = (userId) =>
-  Ticket.find({ user: userId }).sort({ createdAt: -1 });
+// Updated Service with true pagination and search
+export const getUserTickets = async (
+  userId,
+  { page = 1, limit = 10, search = "" }
+) => {
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  // Build dynamic filter
+  const query = { user: userId };
+
+  // Add search functionality (searches subject or category)
+  if (search) {
+    query.$or = [
+      { subject: { $regex: search, $options: "i" } },
+      { category: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // 1. Get total count for pagination metadata
+  const total = await Ticket.countDocuments(query);
+
+  // 2. Get the specific "chunk" of data
+  const tickets = await Ticket.find(query)
+    .sort({ updatedAt: -1 }) // Show recently updated first
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  return { tickets, total };
+};
 
 // Phase 6: Updated getAllTickets to show Insurance Context
-export const getAllTickets = async (filters = {}) => {
-  return await Ticket.find(filters)
-    .populate("user", "name email")
-    .populate("assignedTo", "name")
-    .populate({
-      path: "relatedPolicy",
-      select: "policyNumber type status",
-    })
-    .populate({
-      path: "relatedClaim",
-      select: "claimNumber amount status",
-    })
-    .sort({ createdAt: -1 });
+export const getAllTickets = async (filters = {}, options = {}) => {
+  const { page = 1, limit = 10, search = "" } = options;
+
+  // Calculate how many documents to skip
+  const skip = (page - 1) * limit;
+
+  // Add search logic if a search string exists
+  let finalFilters = { ...filters };
+  if (search) {
+    finalFilters.$or = [
+      { subject: { $regex: search, $options: "i" } },
+      { ticketId: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Execute queries in parallel for better performance
+  const [tickets, total] = await Promise.all([
+    Ticket.find(finalFilters)
+      .populate("user", "name email")
+      .populate("assignedTo", "name")
+      .populate({ path: "relatedPolicy", select: "policyNumber type status" })
+      .populate({ path: "relatedClaim", select: "claimNumber amount status" })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
+    Ticket.countDocuments(finalFilters),
+  ]);
+
+  return {
+    tickets,
+    pagination: {
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      limit: Number(limit),
+    },
+  };
 };
 
 export const getTicketById = (id) =>

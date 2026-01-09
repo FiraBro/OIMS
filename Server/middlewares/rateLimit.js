@@ -34,3 +34,16 @@ export const analyticsLimiter = rateLimit({
   standardHeaders: true,
   message: { status: 429, message: "Dashboard refresh limit reached." },
 });
+
+export const chatRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 chat requests per window
+  message: "Too many chat requests, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  // ADD THIS LINE TO FIX THE ERROR:
+  validate: { xForwardedForHeader: false },
+  // If you are using an older version, you might need to ensure
+  // your keyGenerator is simple:
+  keyGenerator: (req) => req.ip,
+});

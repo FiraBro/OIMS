@@ -61,7 +61,6 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "plans", element: <PlansPage /> },
       { path: "plans/:id", element: <PlanDetail /> },
-      { path: "support", element: <SupportPage /> },
       {
         path: "profile",
         element: (
@@ -126,6 +125,14 @@ export const router = createBrowserRouter([
     ),
   },
 
+  {
+    path: "/support",
+    element: (
+      <ProtectedRoute>
+        <SupportPage />
+      </ProtectedRoute>
+    ),
+  },
   /* 3. MAIN ADMIN DASHBOARD 
      Routes inside AdminLayout will have the Admin Sidebar/Nav.
   */

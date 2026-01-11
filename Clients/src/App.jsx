@@ -7,9 +7,11 @@ import { router } from "./routers";
 import { useAuthStore } from "@/stores/authStore";
 import { useEnterpriseDashboard } from "./hooks/useAdmin";
 import MaintenancePage from "./pages/users/support/Maintenance";
+import InsuranceChatbot from "./pages/users/support/Chatbot";
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const user = useAuthStore((state) => state.user);
+  console.log("App Rendered. Current user:", user);
 
   // Fetch global settings (Maintenance Mode, etc.)
 
@@ -43,6 +45,8 @@ export default function App() {
       <Suspense fallback={null}>
         <RouterProvider router={router} />
       </Suspense>
+
+      <InsuranceChatbot userId={user?.id} />
 
       <ToastContainer
         position="top-right" // Bot-style position

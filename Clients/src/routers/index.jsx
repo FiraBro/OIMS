@@ -18,6 +18,7 @@ import AdminSupportDashboard from "@/pages/admin/ticket/AllTicket";
 /* Specialized Chat Pages (Standalone) */
 import TicketDetailPage from "@/pages/users/support/TicketConversation";
 import AdminLiveChat from "@/pages/admin/support/AdminLiveChat";
+import { PageTransition } from "@/components/common/PageTransition";
 
 /* Lazy Loaded Components */
 const HomePage = lazy(() => import("@/pages/users/home/HomePage"));
@@ -120,7 +121,9 @@ export const router = createBrowserRouter([
     path: "/support/tickets/:id",
     element: (
       <ProtectedRoute>
-        <TicketDetailPage />
+        <PageTransition>
+          <TicketDetailPage />
+        </PageTransition>
       </ProtectedRoute>
     ),
   },
@@ -129,7 +132,9 @@ export const router = createBrowserRouter([
     path: "/support",
     element: (
       <ProtectedRoute>
-        <SupportPage />
+        <PageTransition>
+          <SupportPage />
+        </PageTransition>
       </ProtectedRoute>
     ),
   },

@@ -50,7 +50,7 @@ export default function App() {
 
       <ToastContainer
         position="top-right" // Bot-style position
-        autoClose={6000} // 4 seconds (500 was too fast!)
+        autoClose={1000} // 4 seconds (500 was too fast!)
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick

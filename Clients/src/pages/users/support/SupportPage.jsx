@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   FiPlus,
   FiShield,
@@ -91,21 +92,25 @@ const GeneralSupportPage = () => {
       <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-8 h-20 flex items-center justify-between">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex-shrink-0"
           >
-            <div className="h-10 w-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-              <FiCpu className="text-indigo-400 size-5" />
-            </div>
-            <div>
-              <h1 className="text-md font-black text-slate-900 tracking-tight uppercase">
-                Safe<span className="text-indigo-600">Guard</span>
-              </h1>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                Neural Support Interface
-              </p>
-            </div>
+            <Link to="/" className="flex items-center gap-3 select-none group">
+              {/* Logo Icon Container */}
+              <div className="flex flex-col justify-center">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">
+                    Neural
+                    <span className="text-blue-500">Sure</span>
+                  </span>
+                  {/* FIXED: AI Badge with Gemini Thinking Colors */}
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-gradient-to-r from-[#4285F4] via-[#9B72CB] to-[#D96570] animate-gradient-x">
+                    AI
+                  </span>
+                </div>
+              </div>
+            </Link>
           </motion.div>
 
           {/* INITIALIZE CASE MODAL */}

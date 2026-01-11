@@ -1,4 +1,10 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: health_insurance_redis
+    restart: always
+    ports:
+      - "6379:6379"
   # ====================
   # MongoDB
   # ====================
@@ -28,6 +34,7 @@ services:
       - ./Server/.env # <- backend loads your .env including SMTP
     depends_on:
       - mongodb_health
+      - redis
     volumes:
       - ./Server:/app
     working_dir: /app

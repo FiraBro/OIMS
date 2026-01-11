@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HelpCircle, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const faqs = [
   {
@@ -80,6 +81,7 @@ const faqs = [
 ];
 
 export default function FAQSection() {
+  const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(null);
 
   const containerVariants = {
@@ -188,7 +190,10 @@ export default function FAQSection() {
           className="mt-12 text-center text-gray-500 text-sm"
         >
           Still have questions?{" "}
-          <button className="text-blue-600 font-semibold hover:underline">
+          <button
+            className="text-blue-600 font-semibold hover:underline cursor-pointer"
+            onClick={() => navigate("/support")}
+          >
             Contact our support team
           </button>
         </motion.p>

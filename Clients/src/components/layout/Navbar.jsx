@@ -314,16 +314,19 @@ export default function Navbar() {
             whileTap={{ scale: 0.98 }}
             className="flex-shrink-0"
           >
-            <Link to="/" className="flex items-center gap-3 select-none group">
-              {/* Logo Icon Container */}
-              <div className="flex flex-col justify-center">
+            <Link to="/" className="flex items-center gap-3 select-none">
+              <div className="relative">
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+                </span>
+              </div>
+              <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">
-                    Neural
-                    <span className="text-blue-500">Sure</span>
+                    Neural<span className="text-blue-500">Sure</span>
                   </span>
-                  {/* FIXED: AI Badge with Gemini Thinking Colors */}
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-gradient-to-r from-[#4285F4] via-[#9B72CB] to-[#D96570] animate-gradient-x">
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-gradient-to-r from-[#4285F4] via-[#9B72CB] to-[#D96570]">
                     AI
                   </span>
                 </div>

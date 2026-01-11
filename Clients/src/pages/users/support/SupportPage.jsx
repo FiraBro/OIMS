@@ -4,15 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   FiPlus,
-  FiShield,
   FiSearch,
-  FiChevronLeft,
   FiChevronRight,
   FiActivity,
   FiClock,
   FiLifeBuoy,
-  FiCpu,
-  FiAlertCircle,
 } from "react-icons/fi";
 import { useTickets } from "@/hooks/useTicket"; // Your Hook
 import { Button } from "@/components/ui/button";

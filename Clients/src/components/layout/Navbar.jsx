@@ -17,6 +17,7 @@ import {
   FiBell,
   FiCreditCard,
   FiShield,
+  FiActivity,
   FiPlusCircle,
 } from "react-icons/fi";
 // import { useAuth } from "../../contexts/AuthContext";
@@ -307,21 +308,26 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo */}
+
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="flex-shrink-0"
           >
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
-                <span className="text-white font-bold text-sm">OH</span>
+            <Link to="/" className="flex items-center gap-3 select-none group">
+              {/* Logo Icon Container */}
+              <div className="flex flex-col justify-center">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">
+                    Neural
+                    <span className="text-blue-500">Sure</span>
+                  </span>
+                  {/* FIXED: AI Badge with Gemini Thinking Colors */}
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-gradient-to-r from-[#4285F4] via-[#9B72CB] to-[#D96570] animate-gradient-x">
+                    AI
+                  </span>
+                </div>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
-                OHIMS
-              </span>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent sm:hidden">
-                OH
-              </span>
             </Link>
           </motion.div>
 

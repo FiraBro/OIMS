@@ -7,7 +7,47 @@
 /* shadcn component styles */
 @import "./components.css";
 
-/* Light theme CSS variables */
+/* --- TOASTIFY FINAL FIX --- */
+
+/* 1. Compact Toast Container */
+.Toastify__toast {
+  background-color: #ffffff !important;
+  color: #1f1f1f !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  min-height: 48px !important; /* Small height */
+  padding: 8px 16px !important;
+}
+
+/* 2. Progress Bar - Unified Blue */
+.Toastify__progress-bar--success,
+.Toastify__progress-bar--error,
+.Toastify__progress-bar {
+  background: #4285f4 !important;
+  height: 2px !important;
+}
+
+/* 3. SUCCESS ICON: Remove Green, set to Blue */
+.Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #4285f4 !important;
+}
+/* If your theme uses the colored circle background */
+.Toastify__toast--theme-colored.Toastify__toast--success {
+  background-color: #ffffff !important;
+}
+.Toastify__toast--success .Toastify__toast-icon--theme-colored {
+  color: #4285f4 !important;
+}
+
+/* 4. ERROR ICON: Remove Red, set to Purple/Pink */
+.Toastify__toast--error .Toastify__toast-icon svg {
+  fill: #9b72cb !important;
+}
+.Toastify__toast--error .Toastify__toast-icon--theme-colored {
+  color: #9b72cb !important;
+}
+
+/* --- THEME VARIABLES --- */
 :root {
   --radius: 0.5rem;
   --background: 0 0% 100%;
@@ -21,78 +61,16 @@
   --border: 214.3 31.8% 91.4%;
   --input: 210 36% 96%;
   --ring: 221.2 83% 53%;
-  --toastify-color-progress-light: #ff5733; /* Put your hex color here */
-
-  /* If you want to change the color for specific types: */
-  /* --toastify-color-progress-success: #00ff00;
-  --toastify-color-progress-error: #ff0000; */
 }
 
-/* .Toastify__progress-bar {
-  background: #ff5733 !important;
-} */
-
-/* 1. Change the Progress Bar color */
-/* Force the background to white for ALL toast types (success, error, info, etc) */
-.Toastify__toast--success,
-.Toastify__toast--error,
-.Toastify__toast--info,
-.Toastify__toast {
-  background-color: #ffffff !important;
-  color: #1f1f1f !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  min-height: 50px !important;
-}
-
-/* Force the progress bar to be Blue for every type */
-.Toastify__progress-bar--success,
-.Toastify__progress-bar--error,
-.Toastify__progress-bar--info,
-.Toastify__progress-bar {
-  background: #4285f4 !important; /* Your Blue color */
-  height: 3px !important;
-}
-
-/* Make sure the text inside stays dark */
-.Toastify__toast-body {
-  color: #1f1f1f !important;
-}
-
-/* Optional: change the icons color to blue too */
-.Toastify__toast-icon {
-  fill: #4285f4 !important;
-}
-/* Dark theme */
-.dark {
-  --background: 224 71% 4%;
-  --foreground: 210 40% 98%;
-  --primary: 217 91% 60%;
-  --primary-foreground: 222 47% 11%;
-  --secondary: 160 60% 40%;
-  --secondary-foreground: 210 40% 98%;
-}
-
-/* Global base style */
-html {
-  /* Use scroll-smooth for nicer navigation anchor jumps */
-  scroll-behavior: smooth;
-}
-
+/* Global Styles */
 body {
   @apply bg-white text-gray-900 antialiased;
   font-family: "Inter", sans-serif !important;
-
-  /* FIXED: Allow scrolling and ensure the body expands with content */
   min-height: 100vh;
   overflow-y: auto;
 }
 
-.dark body {
-  @apply bg-gray-900 text-gray-100;
-}
-
-/* Manrope for headings */
 h1,
 h2,
 h3,
@@ -102,30 +80,25 @@ h6 {
   font-family: "Manrope", sans-serif !important;
 }
 
-/* Optional custom grid pattern */
-.bg-grid-pattern {
-  background-image: linear-gradient(to right, #e5e7eb 1px, transparent 1px),
-    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
-  background-size: 40px 40px;
+/* Gemini AI Thinking Animation */
+@keyframes geminiFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
-/* ============================== */
-/* FIX: Radix Select layout shift */
-/* ============================== */
-
-/* Prevent Radix from adding padding-right on body when modals open */
-body[data-scroll-locked] {
-  padding-right: 0 !important;
-  margin-right: 0 !important;
-  /* Radix needs to handle the overflow during locks, not the global CSS */
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: geminiFlow 3s linear infinite;
 }
 
-/* Prevent Radix from calculating scrollbar size */
-:root {
-  --removed-body-scroll-bar-size: 0px !important;
-}
-
-/* Modern thin scrollbars */
+/* Scrollbar Fixes */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -133,8 +106,14 @@ body[data-scroll-locked] {
   background: #e2e8f0;
   border-radius: 10px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
+
+/* Prevent Radix Layout Shift */
+body[data-scroll-locked] {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+:root {
+  --removed-body-scroll-bar-size: 0px !important;
 }
 
 @keyframes geminiFlow {

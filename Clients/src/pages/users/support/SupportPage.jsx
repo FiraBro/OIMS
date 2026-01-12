@@ -285,24 +285,28 @@ const GeneralSupportPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    <AnimatePresence mode="popLayout">
-                      {isLoading ? (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-8 py-12 text-center text-slate-400 text-[10px] font-black uppercase animate-pulse"
-                          >
-                            Decrypting...
-                          </td>
-                        </tr>
-                      ) : (
-                        tickets.map((t, idx) => (
+                    {isLoading ? (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-8 py-12 text-center text-slate-400 text-[10px] font-black uppercase animate-pulse"
+                        >
+                          Decrypting...
+                        </td>
+                      </tr>
+                    ) : (
+                      /* Removed mode="popLayout" to prevent the row from jumping to the side during the exit phase */
+                      <AnimatePresence>
+                        {tickets.map((t, idx) => (
                           <motion.tr
                             key={t._id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ delay: idx * 0.05 }}
+                            exit={{ opacity: 0, x: -10 }} // Changed to horizontal fade out to look cleaner
+                            transition={{
+                              duration: 0.2,
+                              delay: idx * 0.03, // Slightly faster stagger for better feel
+                            }}
                             className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
                           >
                             <td className="px-8 py-6">
@@ -343,9 +347,9 @@ const GeneralSupportPage = () => {
                               </Button>
                             </td>
                           </motion.tr>
-                        ))
-                      )}
-                    </AnimatePresence>
+                        ))}
+                      </AnimatePresence>
+                    )}
                   </tbody>
                 </table>
               </div>

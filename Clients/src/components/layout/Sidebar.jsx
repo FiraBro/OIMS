@@ -8,7 +8,6 @@ import {
   FiCheckCircle,
   FiActivity,
   FiLogOut,
-  FiShield,
   FiChevronRight,
   FiBriefcase, // For Policies
   FiPlusCircle, // For Create Plan

@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import {
   FiGrid,
@@ -75,19 +76,30 @@ export default function Sidebar() {
     <aside className="flex flex-col w-72 bg-white border-r border-zinc-200 h-screen sticky top-0 z-50">
       {/* Brand Section */}
       <div className="h-20 flex items-center px-6 mb-2">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-zinc-200">
-            <FiShield className="text-white text-xl" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-black tracking-tight text-zinc-900 uppercase">
-              Nexus<span className="text-zinc-500 font-medium">Insure</span>
-            </span>
-            <span className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">
-              Admin Suite
-            </span>
-          </div>
-        </div>
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="flex-shrink-0"
+        >
+          <Link to="/" className="flex items-center gap-3 select-none">
+            <div className="relative">
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">
+                  Neural<span className="text-blue-500">Sure</span>
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-gradient-to-r from-[#4285F4] via-[#9B72CB] to-[#D96570]">
+                  AI
+                </span>
+              </div>
+            </div>
+          </Link>
+        </motion.div>
       </div>
 
       {/* Navigation */}

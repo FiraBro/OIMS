@@ -1,9 +1,10 @@
 import React, { lazy, Suspense } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 /* Layouts */
 import UserLayout from "@/layout/UserLayout";
 import AdminLayout from "@/layout/AdminLayout";
+import SupportWrapper from "@/components/layout/SupportWrapper"; // The new wrapper we discussed
 
 /* Guards */
 import ProtectedRoute from "@/pages/auth/form/ProtectRoutes";
@@ -52,9 +53,7 @@ const AdminClaimsManagement = lazy(() =>
 const NotFoundPage = lazy(() => import("@/components/common/NotFoundPage"));
 
 export const router = createBrowserRouter([
-  /* 1. MAIN USER EXPERIENCE 
-     Routes inside UserLayout will have the standard Navbar and Footer.
-  */
+  /* 1. MAIN USER EXPERIENCE (With Navbar/Footer) */
   {
     path: "/",
     element: <UserLayout />,
@@ -114,33 +113,37 @@ export const router = createBrowserRouter([
     ],
   },
 
-  /* 2. STANDALONE USER CONVERSATION 
-     Placed outside UserLayout so it is full-screen Telegram style.
+  /* 2. STANDALONE USER SUPPORT (Wrapped with Chatbot) 
+     This stays outside UserLayout to keep it full-screen.
   */
-  {
-    path: "/support/tickets/:id",
-    element: (
-      <ProtectedRoute>
-        <PageTransition>
-          <TicketDetailPage />
-        </PageTransition>
-      </ProtectedRoute>
-    ),
-  },
-
   {
     path: "/support",
     element: (
       <ProtectedRoute>
-        <PageTransition>
-          <SupportPage />
-        </PageTransition>
+        <SupportWrapper />
       </ProtectedRoute>
     ),
+    children: [
+      {
+        index: true,
+        element: (
+          <PageTransition>
+            <SupportPage />
+          </PageTransition>
+        ),
+      },
+      {
+        path: "tickets/:id",
+        element: (
+          <PageTransition>
+            <TicketDetailPage />
+          </PageTransition>
+        ),
+      },
+    ],
   },
-  /* 3. MAIN ADMIN DASHBOARD 
-     Routes inside AdminLayout will have the Admin Sidebar/Nav.
-  */
+
+  /* 3. MAIN ADMIN DASHBOARD (With Sidebar) */
   {
     path: "/admin",
     element: (
@@ -162,9 +165,7 @@ export const router = createBrowserRouter([
     ],
   },
 
-  /* 4. STANDALONE ADMIN LIVE CHAT 
-     Placed outside AdminLayout so the Sidebar disappears during chat.
-  */
+  /* 4. STANDALONE ADMIN LIVE CHAT */
   {
     path: "/admin/tickets/:id",
     element: (

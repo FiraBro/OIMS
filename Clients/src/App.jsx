@@ -7,34 +7,23 @@ import { router } from "./routers";
 import { useAuthStore } from "@/stores/authStore";
 import { useEnterpriseDashboard } from "./hooks/useAdmin";
 import MaintenancePage from "./pages/users/support/Maintenance";
-import InsuranceChatbot from "./pages/users/support/Chatbot";
+
 export default function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
   const user = useAuthStore((state) => state.user);
-  console.log("App Rendered. Current user:", user);
-
-  // Fetch global settings (Maintenance Mode, etc.)
+  const { settings, isLoading } = useEnterpriseDashboard();
 
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
 
-  // App.jsx
-  const { settings, isLoading } = useEnterpriseDashboard();
-
   if (isLoading) return null;
 
-  // Convert to strict boolean (handles true, "true", or undefined)
+  // --- MAINTENANCE GATE LOGIC ---
   const isMaintenanceActive =
     settings?.maintenanceMode === true ||
     String(settings?.maintenanceMode) === "true";
   const isUserNotAdmin = user?.role !== "admin";
-
-  console.log("FINAL GATE CHECK:", {
-    maintenanceInDB: settings?.maintenanceMode,
-    isMaintenanceActive,
-    isUserNotAdmin,
-  });
 
   if (isMaintenanceActive && isUserNotAdmin) {
     return <MaintenancePage />;
@@ -46,17 +35,15 @@ export default function App() {
         <RouterProvider router={router} />
       </Suspense>
 
-      <InsuranceChatbot userId={user?.id} />
-
       <ToastContainer
-        position="top-right" // Bot-style position
-        autoClose={1000} // 4 seconds (500 was too fast!)
+        position="top-right"
+        autoClose={1000}
         hideProgressBar={false}
         newestOnTop={false}
         closeOnClick
         pauseOnHover
         draggable
-        theme="light" // Keeps it clean white
+        theme="light"
       />
     </>
   );

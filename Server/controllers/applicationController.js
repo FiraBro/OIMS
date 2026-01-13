@@ -1,13 +1,12 @@
 import applicationService from "../services/applicationService.js";
 import catchAsync from "../utils/catchAsync.js";
+import NotificationService from "../services/notificationService.js";
 
 // ==================================================
 // USER: APPLY FOR A POLICY
-
+// ==================================================
 export const applyForPolicy = async (req, res) => {
   try {
-    // Safety check: if req.body.personal is missing, JSON.parse will receive an empty string/undefined and crash.
-    // We use a fallback to "{}" string so it parses to an empty object.
     const personal = JSON.parse(req.body.personal || "{}");
     const nominee = JSON.parse(req.body.nominee || "{}");
     const medical = JSON.parse(req.body.medical || "{}");
@@ -16,7 +15,6 @@ export const applyForPolicy = async (req, res) => {
     const planId = req.body.planId;
     const agree = req.body.agree === "true";
 
-    // Ensure req.files exists (Multer puts files here)
     const documents = (req.files || []).map((file) => ({
       name: file.originalname,
       url: file.path,
@@ -24,17 +22,15 @@ export const applyForPolicy = async (req, res) => {
     }));
 
     const application = await applicationService.apply(
-      {
-        personal,
-        nominee,
-        medical,
-        payment,
-        planId,
-        agree,
-        documents,
-      },
+      { personal, nominee, medical, payment, planId, agree, documents },
       req.user.id
     );
+
+    // AUTOMATION: Notify user that application is submitted
+    await NotificationService.trigger("APPLICATION_SUBMITTED", req.user.id, {
+      id: application._id,
+      planName: personal.planName || "Insurance Plan",
+    });
 
     res.status(201).json({ status: "success", data: application });
   } catch (err) {
@@ -52,6 +48,12 @@ export const applyForPolicy = async (req, res) => {
 export const approveApplication = catchAsync(async (req, res) => {
   const result = await applicationService.approve(req.params.id, req.user.id);
 
+  // AUTOMATION: Notify user of approval
+  await NotificationService.trigger("APPLICATION_APPROVED", result.userId, {
+    id: result._id,
+    policyType: result.planName || "New Policy",
+  });
+
   res.status(200).json({
     status: "success",
     message: "Application approved successfully",
@@ -64,12 +66,17 @@ export const approveApplication = catchAsync(async (req, res) => {
 // ==================================================
 export const rejectApplication = catchAsync(async (req, res) => {
   const { reason } = req.body;
-
   const result = await applicationService.reject(
     req.params.id,
     reason,
     req.user.id
   );
+
+  // AUTOMATION: Notify user of rejection with reason
+  await NotificationService.trigger("APPLICATION_REJECTED", result.userId, {
+    id: result._id,
+    reason: reason || "Incomplete documentation",
+  });
 
   res.status(200).json({
     status: "success",
@@ -82,9 +89,7 @@ export const rejectApplication = catchAsync(async (req, res) => {
 // USER: GET MY APPLICATIONS
 // ==================================================
 export const getMyApplications = catchAsync(async (req, res) => {
-  // Capture status from query: e.g., /my-apps?status=pending
   const { status, page, limit, search } = req.query;
-
   const result = await applicationService.getMyApplications(req.user.id, {
     status,
     page: Number(page) || 1,
@@ -92,30 +97,21 @@ export const getMyApplications = catchAsync(async (req, res) => {
     search: search || "",
   });
 
-  res.status(200).json({
-    status: "success",
-    // result contains { applications: [], counts: {} }
-    ...result,
-  });
+  res.status(200).json({ status: "success", ...result });
 });
 
 // ==================================================
 // ADMIN: LIST APPLICATIONS
 // ==================================================
 export const listApplications = catchAsync(async (req, res) => {
-  // Add 'search' to the destructured query
   const { page, limit, search } = req.query;
-
   const data = await applicationService.list({
     page: Number(page) || 1,
     limit: Number(limit) || 10,
-    search: search || "", // Pass it to the service
+    search: search || "",
   });
 
-  res.status(200).json({
-    status: "success",
-    ...data,
-  });
+  res.status(200).json({ status: "success", ...data });
 });
 
 // ==================================================
@@ -126,10 +122,7 @@ export const deleteApplication = catchAsync(async (req, res) => {
     req.params.id,
     req.user.id
   );
-
-  res.status(200).json({
-    status: "success",
-    message: "Application deleted successfully",
-    data: deleted,
-  });
+  res
+    .status(200)
+    .json({ status: "success", message: "Application deleted", data: deleted });
 });

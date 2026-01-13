@@ -1,24 +1,22 @@
 import policyService from "../services/policyService.js";
 import catchAsync from "../utils/catchAsync.js";
+import NotificationService from "../services/notificationService.js";
 
 // ==================================================
 // USER: GET MY POLICIES
 // ==================================================
 export const getMyPolicies = catchAsync(async (req, res) => {
-  // 1. Extract query params (with defaults)
   const { page, limit, search } = req.query;
 
-  // 2. Pass them as an object to the service
   const result = await policyService.getMyPolicies(req.user.id, {
     page: page || 1,
     limit: limit || 10,
     search: search || "",
   });
 
-  // 3. Update the response to include the new pagination metadata
   res.status(200).json({
     status: "success",
-    results: result.applications.length, // count of current page
+    results: result.applications.length,
     data: {
       applications: result.applications,
       pagination: result.pagination,
@@ -37,6 +35,12 @@ export const requestPolicyRenewal = catchAsync(async (req, res) => {
     req.user.id,
     paymentReference
   );
+
+  // AUTOMATION: Notify user that renewal request is being processed
+  await NotificationService.trigger("RENEWAL_REQUESTED", req.user.id, {
+    policyNumber: result.policyNumber || result._id,
+    amount: result.premiumAmount,
+  });
 
   res.status(200).json({
     status: "success",
@@ -57,41 +61,16 @@ export const approvePolicyRenewal = catchAsync(async (req, res) => {
     req.user.id
   );
 
+  // AUTOMATION: Notify user that their policy is officially extended
+  await NotificationService.trigger("POLICY_RENEWED", policy.userId, {
+    policyNumber: policy.policyNumber,
+    endDate: newEndDate,
+  });
+
   res.status(200).json({
     status: "success",
     message: "Policy renewed successfully",
     data: policy,
-  });
-});
-
-// ==================================================
-// USER/ADMIN: GET POLICY BY ID
-// ==================================================
-export const getPolicyById = catchAsync(async (req, res) => {
-  const policy = await policyService.getPolicyById(req.params.id);
-
-  res.status(200).json({
-    status: "success",
-    data: policy,
-  });
-});
-
-// ==================================================
-// ADMIN: LIST POLICIES (Pagination)
-// ==================================================
-export const listPolicies = catchAsync(async (req, res) => {
-  const { page, limit, search, category } = req.query;
-
-  const data = await policyService.listPolicies({
-    page: Number(page) || 1,
-    limit: Number(limit) || 10,
-    search: search || "",
-    category: category || "",
-  });
-
-  res.status(200).json({
-    status: "success",
-    ...data,
   });
 });
 
@@ -106,6 +85,12 @@ export const updatePolicyStatus = catchAsync(async (req, res) => {
     status,
     req.user.id
   );
+
+  // AUTOMATION: General status update (e.g., Active, Suspended)
+  await NotificationService.trigger("POLICY_STATUS_CHANGED", updated.userId, {
+    policyNumber: updated.policyNumber,
+    newStatus: status.toUpperCase(),
+  });
 
   res.status(200).json({
     status: "success",
@@ -126,6 +111,12 @@ export const cancelPolicy = catchAsync(async (req, res) => {
     req.user.id
   );
 
+  // AUTOMATION: Critical notification for loss of coverage
+  await NotificationService.trigger("POLICY_CANCELLED", policy.userId, {
+    policyNumber: policy.policyNumber,
+    reason: reason || "Administrative decision",
+  });
+
   res.status(200).json({
     status: "success",
     message: "Policy cancelled successfully",
@@ -133,18 +124,30 @@ export const cancelPolicy = catchAsync(async (req, res) => {
   });
 });
 
-// ==================================================
-// ADMIN: SOFT DELETE POLICY
-// ==================================================
+// Remaining controllers (getPolicyById, listPolicies, deletePolicy)
+// usually don't require notifications as they are read-only or administrative.
+export const getPolicyById = catchAsync(async (req, res) => {
+  const policy = await policyService.getPolicyById(req.params.id);
+  res.status(200).json({ status: "success", data: policy });
+});
+
+export const listPolicies = catchAsync(async (req, res) => {
+  const { page, limit, search, category } = req.query;
+  const data = await policyService.listPolicies({
+    page: Number(page) || 1,
+    limit: Number(limit) || 10,
+    search: search || "",
+    category: category || "",
+  });
+  res.status(200).json({ status: "success", ...data });
+});
+
 export const deletePolicy = catchAsync(async (req, res) => {
   const deleted = await policyService.softDeletePolicy(
     req.params.id,
     req.user.id
   );
-
-  res.status(200).json({
-    status: "success",
-    message: "Policy deleted successfully",
-    data: deleted,
-  });
+  res
+    .status(200)
+    .json({ status: "success", message: "Policy deleted", data: deleted });
 });

@@ -15,19 +15,32 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: [true, "Notification message is required"],
     },
-    type: {
+    // Changed "type" to "category" to match your Service Logic (claim, policy, etc.)
+    category: {
       type: String,
-      enum: ["email", "push", "in-app"],
-      default: "email",
+      enum: ["claim", "policy", "payment", "analytics"],
+      required: true,
+    },
+    // Added priority for the "Immediate Email" logic
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
     },
     status: {
       type: String,
       enum: ["pending", "sent", "failed"],
       default: "pending",
     },
-    read: {
+    // Match the frontend property name
+    isRead: {
       type: Boolean,
       default: false,
+    },
+    // IMPORTANT: Added metadata to store {id, reason, policyName}
+    metadata: {
+      type: Object,
+      default: {},
     },
     sentAt: {
       type: Date,
@@ -36,7 +49,6 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Optional: Index for faster queries
 notificationSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
 export default mongoose.model("Notification", notificationSchema);

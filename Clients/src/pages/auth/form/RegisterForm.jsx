@@ -6,7 +6,7 @@ import PersonalInfoStep from "./PersonalInfoStep";
 import AddressStep from "./AddressStep";
 import { Button } from "@/components/ui/button";
 
-const steps = ["Account Details", "Personal Information", "Address"];
+const steps = ["Account Details", "Personal Info", "Address"];
 
 export default function RegisterForm({
   formData,
@@ -23,19 +23,19 @@ export default function RegisterForm({
   const validateCurrentStep = () => {
     if (activeStep === 0) {
       if (!formData.fullName.trim()) {
-        toast("Please enter your full name");
+        toast.error("Please enter your full name");
         return false;
       }
       if (!formData.email.trim()) {
-        toast("Please enter your email");
+        toast.error("Please enter your email");
         return false;
       }
       if (!formData.password.trim()) {
-        toast("Please enter a password");
+        toast.error("Please enter a password");
         return false;
       }
       if (formData.password !== formData.passwordConfirm) {
-        toast("Passwords do not match");
+        toast.error("Passwords do not match");
         return false;
       }
     }
@@ -44,77 +44,103 @@ export default function RegisterForm({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!validateCurrentStep()) return;
 
     if (activeStep === steps.length - 1) {
       if (!acceptTerms) {
-        toast("Please accept the terms and conditions");
+        toast.error("Please accept the terms and conditions");
         return;
       }
-      onSubmit(); // ✅ clean call
+      onSubmit();
     } else {
       setActiveStep((prev) => prev + 1);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <StepIndicator steps={steps} activeStep={activeStep} />
+    <div className="w-full max-w-3xl mx-auto space-y-8">
+      {/* 1. Wider Step Indicator */}
+      <div className="px-4 md:px-10">
+        <StepIndicator steps={steps} activeStep={activeStep} />
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        {activeStep === 0 && (
-          <AccountStep
-            formData={formData}
-            onChange={onChange}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword} // ✅ must exist
-            showConfirmPassword={showConfirmPassword}
-            setShowConfirmPassword={setShowConfirmPassword} // ✅ must exist
-          />
-        )}
+      <form onSubmit={handleSubmit} className="bg-white">
+        {/* 2. Standardized Grid Container for Steps 
+            We wrap the steps in a div that forces a 2-column layout on desktop
+        */}
+        <div className="min-h-[300px]">
+          {activeStep === 0 && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <AccountStep
+                formData={formData}
+                onChange={onChange}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                showConfirmPassword={showConfirmPassword}
+                setShowConfirmPassword={setShowConfirmPassword}
+              />
+            </div>
+          )}
 
-        {activeStep === 1 && (
-          <PersonalInfoStep formData={formData} onChange={onChange} />
-        )}
-        {activeStep === 2 && (
-          <AddressStep
-            formData={formData}
-            onChange={onChange}
-            acceptTerms={acceptTerms}
-            onAcceptTermsChange={setAcceptTerms}
-          />
-        )}
+          {activeStep === 1 && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <PersonalInfoStep formData={formData} onChange={onChange} />
+            </div>
+          )}
 
-        <div className="flex justify-between pt-8 border-t">
+          {activeStep === 2 && (
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+              <AddressStep
+                formData={formData}
+                onChange={onChange}
+                acceptTerms={acceptTerms}
+                onAcceptTermsChange={setAcceptTerms}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 3. Footer Action Buttons - Wider and more distinct */}
+        <div className="flex justify-between items-center pt-10 mt-10 border-t border-gray-100">
           {activeStep > 0 ? (
             <Button
               type="button"
               variant="outline"
+              size="lg"
+              className="px-8 rounded-xl border-gray-300"
               onClick={() => setActiveStep(activeStep - 1)}
             >
-              ← Previous
+              ← Back
             </Button>
           ) : (
             <div />
           )}
 
-          <Button type="submit" disabled={isLoading}>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            size="lg"
+            className="px-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 transition-all active:scale-95"
+          >
             {isLoading
               ? "Processing..."
               : activeStep === steps.length - 1
               ? "Create Account"
-              : "Next Step →"}
+              : "Continue →"}
           </Button>
         </div>
       </form>
 
-      <div className="text-center pt-4">
-        <p className="text-sm">
+      <div className="text-center">
+        <p className="text-gray-500">
           Already have an account?{" "}
-          <Button variant="link" onClick={onSwitchToLogin}>
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="text-blue-600 font-bold hover:underline"
+          >
             Sign in here
-          </Button>
+          </button>
         </p>
       </div>
     </div>

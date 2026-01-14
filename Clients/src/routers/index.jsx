@@ -20,6 +20,7 @@ import AdminSupportDashboard from "@/pages/admin/ticket/AllTicket";
 import TicketDetailPage from "@/pages/users/support/TicketConversation";
 import AdminLiveChat from "@/pages/admin/support/AdminLiveChat";
 import { PageTransition } from "@/components/common/PageTransition";
+import NotificationCenter from "@/pages/users/notification/Notification";
 
 /* Lazy Loaded Components */
 const HomePage = lazy(() => import("@/pages/users/home/HomePage"));
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: "plans", element: <PlansPage /> },
       { path: "plans/:id", element: <PlanDetail /> },
+      { path: "notifications", element: <NotificationCenter /> },
       {
         path: "profile",
         element: (

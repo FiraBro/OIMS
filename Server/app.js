@@ -3,6 +3,11 @@ import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import fs from "fs";
+import yaml from "js-yaml";
+import swaggerUi from "swagger-ui-express";
+
+// Import your business logic
 import "./cron/escalation.js";
 import authRouter from "./routes/authRoutes.js";
 import insurancePlanRouter from "./routes/planRoutes.js";
@@ -24,28 +29,57 @@ dotenv.config();
 
 const app = express();
 
-// ===== Middleware =====
+// ==========================================
+// 1. SWAGGER CONFIGURATION
+// ==========================================
+const swaggerPath = path.join(process.cwd(), "openapi.yaml");
+let swaggerDocument;
+
+try {
+  // Read the YAML file you created earlier
+  swaggerDocument = yaml.load(fs.readFileSync(swaggerPath, "utf8"));
+} catch (e) {
+  console.error(
+    "❌ Failed to load openapi.yaml. Documentation will be unavailable."
+  );
+}
+
+// ==========================================
+// 2. GLOBAL MIDDLEWARE
+// ==========================================
 app.use(express.json());
-
 app.use(cookieParser());
-
 app.use(
   cors({
     origin: (origin, callback) => {
-      callback(null, true); // allow all origins
+      callback(null, true); // Allow all origins for dev; restrict in production
     },
     credentials: true,
   })
 );
 
+// Serve static uploads
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
-// ===== Home Route =====
-app.get("/", (req, res) => {
-  res.send("API is running...");
-});
+// ==========================================
+// 3. DOCUMENTATION ROUTE (Visit /api-docs)
+// ==========================================
+if (swaggerDocument) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
+
+// ==========================================
+// 4. API ROUTES
+// ==========================================
 const versions = "v1";
-// ===== API Routes =====
+
+// Home Route
+app.get("/", (req, res) => {
+  res.send(
+    `Insurance API is running. Documentation: <a href="/api-docs">/api-docs</a>`
+  );
+});
+
 app.use(`/api/${versions}/auth`, authRouter);
 app.use(`/api/${versions}/plans`, insurancePlanRouter);
 app.use(`/api/${versions}/policies`, policyRoute);
@@ -58,12 +92,16 @@ app.use(`/api/${versions}/support/tickets`, ticketRoutes);
 app.use(`/api/${versions}/applications`, applicationRoutes);
 app.use(`/api/${versions}/chat`, chatRoutes);
 
-// ===== 404 Handler (No *) =====
+// ==========================================
+// 5. ERROR HANDLING
+// ==========================================
+
+// 404 Handler
 app.use((req, res, next) => {
   next(new AppError(`Cannot find ${req.originalUrl} on this server`, 404));
 });
 
-// ===== Global Error Handler =====
+// Global Error Handler (must be last)
 app.use(globalErrorHandler);
 
 export default app;

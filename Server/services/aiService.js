@@ -44,7 +44,7 @@ export const getAIAnswer = async (query, context) => {
     const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
-  You are a FiraBoss Insurance Support bot. Use the PROVIDED FAQ LIST to help the user.
+  You are a NeuralSure Insurance Support bot. Use the PROVIDED FAQ LIST to help the user.
 
   [PROVIDED FAQ LIST]:
   ${context}
@@ -65,6 +65,6 @@ export const getAIAnswer = async (query, context) => {
   } catch (error) {
     console.error("AI Answer Error:", error.message);
     // Return "I don't know" so your controller triggers the ticket creation
-    return "I don't know";
+    return "Please create a support ticket for this query.";
   }
 };

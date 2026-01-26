@@ -7,7 +7,7 @@ export const useChatbot = (userId) => {
     {
       role: "bot",
       content:
-        "Hello! I'm your FiraBoss Assistant. How can I help with your insurance today?",
+        "Hello! I'm your NeuralSure Assistant. How can I help with your insurance today?",
     },
   ]);
 

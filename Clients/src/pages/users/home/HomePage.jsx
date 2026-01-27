@@ -11,7 +11,6 @@ export default function HomePage() {
       <HeroSection />
       <PlansPreview />
       <HowItWorks />
-      <TestimonialsCarousel />
       <FAQSection />
     </div>
   );

@@ -40,6 +40,25 @@ A modern, full-featured digital insurance platform that seamlessly connects cust
 - **File Uploads:** Multer / Cloudinary
 - **Deployment:** Docker
 
+## API Documentation
+
+This project includes full API documentation using **Swagger (OpenAPI 3.0)**.
+
+### 🔹 OpenAPI Specification
+
+The complete API contract is available here:
+
+You can view it online without running the project:
+
+1. Open https://editor.swagger.io/
+2. Copy the contents of `openapi.yaml`
+3. Paste it into the editor to explore all endpoints interactively
+
+### 🔹 Swagger UI (Local)
+
+If you run the project locally, interactive API documentation is available at:
+http://localhost:3001/api-docs
+
 ## Infrastructure
 
 **Containerization:** Docker & Docker Compose for consistent environment orchestration.

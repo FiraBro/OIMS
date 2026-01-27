@@ -25,7 +25,7 @@ const Footer = () => {
                   <Shield className="h-6 w-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-gray-900">
-                  Insure<span className="text-blue-600">Wise</span>
+                  Neural<span className="text-blue-600">Sure</span>
                 </span>
               </div>
               <p className="text-gray-600 text-sm leading-relaxed">
@@ -50,7 +50,7 @@ const Footer = () => {
                         {item}
                       </a>
                     </li>
-                  )
+                  ),
                 )}
               </ul>
             </div>
@@ -113,7 +113,7 @@ const Footer = () => {
             {/* Social Links */}
             <div className="flex items-center gap-4">
               <a
-                href="#"
+                href="https://x.com/FiragosJemal"
                 className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
               >
                 <Twitter className="h-5 w-5" />

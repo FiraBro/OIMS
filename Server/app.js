@@ -40,7 +40,7 @@ try {
   swaggerDocument = yaml.load(fs.readFileSync(swaggerPath, "utf8"));
 } catch (e) {
   console.error(
-    "❌ Failed to load openapi.yaml. Documentation will be unavailable."
+    "❌ Failed to load openapi.yaml. Documentation will be unavailable.",
   );
 }
 
@@ -55,7 +55,7 @@ app.use(
       callback(null, true); // Allow all origins for dev; restrict in production
     },
     credentials: true,
-  })
+  }),
 );
 
 // Serve static uploads
@@ -76,7 +76,7 @@ const versions = "v1";
 // Home Route
 app.get("/", (req, res) => {
   res.send(
-    `Insurance API is running. Documentation: <a href="/api-docs">/api-docs</a>`
+    `Insurance API is running. Documentation: <a href="/api-docs">/api-docs</a>`,
   );
 });
 

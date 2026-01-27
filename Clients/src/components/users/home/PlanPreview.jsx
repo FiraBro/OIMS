@@ -53,7 +53,7 @@ export default function PlansPreview() {
           fetchNextPage();
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 },
     );
 
     if (observerTarget.current) observer.observe(observerTarget.current);
@@ -261,7 +261,7 @@ export default function PlansPreview() {
           <Button
             variant="outline"
             className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-10 py-6 text-lg transition-colors"
-            onClick={() => navigate("/plan")}
+            onClick={() => navigate("/plans")}
           >
             Compare All Plans
           </Button>

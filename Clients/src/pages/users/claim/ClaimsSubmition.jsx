@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -18,11 +12,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Upload, FileText, Shield, DollarSign } from "lucide-react";
-import { claimService } from "@/services/claimService"; // Adjust path as needed
+import {
+  Upload,
+  FileText,
+  Shield,
+  DollarSign,
+  Info,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { claimService } from "@/services/claimService";
+
 export default function ClaimsSubmition() {
   const [formData, setFormData] = useState({
-    policyId: "", // Changed from policyNumber to policyId
+    policyId: "",
     claimType: "",
     description: "",
     amount: "",
@@ -32,13 +35,10 @@ export default function ClaimsSubmition() {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSelectChange = (value) => {
+  const handleSelectChange = (value) =>
     setFormData({ ...formData, claimType: value });
-  };
 
   const handleFile = (e) => {
     const selectedFile = e.target.files[0];
@@ -51,296 +51,228 @@ export default function ClaimsSubmition() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const data = new FormData();
-
-      // Ensure these keys match your Backend Validator
-      data.append("policyId", formData.policyId); // Send policyId (ID or Number)
+      data.append("policyId", formData.policyId);
       data.append("claimType", formData.claimType);
       data.append("description", formData.description);
       data.append("amount", formData.amount);
+      if (file) data.append("document", file);
 
-      if (file) {
-        data.append("document", file); // Must match upload.single("document")
-      }
-
-      // ✅ USE YOUR SERVICE HERE
       await claimService.createClaim(data);
-
-      toast("Claim submitted successfully!");
-
-      // Reset Form
+      toast.success("Claim filed successfully!");
       setFormData({ policyId: "", claimType: "", description: "", amount: "" });
       setFile(null);
       setFileName("");
     } catch (err) {
-      const errorMsg = err.response?.data?.message || "Failed to submit claim.";
-      toast(errorMsg);
+      toast.error(err.response?.data?.message || "Submission failed.");
     } finally {
       setLoading(false);
     }
   };
-  const claimTypes = [
-    { value: "Accident", label: "Accident Claim" },
-    { value: "Medical", label: "Medical Expense" },
-    { value: "Property Damage", label: "Property Damage" },
-    { value: "Theft", label: "Theft/Loss" },
-    { value: "Liability", label: "Third Party Liability" },
-    { value: "Natural Disaster", label: "Natural Disaster" },
-  ];
 
   return (
-    <div className="min-h-screen bg-[#fff] md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-            Claims Management Portal
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Submit a New Claim
           </h1>
-          <p className="text-gray-600">
-            Submit your insurance claim quickly and securely
+          <p className="text-slate-500 text-sm mt-1">
+            Provide the details of the incident to initiate your claim process.
           </p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="text-xs">
+            Save Draft
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs text-blue-600">
+            View Guidelines
+          </Button>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-1 space-y-6">
-            <Card className="border border-gray-200 border-l-4 border-l-blue-500 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-blue-500" />
-                  What You'll Need
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
-                    Valid policy number
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
-                    Incident details and description
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
-                    Supporting documents (receipts, photos, reports)
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <div className="h-2 w-2 bg-blue-500 rounded-full mt-1.5"></div>
-                    Claim amount with breakdown if available
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border border-gray-200 border-l-4 border-l-blue-500 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Processing Timeline</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      Initial Review
-                    </span>
-                    <span className="text-sm font-medium">
-                      1-2 Business Days
-                    </span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Main Form Area */}
+        <div className="lg:col-span-8 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Card className="border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-50/50 px-6 py-3 border-b border-slate-200">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Step 1: Policy & Type
+                </span>
+              </div>
+              <CardContent className="p-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-slate-700">
+                      Policy Identification
+                    </Label>
+                    <div className="relative">
+                      <Shield className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        name="policyId"
+                        value={formData.policyId}
+                        onChange={handleChange}
+                        placeholder="POL-000-000"
+                        className="pl-10 h-10 border-slate-200 focus:ring-blue-500/20 focus:border-blue-500"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Assessment</span>
-                    <span className="text-sm font-medium">
-                      3-5 Business Days
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      Final Decision
-                    </span>
-                    <span className="text-sm font-medium">
-                      7-10 Business Days
-                    </span>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-slate-700">
+                      Claim Category
+                    </Label>
+                    <Select
+                      value={formData.claimType}
+                      onValueChange={handleSelectChange}
+                    >
+                      <SelectTrigger className="h-10 border-slate-200">
+                        <SelectValue placeholder="Select type..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[
+                          "Accident",
+                          "Medical",
+                          "Theft",
+                          "Natural Disaster",
+                        ].map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          <div className="lg:col-span-2">
-            <Card className="shadow-lg border border-gray-200 border-r-4 border-r-blue-500 ">
-              <CardHeader className="border-b border-gray-200">
-                <CardTitle>Submit New Claim</CardTitle>
-                <CardDescription>
-                  Fill in all required fields to process your claim efficiently
-                </CardDescription>
-              </CardHeader>
+            <Card className="border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-slate-50/50 px-6 py-3 border-b border-slate-200">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Step 2: Incident Details
+                </span>
+              </div>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[13px] font-medium text-slate-700">
+                    Description of Event
+                  </Label>
+                  <Textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="Describe exactly what happened..."
+                    className="min-h-[120px] border-slate-200 focus:ring-blue-500/20"
+                    required
+                  />
+                </div>
 
-              <CardContent className="pt-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Policy Number */}
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="policyNumber"
-                        className="flex items-center gap-2"
-                      >
-                        <Shield className="h-4 w-4" />
-                        Policy Number *
-                      </Label>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-slate-700">
+                      Estimated Claim Amount
+                    </Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                       <Input
-                        id="policyId" // Matches state
-                        name="policyId" // Matches state
-                        value={formData.policyId}
-                        onChange={handleChange}
-                        placeholder="e.g., POL-2024-001234"
-                        className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
-                        required
-                      />
-                    </div>
-
-                    {/* Claim Type - FIXED: Added positioning props to SelectContent */}
-                    <div className="space-y-2 relative">
-                      <Label htmlFor="claimType">Claim Type *</Label>
-                      <Select
-                        value={formData.claimType}
-                        onValueChange={handleSelectChange}
-                      >
-                        <SelectTrigger className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200">
-                          <SelectValue placeholder="Select claim type" />
-                        </SelectTrigger>
-                        <SelectContent
-                          position="popper"
-                          sideOffset={5}
-                          className="z-50 bg-white border border-gray-200 rounded-md shadow-lg w-full min-w-[var(--radix-select-trigger-width)]"
-                        >
-                          {claimTypes.map((type) => (
-                            <SelectItem
-                              key={type.value}
-                              value={type.value}
-                              className="cursor-pointer bg-white hover:bg-gray-100"
-                            >
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Claim Amount */}
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="amount"
-                        className="flex items-center gap-2"
-                      >
-                        <DollarSign className="h-4 w-4" />
-                        Claim Amount *
-                      </Label>
-                      <Input
-                        id="amount"
                         name="amount"
                         type="number"
                         value={formData.amount}
                         onChange={handleChange}
                         placeholder="0.00"
-                        className="h-11 border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                        className="pl-10 h-10 border-slate-200"
                         required
                       />
                     </div>
+                  </div>
 
-                    {/* File Upload */}
-                    <div className="space-y-2">
-                      <Label htmlFor="document">Supporting Document *</Label>
-                      <div className="relative">
-                        <Input
-                          id="document"
-                          type="file"
-                          onChange={handleFile}
-                          className="sr-only"
-                          required
-                        />
-                        <Label
-                          htmlFor="document"
-                          className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
-                        >
-                          <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                          <span className="text-sm text-gray-600">
-                            {fileName || "Click to upload"}
-                          </span>
-                          <span className="text-xs text-gray-500 mt-1">
-                            PDF, JPG, PNG up to 10MB
-                          </span>
-                        </Label>
-                      </div>
+                  <div className="space-y-2">
+                    <Label className="text-[13px] font-medium text-slate-700">
+                      Supporting Evidence
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="doc-upload"
+                        type="file"
+                        onChange={handleFile}
+                        className="hidden"
+                      />
+                      <Label
+                        htmlFor="doc-upload"
+                        className="flex items-center justify-center w-full h-10 border border-dashed border-slate-300 rounded-md bg-slate-50 hover:bg-slate-100 cursor-pointer transition-all text-xs font-medium text-slate-600"
+                      >
+                        <Upload className="h-3 w-3 mr-2" />
+                        {fileName ? fileName : "Upload Files (Max 10MB)"}
+                      </Label>
                     </div>
                   </div>
-
-                  {/* Description */}
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="description"
-                      className="flex items-center gap-2"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Incident Description *
-                    </Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={handleChange}
-                      placeholder="Please provide a detailed description of the incident..."
-                      className="min-h-[120px] resize-none border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
-                      required
-                    />
-                    <p className="text-xs text-gray-500">
-                      Include date, time, location, and any other relevant
-                      details
-                    </p>
-                  </div>
-
-                  {/* Submit */}
-                  <div className="pt-4">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full h-12 text-white font-medium bg-blue-600 hover:bg-blue-500 cursor-pointer"
-                      size="lg"
-                    >
-                      {loading ? (
-                        <>
-                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                          Processing Your Claim...
-                        </>
-                      ) : (
-                        "Submit Claim for Review"
-                      )}
-                    </Button>
-
-                    <p className="text-xs text-gray-500 text-center mt-3">
-                      By submitting, you confirm that all information provided
-                      is accurate
-                    </p>
-                  </div>
-                </form>
+                </div>
               </CardContent>
             </Card>
 
-            <div className="mt-6 text-center text-sm text-gray-500">
-              Need assistance? Contact our claims support team at{" "}
-              <a
-                href="tel:+18001234567"
-                className="text-blue-600 hover:underline"
+            <div className="flex items-center justify-between p-2">
+              <div className="flex items-center text-xs text-slate-500 gap-2">
+                <Info className="h-3.5 w-3.5" />
+                Processing typically takes 7-10 business days.
+              </div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 h-11 rounded-lg shadow-md shadow-blue-200 transition-all"
               >
-                1-800-123-4567
-              </a>{" "}
-              or{" "}
-              <a
-                href="mailto:claims@insurance.com"
-                className="text-blue-600 hover:underline"
-              >
-                claims@insurance.com
-              </a>
+                {loading ? "Submitting..." : "Submit Claim Request"}
+              </Button>
             </div>
+          </form>
+        </div>
+
+        {/* Sidebar Info Area */}
+        <div className="lg:col-span-4 space-y-4">
+          <Card className="bg-slate-900 text-white border-none">
+            <CardContent className="p-6">
+              <h3 className="font-semibold flex items-center gap-2 mb-4">
+                <AlertCircle className="h-4 w-4 text-blue-400" />
+                Quick Requirements
+              </h3>
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "Proof of Incident",
+                    desc: "Photos or police reports",
+                  },
+                  {
+                    title: "Payment Receipts",
+                    desc: "For medical or repair costs",
+                  },
+                  { title: "Policy Status", desc: "Must be active & paid" },
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-3">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium">{item.title}</p>
+                      <p className="text-[11px] text-slate-400">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="p-6 rounded-xl border border-blue-100 bg-blue-50/50">
+            <h4 className="text-sm font-bold text-blue-900 mb-1">Need Help?</h4>
+            <p className="text-xs text-blue-700 mb-4 leading-relaxed">
+              Our claims specialists are available 24/7 for urgent assistance.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full bg-white text-blue-600 border-blue-200 hover:bg-blue-50 text-xs h-9"
+            >
+              Chat with Agent
+            </Button>
           </div>
         </div>
       </div>

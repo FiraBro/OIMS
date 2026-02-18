@@ -30,26 +30,26 @@ const SupportPage = lazy(() => import("@/pages/users/support/SupportPage"));
 const AuthPage = lazy(() => import("@/pages/auth/AuthPage"));
 const ProfilePage = lazy(() => import("@/pages/users/profile/ProfilePage"));
 const ApplyPlan = lazy(() => import("@/pages/users/plans/ApplyPlan"));
-const UserApplications = lazy(() =>
-  import("@/pages/users/applications/UserApplications")
+const UserApplications = lazy(
+  () => import("@/pages/users/applications/UserApplications"),
 );
-const ClaimSubmissionForm = lazy(() =>
-  import("@/pages/users/claim/ClaimsSubmition")
+const ClaimSubmissionForm = lazy(
+  () => import("@/pages/users/claim/ClaimsSubmition"),
 );
 const MyClaims = lazy(() => import("@/pages/users/claim/MyClaims"));
 const MyPolicies = lazy(() => import("@/pages/users/policy/MyPolicy"));
-const AdminDashboard = lazy(() =>
-  import("@/pages/admin/dashboard/AdminDashboard")
+const AdminDashboard = lazy(
+  () => import("@/pages/admin/dashboard/AdminDashboard"),
 );
-const AdminPolicyApplications = lazy(() =>
-  import("@/pages/admin/applications/AdminPolicyApplications")
+const AdminPolicyApplications = lazy(
+  () => import("@/pages/admin/applications/AdminPolicyApplications"),
 );
-const ViewPolicyApplication = lazy(() =>
-  import("@/pages/admin/policy/ViewPolicyApplication")
+const ViewPolicyApplication = lazy(
+  () => import("@/pages/admin/policy/ViewPolicyApplication"),
 );
 const AdminUsersPage = lazy(() => import("@/pages/admin/users/AdminUserPages"));
-const AdminClaimsManagement = lazy(() =>
-  import("@/pages/admin/claim/ClaimsManagement")
+const AdminClaimsManagement = lazy(
+  () => import("@/pages/admin/claim/ClaimsManagement"),
 );
 const NotFoundPage = lazy(() => import("@/components/common/NotFoundPage"));
 

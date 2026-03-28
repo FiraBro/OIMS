@@ -8,6 +8,7 @@ import {
   Linkedin,
   Facebook,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -69,12 +70,21 @@ const Footer = () => {
                   "FAQ",
                 ].map((item) => (
                   <li key={item}>
+                    {item === "Privacy Policy" ? (
+          <Link
+            to="/privacy"
+            className="text-gray-600 hover:text-blue-600 transition-colors duration-200 text-sm"
+          >
+            Privacy Policy
+          </Link>
+        ) : (
                     <a
                       href="#"
                       className="text-gray-600 hover:text-blue-600 transition-colors duration-200 text-sm"
                     >
                       {item}
                     </a>
+        )}
                   </li>
                 ))}
               </ul>

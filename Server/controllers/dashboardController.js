@@ -2,18 +2,26 @@ import * as dashboardService from "../services/dashboardService.js";
 
 export const getAdminOverview = async (req, res) => {
   try {
-    const dashboardData = await dashboardService.getDashboardStats();
+    const data = await dashboardService.getDashboardStats();
 
-    res.status(200).json({
+    if (!data) {
+      return res.status(404).json({
+        success: false,
+        message: "Dashboard data not found",
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      message: "Dashboard data retrieved successfully",
-      data: dashboardData,
+      data,
     });
-  } catch (error) {
-    res.status(500).json({
+
+  } catch (err) {
+    console.error("[DashboardController]", err);
+
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch dashboard metrics",
-      error: error.message,
+      message: "Server error",
     });
   }
 };
